@@ -100,7 +100,7 @@ switch(param)
         % now we are going to time-lock it to the scan, and include a
         % parameter for scan-onset
         scan_duration=ni.dim(4)*ni.pixdim(4);% in sec
-        for k=1:length(physio_output(k))
+        for k=1:length(physio_output)
             if isfield(physio_output(1),'CNIsrate') % if there is a sampling rate
                 % chop of the beginning
                 physio_output(k).data=physio_output(k).rawdata(end-round(scan_duration*physio_output(k).CNIsrate)+1:end);
@@ -113,6 +113,72 @@ switch(param)
         end
         
         val=physio_output;
+        
+    case{'ppg_peaks'}
+        physio=BB_get(ni,'physio');
+        ppg_ind=0;
+        for k=1:length(physio)
+            if isequal(physio(k).name,'PPGDat')
+                ppg_ind=k;
+            end
+        end
+        % first get a rough estimate of onsets for the heartbeat
+        signal=physio(ppg_ind).data;
+        phys_srate=physio(ppg_ind).CNIsrate;
+        % set minimum inter-heartbeat interval
+        PPG_int=0.7;
+        
+        % detect peaks:
+        [pks1,locs1]=findpeaks(signal,'minpeakdistance',PPG_int*phys_srate);
+        % now move back to seconds
+        val=locs1/phys_srate; % ppg onsets
+
+        % we already got our value, but keep this code if necessary for
+        % later:
+        % low-pass filter % not necessary, keep in for lower quality data?
+        band=5;
+        Rp=3; Rs=60; % third order Butterworth
+        high_p=band(1)*2/phys_srate;
+        high_s=(band(1)+20)*2/phys_srate;
+        [n_band,wn_band]=buttord(high_p,high_s,Rp,Rs);
+        [bf_b,bf_a]=butter(n_band,wn_band,'low');
+        band_sig=filtfilt(bf_b,bf_a,signal);
+
+        % detect peaks:
+        [pks2,locs2]=findpeaks(band_sig,'minpeakdistance',PPG_int*phys_srate);
+
+        % make epochs and plot:
+        epoch_pre=.5*phys_srate;
+        epoch_post=4*phys_srate;
+        hb_epochs1=zeros(length(pks1),length(-epoch_pre+1:epoch_post));
+
+        for k=1:length(pks1)-4
+            hb_epochs1(k,:)=signal(locs1(k)-epoch_pre+1:locs1(k)+epoch_post);
+        end
+
+        % plot average PPG response 
+        figure('Position',[0 0 800 700])
+        subplot(2,2,1),hold on
+        plot(signal,'k')
+        plot(locs1,pks1,'r.')
+        title('PPG signal and detected peaks')
+        
+        subplot(2,2,2),hold on
+        plot(signal,'k')
+        plot(locs1,pks1,'r.')
+        xlim([0 phys_srate*30])
+        title('PPG signal and detected peaks - zoom')
+
+        subplot(2,1,2),hold on
+        t=[-epoch_pre+1:epoch_post]/phys_srate;
+        plot(t,hb_epochs1,'k')
+        plot(t,mean(hb_epochs1),'r')
+        title('PPG epochs')
+
+%         set(gcf,'PaperPositionMode','auto')
+%         [~,b]=fileparts(ni.fname);
+%         [~,b]=fileparts(b);
+%         print('-painters','-r300','-dpng',['./figures/PPG_epochs_' b])
     otherwise
         error('Uknown afq parameter');
         
