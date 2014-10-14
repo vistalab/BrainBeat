@@ -1,7 +1,7 @@
-function val = BB_get(ni,param)
+function val = BB_get(ni,param,varargin)
 % Get value from BB structure
 %
-% val = BB_get(afq, param, varargin)
+% val = BB_get(ni, param, varargin)
 %
 % param list:              - arguments:
 %
@@ -16,7 +16,7 @@ function val = BB_get(ni,param)
 % BB_get(ni,'tr')
 %
 % Wandell Copyright Vistasoft Team, 2013
-% Written by Aviv an Dora 2014
+% Written by Aviv and Dora 2014
 
 
 % remove spaces and upper case
@@ -128,11 +128,6 @@ switch(param)
         % set minimum inter-heartbeat interval
         PPG_int=0.7;
         
-        % detect peaks:
-        [pks1,locs1]=findpeaks(signal,'minpeakdistance',PPG_int*phys_srate);
-        % now move back to seconds
-        val=locs1/phys_srate; % ppg onsets
-
         % we already got our value, but keep this code if necessary for
         % later:
         % low-pass filter % not necessary, keep in for lower quality data?
@@ -143,42 +138,39 @@ switch(param)
         [n_band,wn_band]=buttord(high_p,high_s,Rp,Rs);
         [bf_b,bf_a]=butter(n_band,wn_band,'low');
         band_sig=filtfilt(bf_b,bf_a,signal);
-
         % detect peaks:
-        [pks2,locs2]=findpeaks(band_sig,'minpeakdistance',PPG_int*phys_srate);
+        [pks1,locs1]=findpeaks(band_sig,'minpeakdistance',PPG_int*phys_srate);
+        % now move back to seconds and return value
+        val=locs1/phys_srate; % ppg onsets
 
+        % add some plots so we can check stuff:
         % make epochs and plot:
         epoch_pre=.5*phys_srate;
         epoch_post=4*phys_srate;
-        hb_epochs1=zeros(length(pks1),length(-epoch_pre+1:epoch_post));
+        hb_epochs1=NaN(length(pks1),length(-epoch_pre+1:epoch_post));
 
-        for k=1:length(pks1)-4
-            hb_epochs1(k,:)=signal(locs1(k)-epoch_pre+1:locs1(k)+epoch_post);
+        for k=1:length(pks1)
+            if locs1(k)+epoch_post<length(signal)
+                hb_epochs1(k,:)=signal(locs1(k)-epoch_pre+1:locs1(k)+epoch_post);
+            end
         end
 
-        % plot average PPG response 
+        % plot averaged PPG response 
         figure('Position',[0 0 800 700])
-        subplot(2,2,1),hold on
-        plot(signal,'k')
-        plot(locs1,pks1,'r.')
+        subplot(2,2,1),hold on, plot(signal,'k'), plot(locs1,pks1,'r.')
         title('PPG signal and detected peaks')
-        
-        subplot(2,2,2),hold on
-        plot(signal,'k')
-        plot(locs1,pks1,'r.')
+        subplot(2,2,2),hold on, plot(signal,'k'), plot(locs1,pks1,'r.')
         xlim([0 phys_srate*30])
         title('PPG signal and detected peaks - zoom')
-
         subplot(2,1,2),hold on
         t=[-epoch_pre+1:epoch_post]/phys_srate;
-        plot(t,hb_epochs1,'k')
-        plot(t,mean(hb_epochs1),'r')
+        plot(t,hb_epochs1,'k'), plot(t,mean(hb_epochs1),'r')
         title('PPG epochs')
 
-%         set(gcf,'PaperPositionMode','auto')
-%         [~,b]=fileparts(ni.fname);
-%         [~,b]=fileparts(b);
-%         print('-painters','-r300','-dpng',['./figures/PPG_epochs_' b])
+    case{'ppg_response_function'}
+        [response_matrix,t] = BB_response2physio(ni,varargin{1});
+        val.response_matrix=response_matrix;
+        val.t=t;
     otherwise
         error('Uknown afq parameter');
         
