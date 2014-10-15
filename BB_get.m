@@ -6,14 +6,25 @@ function val = BB_get(ni,param,varargin)
 % param list:              - arguments:
 %
 % 'tr'
-% 'te'
-% 'fa'
-% 'nr_points'
-% 'resolution'
-% 'dimentions'
+% 'sliceduration'
+        % duration of 1 slice within a tr
+% nslices
+        % number of slices within 1 tr
+% mux
+        % the mux factor
+% 'timing'
+        % timing for every slice in ms
 % 'physio'
+        % physio data: ppg (pulse) and resp
+% 'ppg_peaks' 
+        % returns the peaks in the ppg signal in seconds
+% 'ppg_response_function'
+        % gets the heart-rate locked brain response for every voxel
+        % and gets the time (t)
+        % varargin{1}: adding a slice number is optional
 %
-% BB_get(ni,'tr')
+%
+% example: BB_get(ni,'physio')
 %
 % Wandell Copyright Vistasoft Team, 2013
 % Written by Aviv and Dora 2014
@@ -115,6 +126,8 @@ switch(param)
         val=physio_output;
         
     case{'ppg_peaks'}
+        % returns the peaks in the ppg signal in seconds
+        
         physio=BB_get(ni,'physio');
         ppg_ind=0;
         for k=1:length(physio)
@@ -168,6 +181,8 @@ switch(param)
         title('PPG epochs')
 
     case{'ppg_response_function'}
+        % gets the heart-rate locked brain response for every voxel
+        % adding a slice number is optional in varargin{1}
         [response_matrix,t] = BB_response2physio(ni,varargin{1});
         val.response_matrix=response_matrix;
         val.t=t;
