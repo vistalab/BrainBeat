@@ -163,7 +163,7 @@ switch(param)
         hb_epochs1=NaN(length(pks1),length(-epoch_pre+1:epoch_post));
 
         for k=1:length(pks1)
-            if locs1(k)+epoch_post<length(signal)
+            if locs1(k)+epoch_post<length(signal) && locs1(k)-epoch_pre>0
                 hb_epochs1(k,:)=signal(locs1(k)-epoch_pre+1:locs1(k)+epoch_post);
             end
         end
