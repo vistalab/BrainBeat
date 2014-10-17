@@ -54,7 +54,7 @@ for s=1:length(slices)
 
             for k=1:length(ppg_onsets); % run through all ppg onsets
                 [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
-                temp_resp_mat(m,n,k,:)=s_vox_up(ppg_find-round(epoch_pre*srate_epochs)+1:ppg_find+round(epoch_post*srate_epochs));
+                temp_resp_mat(m,n,k,:)=s_vox_up(ppg_find-round(epoch_pre*srate_epochs):ppg_find+round(epoch_post*srate_epochs));
             end
             clear s_vox
         end
