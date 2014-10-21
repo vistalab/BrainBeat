@@ -1,36 +1,31 @@
 function val = BB_get(ni,param,varargin)
 % Get value from BB structure
 %
-% val = BB_get(ni, param, varargin)
+%    val = BB_get(ni, param, varargin)
 %
 % param list:              - arguments:
 %
-% 'tr'
-% 'sliceduration'
-        % duration of 1 slice within a tr
-% nslices
-        % number of slices within 1 tr
-% mux
-        % the mux factor
-% 'timing'
-        % timing for every slice in ms
-% 'physio'
-        % physio data: ppg (pulse) and resp
-% 'ppg_peaks' 
-        % returns the peaks in the ppg signal in seconds
-% 'ppg_response_function'
-        % gets the heart-rate locked brain response for every voxel
-        % and gets the time (t)
-        % varargin{1}: adding a slice number is optional
+%  'tr'
+%  'slice duration'  - duration of 1 slice within a tr
+%   'n slices        - number of slices within 1 tr
+%   'mux'            - the number of simultaneous slices (mux factor)
+%   'timing'         - timing for every slice in ms
+%   'physio'         - physio data: ppg (pulse) and resp (resp)
+%   'ppg_peaks'      - returns the peaks in the ppg signal in seconds
+%                      (ppg = pulse pressure gXXX)
+%   'ppg_response_function' - heart-rate locked brain impulse response for
+%                             every voxel and gets the time (t) 
 %
+%    varargin{1}: adding a slice number is optional
 %
-% example: BB_get(ni,'physio')
+% Examples: 
+%    BB_get(ni,'physio')
+%     
 %
-% Wandell Copyright Vistasoft Team, 2013
-% Written by Aviv and Dora 2014
+% Written by Aviv and Dora, Copyright Vistasoft Team 2014
 
 
-% remove spaces and upper case
+%% remove spaces and upper case
 param = mrvParamFormat(param);
 
 %% Get the requested parameter
@@ -77,22 +72,40 @@ switch(param)
         end
         val=timing;
     case{'physio'}
-        [file_path,file_name]=fileparts(ni.fname);
-        [~,file_name]=fileparts(file_name);
-        physio_name=fullfile(file_path,[file_name '_physio.tgz']);
-        physio_dir=fullfile(file_path,[file_name '_physio']);
-        UnTarpPhysio_dir=fullfile(file_path,[file_name '_physio_Unzip']);
-        if ~exist(physio_dir,'dir')
-            physio=gunzip(physio_name);
-            physio=untar(physio{1},UnTarpPhysio_dir);
-        else
-            physioTmp1=dir(UnTarpPhysio_dir);
-            physioTmp2=dir(fullfile(UnTarpPhysio_dir,physioTmp1(3).name));
-            physio={physioTmp2(3:end).name};
-            for k=1:length(physio)
-                physio{k}=fullfile(UnTarpPhysio_dir,physioTmp1(3).name,physio{k});
+        % p = bbGet(ni,'physio')
+        % Read the physio and respiratory data specified in the NI file
+
+        % We first check to see if there is an unziped/tar file with the
+        % name
+        
+        % Should add physio file handling to niftiGet(ni,'physio ....');
+        [fPath,fName] = fileparts(ni.fname);
+        [~, fName]    = fileparts(fName);       
+        UnTarpPhysio_dir = fullfile(fPath,[fName '_physio_Unzip']);
+        
+        if ~exist(UnTarpPhysio_dir,'dir')
+            % Make the untar'd gunzip'd physio directory
+            physio_name = fullfile(fPath,[fName '_physio.tgz']);
+            if ~exist(physio_name,'file')
+                error('No physio tgz file %s\n',physio_name);
             end
+            physioTar = gunzip(physio_name);    % This is a cell of the tar file name
+            untar(physioTar{1},UnTarpPhysio_dir);
+            
+            % Eliminate the unwanted tar file
+            delete(physioTar{1});
         end
+        
+        % physio_dir  = fullfile(file_path,[file_name '_physio']);
+        
+        % So the directory now exists.  Get the physio data.  One of them
+        % is the PPG and the other is RESP
+        physioData = dir(fullfile(UnTarpPhysio_dir,[fName,'_physio'],'*Data*'));
+       
+        % This the Matlab structure we return.  The first one is PPG and
+        % the second one is RESP.  Maybe we should structure it as
+        %  physio.ppg and physio.resp
+        %
         physio_output=[];
         for k=1:length(physio)
             [~, d]=fileparts(physio{k});
