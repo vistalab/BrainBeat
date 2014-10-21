@@ -4,11 +4,14 @@ function [response_matrix,t] = BB_response2physio(ni,slices)
 %
 % [response_matrix,t] = BB_response2physio(ni)
 % 
+% ni: a nifti structure loaded by niftiRead
 %
-%
-%
-% Wandell Copyright Vistasoft Team, 2013
-% Written by Dora 2014
+% optional inputs:
+% slices: slices for which to calculate response function, if no input, do
+% all slices
+% 
+% 
+% Written by Dora, Copyright Vistasoft Team 2014
 
 if ~exist('slices','var') % do whole brain
     slices=[1:size(ni.data,3)];

@@ -12,11 +12,11 @@ function val = BB_get(ni,param,varargin)
 %   'timing'         - timing for every slice in ms
 %   'physio'         - physio data: ppg (pulse) and resp (resp)
 %   'ppg_peaks'      - returns the peaks in the ppg signal in seconds
-%                      (ppg = pulse pressure gXXX)
+%                      (ppg = photoplethethysmogram)
 %   'ppg_response_function' - heart-rate locked brain impulse response for
 %                             every voxel and gets the time (t) 
-%
-%    varargin{1}: adding a slice number is optional
+%                           - varargin{1} = slice number is optional
+%                           (default all slices, but that takes a couple of minutes)
 %
 % Examples: 
 %    BB_get(ni,'physio')
@@ -106,26 +106,23 @@ switch(param)
         % the second one is RESP.  Maybe we should structure it as
         %  physio.ppg and physio.resp
         %
-        physio_output=[];
-        for k=1:length(physio)
-            [~, d]=fileparts(physio{k});
-            physio_output(k).name=d(1:6);
-            physio_output(k).rawdata=load(physio{k});
-            if isequal(physio_output(k).name,'PPGDat');
-                physio_output(k).CNIsrate=100;
-                % here, we are hardcoding the CNI sampling rate for
-                % ECG
-            elseif isequal(physio_output(k).name,'RESPDa')
-                physio_output(k).CNIsrate=25;
-                % here, we are hardcoding the CNI sampling rate for
-                % respiration
+        physio_output = [];
+        for k=1:length(physioData)
+            if isequal(physioData(k).name(1:6),'PPGDat');
+                physio_output(1).name = 'PPG';
+                physio_output(1).CNIsrate = 100; % here, we are hardcoding the CNI sampling rate for ECG
+                physio_output(1).rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
+            elseif isequal(physioData(k).name(1:6),'RESPDa')
+                physio_output(2).name = 'RESP';
+                physio_output(2).CNIsrate = 25; % here, we are hardcoding the CNI sampling rate for respiration
+                physio_output(2).rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
             end
         end
         % now we are going to time-lock it to the scan, and include a
         % parameter for scan-onset
         scan_duration=ni.dim(4)*ni.pixdim(4);% in sec
         for k=1:length(physio_output)
-            if isfield(physio_output(1),'CNIsrate') % if there is a sampling rate
+            if isfield(physio_output(k),'CNIsrate') % if there is a sampling rate
                 % chop of the beginning
                 physio_output(k).data=physio_output(k).rawdata(end-round(scan_duration*physio_output(k).CNIsrate)+1:end);
                 % add scan onset:
@@ -142,12 +139,8 @@ switch(param)
         % returns the peaks in the ppg signal in seconds
         
         physio=BB_get(ni,'physio');
-        ppg_ind=0;
-        for k=1:length(physio)
-            if isequal(physio(k).name,'PPGDat')
-                ppg_ind=k;
-            end
-        end
+        ppg_ind=1; % 1 for ppg, 2 for resp
+
         % first get a rough estimate of onsets for the heartbeat
         signal=physio(ppg_ind).data;
         phys_srate=physio(ppg_ind).CNIsrate;
@@ -200,6 +193,6 @@ switch(param)
         val.response_matrix=response_matrix;
         val.t=t;
     otherwise
-        error('Uknown afq parameter');
+        error('unknown BB parameter');
         
 end
