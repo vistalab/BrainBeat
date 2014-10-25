@@ -16,8 +16,11 @@ function val = BB_get(ni,param,varargin)
 %   'ppg_response_function' - heart-rate locked brain impulse response for
 %                             every voxel and gets the time (t) 
 %                           - varargin{1} = slice number is optional
-%                           (default all slices, but that takes a couple of minutes)
-%
+%                             (default all slices, but that takes a couple of minutes)
+%   'ppg_correlation - correlation with ppg signal size voxels X voxels X
+%                      slices
+%                    - varargin{1} = slice number is optional
+%                      (default all slices, but that takes a couple of minutes)
 % Examples: 
 %    BB_get(ni,'physio')
 %     
@@ -192,6 +195,12 @@ switch(param)
         [response_matrix,t] = BB_response2physio(ni,varargin{1});
         val.response_matrix=response_matrix;
         val.t=t;
+        
+    case{'ppg_correlation'}
+        % gets the correlation with PPG for every voxel
+        % adding a slice number is optional in varargin{1}
+        val = BB_correlate2physio(ni,varargin{1});
+        
     otherwise
         error('unknown BB parameter');
         
