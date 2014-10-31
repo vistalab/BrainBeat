@@ -27,10 +27,17 @@ anat      ='9_1_T1w_1mm_sag';   % Anatomical data
 anat      = fullfile(dDir,subj,anat,'8202_9_1.nii.gz');
 niAnatomy = niftiRead(anat);
 
-showMontage(niAnatomy.data);
-
 % mrViewer should be able to take a nifti structure as input data
-mrViewer(anat)
+% The orientation of the 3-axis images is in Radiological format.  Perhaps
+% this should be the default?
+% The zoom is incomprehensible or broken.
+mrViewer(anat,'nifti')
+
+%% Let's have a look at some of the key parameters
+
+BB_get(ni,'timing')
+
+
 
 %% Let's pick a physiology file and do something
 
@@ -47,7 +54,7 @@ ppg_onsets=BB_get(ni,'ppg_peaks');
 slice_plot = 20;
 
 % calculate the correlation
-out_r_map = BB_get(ni,'ppg_correlation',sl_plot);
+out_r_map = BB_get(ni,'ppg_correlation',slice_plot);
 
 % make a figure
 figure('Position',[0 0 800 300])

@@ -1,13 +1,29 @@
 function val = BB_get(ni,param,varargin)
-% Get value from BB structure
+% Get value from BB (Brain beat) structure
 %
 %    val = BB_get(ni, param, varargin)
 %
+% The brain beat project tries to measure fMRI signals at a high rate and
+% then understand which aspects of the response vary with the heart beat
+% and sometimes with the respiratory cycle.
+%
+% The heart beat is measured with a Plethysmograph based on light and worn
+% by the subject on their index finger.  So GE calls it a Photo
+% Plethysmograph (PPG).
+% (http://en.wikipedia.org/wiki/Plethysmograph) 
+%
+% We also have subjects wear a breathing belt to record their respiration.
+%
+%
+% Inputs:
+%   ni    - a nifti 4D file with the imaging data over time (niftiRead)
+%   param - See choices below
+%   
 % param list:              - arguments:
 %
-%  'tr'
-%  'slice duration'  - duration of 1 slice within a tr
-%   'n slices        - number of slices within 1 tr
+%   'tr'             - Repetition time
+%   'slice duration' - duration of one slice within a tr
+%   'n slices        - number of slices within one tr
 %   'mux'            - the number of simultaneous slices (mux factor)
 %   'timing'         - timing for every slice in ms
 %   'physio'         - physio data: ppg (pulse) and resp (resp)
@@ -22,58 +38,107 @@ function val = BB_get(ni,param,varargin)
 %                    - varargin{1} = slice number is optional
 %                      (default all slices, but that takes a couple of minutes)
 % Examples: 
-%    BB_get(ni,'physio')
-%     
+%   BB_get(ni,'physio')
+%   BB_get(ni,'tr')
+%   BB_get(ni,'slice duration')
+%   BB_get(ni,'super slices')
+%   BB_get(ni,'total slices')
+%   BB_get(ni,'simultaneous slices')
+%   BB_get(ni,'slice acquisition order')
+%   BB_get(ni,'n volumes')
+%   T = BB_get(ni,'timing'); 
+%   mrvNewGraphWin; plot(T(:,1),'-o'); hold on; plot(T(:,2),'-x')
+%
+%   p = BB_get(ni,'physio');
 %
 % Written by Aviv and Dora, Copyright Vistasoft Team 2014
 
+%% Programming todo
+% Let's move the physio part out and re-write a set of functions called
+% physioCreate/Get/Set
+%    p = physioCreate(filename)
+% if filename is empty then we return a default physio structure
+% The physio structure should have physio.resp and physio.ppg as two main
+% slots.
+%
+% The physio stuff in here can be moved out.  This routine is good as
+% taking a nifti structure in and returning the SMS parameters.  We should
+% probably try to put a label into the NIFTI structure somewhere that
+% identifies it as a SMS (brain beat) type of structure.
 
-%% remove spaces and upper case
+%% remove spaces and upper case from para
 param = mrvParamFormat(param);
 
 %% Get the requested parameter
 switch(param)
     case{'tr'}
+        % The fourth dimension of pixdim is a timing value, the TR
+        % The first three are spatial dimensions
         val = ni.pixdim(4);
     case('sliceduration')
-        val=ni.slice_duration;
-    case{'nslices'}
-        val = round(ni.pixdim(4)./ni.slice_duration);
-    case{'mux'}
-        val = round(ni.dim(3)./BB_get(ni,'nslices'));
+        % Read time for a single slice in seconds
+        % Consider adding varargin of time unit (e.g., 'sec','ms', so
+        % forth)
+        val = ni.slice_duration;
+    case {'nvolumes'}
+        % This is the number of times the whole brain is measured.
+        % A super slice is measured every slice duration, and a volume is
+        % acquired every tr.
+        val = ni.dim(4);
+    case{'nslices','totalslices'}
+        % Total number of slices
+        val = ni.dim(3);
+    case {'superslices'}
+        % The slices are acquired continuously, so the TR divided by the
+        % slice duration is the number of super slices (or blocks of
+        % slices, or something)
+        %
+        % We could check that the value is very close to an integer
+        val = round(BB_get(ni,'tr')./ BB_get(ni,'slice duration'));
+    case{'mux','simultaneousslices'}
+        % Number of slices acquired simultaneously
+        val = round(ni.dim(3)./BB_get(ni,'super slices'));
+    case {'sliceacquisitionorder'}
+        % This is currently hard coded for the CNI.  In a better brighter
+        % world this information will be stored in the NIFTI
+        nslices= BB_get(ni,'super slices');
+        val = [(1:2:round(nslices)) (2:2:round(nslices))];
+
     case{'timing'}
-        nslices=BB_get(ni,'nslices');
-        mux=BB_get(ni,'mux');
-        tr=ni.pixdim(4);
-        mux_slice_acq_order = [[1:2:round(nslices)] [2:2:round(nslices)]];
+        % This is the moment in time (secs) that each slice is acquired,
+        % for all of the slices throughout the data set.  So the returned
+        % size is (total slices)*(n 
+        % BB_get(ni,'timing')
+        % 
+        % The moment in time that we start to measure each slice
+        nslices= BB_get(ni,'super slices');
+        mux    = BB_get(ni,'simultaneous slices');
+         
+        tr     = BB_get(ni,'tr');
+        sDuration = BB_get(ni,'slice duration');
+        mux_slice_acq_time = 0:sDuration:tr;
         
-        clear mux_slice_acq_time
-        for s=0:nslices-1
-            mux_slice_acq_time(s+1) = s/nslices*tr;
-        end
+        % This is the timing for the super slices
+        mux_slice_acq_order   = BB_get(ni,'slice acquisition order');
+        [~,idx] = sort(mux_slice_acq_order);
+        sliceTime = mux_slice_acq_time(idx);
         
-        clear unmux_slice_acq_order
-        ii=0;
-        for m=0:mux-1
-        for s=mux_slice_acq_order
-            ii=ii+1;
-            unmux_slice_acq_order(ii)=nslices*m+s;
+        sAcquisitionTiming = zeros(mux,nslices);
+        for ii=1:mux
+            sAcquisitionTiming(ii,:) = sliceTime;
         end
+        sAcquisitionTiming = sAcquisitionTiming';
+        sAcquisitionTiming = sAcquisitionTiming(:);
+               
+        % The timing matrix
+        nVolumes = BB_get(ni,'n volumes');
+        timing = zeros(BB_get(ni,'total slices'),nVolumes);
+        for k=1:nVolumes
+            dt = (k-1)*tr;
+            timing(:,k) = sAcquisitionTiming + dt;
         end
+        val = timing;
         
-        unmux_slice_acq_time=[];
-        for k=1:mux
-            unmux_slice_acq_time = [unmux_slice_acq_time mux_slice_acq_time];
-        end
-        % we have timing per volume (unmux_slice_acq_order unmux_slice_acq_time)
-        
-        % now we create a matrix with columns for nr of slices and rows for
-        % nr of tr
-        timing=zeros(ni.dim(3),ni.dim(4));
-        for k=1:size(timing,2)
-            timing(:,k)=unmux_slice_acq_time+((k-1)*tr);
-        end
-        val=timing;
     case{'physio'}
         % p = bbGet(ni,'physio')
         % Read the physio and respiratory data specified in the NI file
