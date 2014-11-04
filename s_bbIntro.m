@@ -35,18 +35,18 @@ mrViewer(anat,'nifti')
 
 %% Let's have a look at some of the key parameters
 
-BB_get(ni,'timing')
+bbGet(ni,'timing')
 
 
 
 %% Let's pick a physiology file and do something
 
 % load the physiology data:
-physio = BB_get(ni,'physio');
+physio = bbGet(ni,'physio');
 
 % let's get the ppg peaks in seconds, this also produces a plot of the ppg
 % data locked to the peak
-ppg_onsets=BB_get(ni,'ppg_peaks');
+ppg_onsets=bbGet(ni,'ppg_peaks');
 
 %% Let's look at the correlation with PPG in a slice
 
@@ -54,7 +54,7 @@ ppg_onsets=BB_get(ni,'ppg_peaks');
 slice_plot = 20;
 
 % calculate the correlation
-out_r_map = BB_get(ni,'ppg_correlation',slice_plot);
+out_r_map = bbGet(ni,'ppg_correlation',slice_plot);
 
 % make a figure
 figure('Position',[0 0 800 300])
@@ -68,7 +68,7 @@ colorbar, axis image, title('correlation with heartbeat (r)')
 sl_plot=20;
 
 % calculate the response matrix
-val = BB_get(ni,'ppg_response_function',sl_plot);
+val = bbGet(ni,'ppg_response_function',sl_plot);
 response_matrix = val.response_matrix;
 t = val.t;
 clear val
@@ -82,7 +82,7 @@ epoch_post = t(end)*phys_srate;
 ppg_t = (-round(epoch_pre)+1:epoch_post)/phys_srate;
 
 % get rid of early and late ppg onsets that do have an entire curve:
-timing = BB_get(ni,'timing');% we need the timing
+timing = bbGet(ni,'timing');% we need the timing
 ppg_onsets=ppg_onsets((ppg_onsets+t(1))>0); % get rid of early ones
 ppg_onsets=ppg_onsets((ppg_onsets+t(end))<max(timing(:))); % get rid of late ones
 

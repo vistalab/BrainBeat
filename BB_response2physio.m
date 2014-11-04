@@ -18,10 +18,10 @@ if ~exist('slices','var') % do whole brain
 end
 
 % get the stuff we need:
-timing=BB_get(ni,'timing');
-ppg_onsets=BB_get(ni,'ppg_peaks');
-mux_f=BB_get(ni,'nslices');
-srate=1/BB_get(ni,'tr');
+timing=bbGet(ni,'timing');
+ppg_onsets=bbGet(ni,'ppg_peaks');
+mux_f=bbGet(ni,'super slices');
+srate=1/bbGet(ni,'tr');
 
 % set epoch times
 epoch_pre=.5;%sec pre-onset
