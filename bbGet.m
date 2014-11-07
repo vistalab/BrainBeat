@@ -50,6 +50,7 @@ function val = bbGet(ni,param,varargin)
 %   mrvNewGraphWin; plot(T(:,1),'-o'); hold on; plot(T(:,2),'-x')
 %
 %   p = bbGet(ni,'physio');
+%   
 %
 % Written by Aviv and Dora, Copyright Vistasoft Team 2014
 

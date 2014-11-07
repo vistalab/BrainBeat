@@ -33,6 +33,12 @@ niAnatomy = niftiRead(anat);
 % The zoom is incomprehensible or broken.
 mrViewer(anat,'nifti')
 
+%% Deal with physio data
+
+physioFile = bbGet(ni,'physio file');
+physio     = physioCreate('filename',physioFile);
+physioGet(physio,'name')
+
 %% Let's have a look at some of the key parameters
 
 bbGet(ni,'timing')
