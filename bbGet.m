@@ -52,7 +52,7 @@ function val = bbGet(ni,param,varargin)
 %   p = bbGet(ni,'physio');
 %   
 %
-% Written by Aviv and Dora, Copyright Vistasoft Team 2014
+% AM/DH/BW Vistasoft Team , 2014
 
 %% Programming todo
 % Let's move the physio part out and re-write a set of functions called
@@ -171,35 +171,38 @@ switch(param)
         % is the PPG and the other is RESP
         physioData = dir(fullfile(UnTarpPhysio_dir,[fName,'_physio'],'*Data*'));
        
-        % This the Matlab structure we return.  The first one is PPG and
-        % the second one is RESP.  Maybe we should structure it as
-        %  physio.ppg and physio.resp
-        %
+        % This the Matlab structure we return. 
         physio_output = [];
         for k=1:length(physioData)
             if isequal(physioData(k).name(1:6),'PPGDat');
-                physio_output(1).name = 'PPG';
-                physio_output(1).CNIsrate = 100; % here, we are hardcoding the CNI sampling rate for ECG
-                physio_output(1).rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
+                physio_output.ppg.name = 'PPG';
+                physio_output.ppg.srate = 100; % here, we are hardcoding the CNI sampling rate for ECG
+                physio_output.ppg.rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
             elseif isequal(physioData(k).name(1:6),'RESPDa')
-                physio_output(2).name = 'RESP';
-                physio_output(2).CNIsrate = 25; % here, we are hardcoding the CNI sampling rate for respiration
-                physio_output(2).rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
+                physio_output.resp.name = 'RESP';
+                physio_output.resp.srate = 25; % here, we are hardcoding the CNI sampling rate for respiration
+                physio_output.resp.rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
             end
         end
+        
         % now we are going to time-lock it to the scan, and include a
         % parameter for scan-onset
         scan_duration=ni.dim(4)*ni.pixdim(4);% in sec
-        for k=1:length(physio_output)
-            if isfield(physio_output(k),'CNIsrate') % if there is a sampling rate
-                % chop of the beginning
-                physio_output(k).data=physio_output(k).rawdata(end-round(scan_duration*physio_output(k).CNIsrate)+1:end);
-                % add scan onset:
-                physio_output(k).scan_onset=zeros(size(physio_output(k).data));
-                for m=1:round(ni.dim(4))
-                    physio_output(k).scan_onset(round(ni.pixdim(4)*(m-1)*physio_output(k).CNIsrate+1))=1;
-                end
-            end
+        %%%% PPG:
+        % chop of the beginning
+        physio_output.ppg.data=physio_output.ppg.rawdata(end-round(scan_duration*physio_output.ppg.srate)+1:end);
+        % add scan onset:
+        physio_output.ppg.scan_onset=zeros(size(physio_output.ppg.data));
+        for m=1:round(ni.dim(4))
+            physio_output.ppg.scan_onset(round(ni.pixdim(4)*(m-1)*physio_output.ppg.srate+1))=1;
+        end
+        %%%% RESP:
+        % chop of the beginning
+        physio_output.resp.data=physio_output.resp.rawdata(end-round(scan_duration*physio_output.resp.srate)+1:end);
+        % add scan onset:
+        physio_output.resp.scan_onset=zeros(size(physio_output.resp.data));
+        for m=1:round(ni.dim(4))
+            physio_output.resp.scan_onset(round(ni.pixdim(4)*(m-1)*physio_output.resp.srate+1))=1;
         end
         
         val=physio_output;
@@ -208,12 +211,11 @@ switch(param)
         % returns the peaks in the ppg signal in seconds
         
         physio=bbGet(ni,'physio');
-        ppg_ind=1; % 1 for ppg, 2 for resp
 
         % first get a rough estimate of onsets for the heartbeat
-        signal=physio(ppg_ind).data;
-        phys_srate=physio(ppg_ind).CNIsrate;
-        % set minimum inter-heartbeat interval
+        signal=physio.ppg.data;
+        phys_srate=physio.ppg.srate;
+        % set minimum inter-heartbeat interval in seconds
         PPG_int=0.7;
         
         % we already got our value, but keep this code if necessary for
@@ -258,14 +260,14 @@ switch(param)
     case{'ppg_response_function'}
         % gets the heart-rate locked brain response for every voxel
         % adding a slice number is optional in varargin{1}
-        [response_matrix,t] = BB_response2physio(ni,varargin{1});
+        [response_matrix,t] = bbResponse2physio(ni,varargin{1});
         val.response_matrix=response_matrix;
         val.t=t;
         
     case{'ppg_correlation'}
         % gets the correlation with PPG for every voxel
         % adding a slice number is optional in varargin{1}
-        val = BB_correlate2physio(ni,varargin{1});
+        val = bbCorrelate2physio(ni,varargin{1});
         
     otherwise
         error('unknown BB parameter');

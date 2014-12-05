@@ -43,8 +43,6 @@ physioGet(physio,'name')
 
 bbGet(ni,'timing')
 
-
-
 %% Let's pick a physiology file and do something
 
 % load the physiology data:

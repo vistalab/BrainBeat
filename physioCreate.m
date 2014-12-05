@@ -3,7 +3,7 @@ function p = physioCreate(varargin)
 %
 %  p = physioCreate(varargin)
 %
-% The heart beat is estimated with a photoplethethysmogram
+% The heart beat is estimated with a photoplethysmogram
 % The respiration is estimated with a breathing belt.
 %
 % Example:
