@@ -132,5 +132,34 @@ close gcf
 % [~,b]=fileparts(b);
 movie2avi(mov,fullfile(dDir,subj,scan,[b '_PPGmov_slice' int2str(sl_plot) '.avi']),'compression','None','fps',1)
 
+%% compute the correlation/ reliability with the PPG for the whole brain and save as a nifti:
+
+[out_r_map]=bbCorrelate2physio(ni);
+
+ni1=ni;
+ni1.data=out_r_map;
+[~,b]=fileparts(ni.fname);
+[~,b]=fileparts(b);
+ni1.fname=[b '_corrPPG'];
+niftiWrite(ni1,[data_path subj_name '/' scan_name '/' ni1.fname])
+clear ni1
+
+%% compute the PPG triggered response matrix for the whole brain and save as a nifti:
+
+% now run for the whole brain:
+[response_matrix,t] = bbResponse2physio(ni);
+
+% safe the response matrix as mat
+save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponse'],'response_matrix','t')
+
+% safe the response matrix as nifti and save  time t
+ni1=ni;
+ni1.data=response_matrix;
+[~,b]=fileparts(ni.fname);
+[~,b]=fileparts(b);
+ni1.fname=[b '_PPGtrigResponse'];
+niftiWrite(ni1,[data_path subj_name '/' scan_name '/' ni1.fname])
+clear ni1
+save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponseT'],'t')
 
 %% End
