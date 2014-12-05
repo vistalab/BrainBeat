@@ -20,7 +20,6 @@ scan ='6_1_mux8fov4_r1_25s_4mmFA25';  % A particular data set
 fmri = fullfile(dDir,subj,scan,'8202_6_1.nii.gz');
 ni = niftiRead(fmri);
 
-
 %% We should get the anatomicals up too at some point
 
 anat      ='9_1_T1w_1mm_sag';   % Anatomical data
@@ -31,17 +30,17 @@ niAnatomy = niftiRead(anat);
 % The orientation of the 3-axis images is in Radiological format.  Perhaps
 % this should be the default?
 % The zoom is incomprehensible or broken.
-mrViewer(anat,'nifti')
+% mrViewer(anat,'nifti')
 
 %% Deal with physio data
 
-physioFile = bbGet(ni,'physio file');
+physioFile = bbGet(ni,'physio');
 physio     = physioCreate('filename',physioFile);
-physioGet(physio,'name')
+% physioGet(physio,'file name');
 
 %% Let's have a look at some of the key parameters
 
-bbGet(ni,'timing')
+t = bbGet(ni,'timing');
 
 %% Let's pick a physiology file and do something
 
@@ -50,7 +49,7 @@ physio = bbGet(ni,'physio');
 
 % let's get the ppg peaks in seconds, this also produces a plot of the ppg
 % data locked to the peak
-ppg_onsets=bbGet(ni,'ppg_peaks');
+ppg_onsets = bbGet(ni,'ppg_peaks');
 
 %% Let's look at the correlation with PPG in a slice
 
