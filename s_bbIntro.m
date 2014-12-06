@@ -35,21 +35,49 @@ niAnatomy = niftiRead(anat);
 %% Deal with physio data
 
 physioFile = bbGet(ni,'physio');
-physio     = physioCreate('filename',physioFile);
+% physio     = physioCreate('filename',physioFile);
 % physioGet(physio,'file name');
 
 %% Let's have a look at some of the key parameters
-
 t = bbGet(ni,'timing');
+
+% Each slice has its own timing
+mrvNewGraphWin; 
+nSlices  = bbGet(ni,'n slices');
+nVolumes = bbGet(ni,'n volumes');
+mesh(1:nVolumes,1:nSlices,t)
+xlabel('nVolumes'); ylabel('n Slices');
+zlabel('Time (sec)');
+
 
 %% Let's pick a physiology file and do something
 
 % load the physiology data:
 physio = bbGet(ni,'physio');
 
+data = physioGet(physio,'ppg data');
+ppgPeaks = physioGet(physio,'ppg peaks');
+t = physioGet(physio,'ppg sample times');
+
+peakVal = max(data(:))*ones(size(ppgPeaks));
+mrvNewGraphWin;
+srate = physioGet(physio,'ppg srate');
+peakSamples = round(ppgPeaks*srate);
+plot(ppgPeaks,data(peakSamples),'ro',t,data,'k-');
+xlabel('secs'); grid on
+
+mrvNewGraphWin; 
+plot(ppgPeaks)
+
+%
+physioPlot(physio,'ppg peaks')
+physioPlot(physio,'resp peaks')
+
 % let's get the ppg peaks in seconds, this also produces a plot of the ppg
 % data locked to the peak
 ppg_onsets = bbGet(ni,'ppg_peaks');
+
+
 
 %% Let's look at the correlation with PPG in a slice
 

@@ -146,6 +146,9 @@ switch(param)
 
         % We first check to see if there is an unziped/tar file with the
         % name
+        %
+        % The code below should go into a separate function for reading the
+        % physio data
         
         % Should add physio file handling to niftiGet(ni,'physio ....');
         [fPath,fName] = fileparts(ni.fname);
