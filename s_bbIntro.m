@@ -17,7 +17,8 @@ dDir = '/biac4/wandell/data/BrainBeat/data';
 
 subj ='20141017_1242';    % Date _ Time out of NIMS
 scan ='6_1_mux8fov4_r1_25s_4mmFA25';  % A particular data set
-fmri = fullfile(dDir,subj,scan,'8202_6_1.nii.gz');
+scanName='8202_6_1';
+fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
 ni = niftiRead(fmri);
 
 %% We should get the anatomicals up too at some point
@@ -35,8 +36,20 @@ niAnatomy = niftiRead(anat);
 %% Deal with physio data
 
 physioFile = bbGet(ni,'physio');
+
+% use the nifti structure:
+physio     = physioCreate('nifti',ni,'figure',1);
+
+% or enter the nifti filename and ppg and resp filenames
+ppgName = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'PPGData_muxarcepi_1017201413_06_39_15');
+respName = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'RESPData_muxarcepi_1017201413_06_39_15');
+physio     = physioCreate('niftiFilename',fmri,'ppg',ppgName,'resp',respName,'figure',1);
+
+
+
 % physio     = physioCreate('filename',physioFile);
 % physioGet(physio,'file name');
+
 
 %% Let's have a look at some of the key parameters
 t = bbGet(ni,'timing');
@@ -52,31 +65,38 @@ zlabel('Time (sec)');
 
 %% Let's pick a physiology file and do something
 
-% load the physiology data:
-physio = bbGet(ni,'physio');
+ppgData = physioGet(physio,'ppg data');
+respData = physioGet(physio,'resp data');
 
-data = physioGet(physio,'ppg data');
+% get PPG peaks
 ppgPeaks = physioGet(physio,'ppg peaks');
-t = physioGet(physio,'ppg sample times');
 
-peakVal = max(data(:))*ones(size(ppgPeaks));
+% plot PPG peaks
+t = physioGet(physio,'ppg sample times');
+peakVal = max(ppgData(:))*ones(size(ppgPeaks));
 mrvNewGraphWin;
 srate = physioGet(physio,'ppg srate');
 peakSamples = round(ppgPeaks*srate);
-plot(ppgPeaks,data(peakSamples),'ro',t,data,'k-');
+plot(ppgPeaks,ppgData(peakSamples),'ro',t,ppgData,'k-');
 xlabel('secs'); grid on
 
-mrvNewGraphWin; 
-plot(ppgPeaks)
+% get RESP peaks
+respPeaks = physioGet(physio,'resp peaks');
 
-%
-physioPlot(physio,'ppg peaks')
-physioPlot(physio,'resp peaks')
+% plot RESP peaks
+t = physioGet(physio,'resp sample times');
+peakVal = max(respData(:))*ones(size(respPeaks));
+mrvNewGraphWin;
+srate = physioGet(physio,'resp srate');
+peakSamples = round(respPeaks*srate);
+plot(respPeaks,respData(peakSamples),'ro',t,respData,'k-');
+xlabel('secs'); grid on
 
-% let's get the ppg peaks in seconds, this also produces a plot of the ppg
-% data locked to the peak
-ppg_onsets = bbGet(ni,'ppg_peaks');
+% get PPG rate
+ppgRate = physioGet(physio,'ppg rate');
 
+% get RESP rate
+respRate = physioGet(physio,'resp rate');
 
 
 %% Let's look at the correlation with PPG in a slice

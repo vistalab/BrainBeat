@@ -8,7 +8,7 @@ function val = physioGet(phy,param,varargin)
 %   param: Parameter to retrieve
 % 
 % Output:
-%   val:  return value
+%   val:  Return value
 %
 % Examples:
 %   We should create a test physio file that we can load easily and then
@@ -33,79 +33,56 @@ end
 % Which type of data are we getting?
 respFlag = false; ppgFlag = false;
 if     strcmp(param(1:4),'resp'), respFlag = true; param=param(5:end); 
+    obj = phy.resp;
+    dataType='resp';
 elseif strcmp(param(1:3),'ppg'),  ppgFlag = true;  param = param(4:end);
+    obj = phy.ppg;
+    dataType='ppg';
 end
 
-% Respiratory data
-if respFlag
-    
-    switch param
-        case 'data'
-            val = phy.resp.data;
-        case 'peaks'
-            % physioGet(phy,'resp peaks',[interval])
-            if isempty(varargin), interval = 2;
+
+switch param
+    case 'data'
+        val = obj.data;
+    case 'peaks'
+        % physioGet(phy,'resp peaks',[interval])
+        if respFlag
+            if isempty(varargin), interval = 2; 
             else interval = varargin{1};
             end
-            signal = physioGet(phy,'resp data');
-            srate  = physioGet(phy,'resp srate');
-
-            % set minimum inter-heartbeat interval in seconds
-            val = physioPeaks(signal,interval,srate);
-            val = val / srate;
-
-        case 'srate'
-            % Number of samples per second
-            val = phy.resp.srate;
-            
-        case 'sampletimes'
-            % Could adjust for sec or ms or other units.  Ask BW.
-            % seconds/persample
-            val = (1:physioGet(phy,'resp n samples'))/physioGet(phy,'resp srate');
-            
-        case 'nsamples'
-            val = length(phy.resp.data);
-            
-        otherwise
-            error('Unknown parameter %s\n',param);
-    end
-    
-% Pulse data from the plethysmograph
-elseif ppgFlag
-    
-    switch param
-        case 'data'
-            % Raw data
-            val = phy.ppg.data;
-        case 'peaks'
-            % Returns the time of the peaks in secs
-            if isempty(varargin), interval = 0.7;
+        elseif ppgFlag 
+            if isempty(varargin), interval = .7; 
             else interval = varargin{1};
             end
-            signal = physioGet(phy,'ppg data');
-            srate  = physioGet(phy,'ppg srate');
+        end
+        signal = physioGet(phy,[dataType 'data']);
+        srate  = physioGet(phy,[dataType 'srate']);
 
-            
-            % set minimum inter-heartbeat interval in seconds
-            val = physioPeaks(signal,interval,srate);
-            val = val / srate;
-        case 'srate'
-            % Samples per second
-            val = phy.ppg.srate;
-            
-        case 'sampletimes'
-            % Could adjust for sec or ms or other units.  Ask BW.
-            val = (1:physioGet(phy,'ppg n samples'))/physioGet(phy,'ppg srate');
-            
-        case 'nsamples'
-            val = length(phy.ppg.data);
-            
-            
-        otherwise
-            error('Unknown parameter %s\n',param);
-    end
-    
+        % set minimum inter-heartbeat interval in seconds
+        val = physioPeaks(signal,interval,srate);
+        val = val / srate;
+
+    case 'srate'
+        % Number of samples per second
+        val = obj.srate;
+
+    case 'sampletimes'
+        % Could adjust for sec or ms or other units.  Ask BW.
+        % seconds/persample
+        val = (1:physioGet(phy,[dataType ' n samples']))/physioGet(phy,[dataType ' srate']);
+
+    case 'nsamples'
+        val = length(obj.data);
+
+    case 'rate' % peaks per second
+        objPeaks = physioGet(phy,[dataType ' peaks']);
+        totalTime = length(obj.data)./physioGet(phy,[dataType ' srate']); % in secs
+        val = length(objPeaks) / totalTime; 
+        
+    otherwise
+        error('Unknown parameter %s\n',param);
 end
+
 
 end
 
@@ -118,7 +95,8 @@ function onsets = physioPeaks(signal,interval,srate)
 band = 5;
 Rp   = 3; Rs=60; % third order Butterworth
 high_p =  band(1)*2/srate;
-high_s = (band(1)+20)*2/srate;
+delta=0.001*2/srate;
+high_s = min(1-delta,high_p+0.1);
 
 [n_band,wn_band] = buttord(high_p,high_s,Rp,Rs);
 [bf_b,bf_a] = butter(n_band,wn_band,'low');
