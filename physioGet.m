@@ -46,18 +46,28 @@ switch param
         val = obj.data;
     case 'peaks'
         % physioGet(phy,'resp peaks',[interval])
-        if respFlag
-            if isempty(varargin), interval = 2; 
-            else interval = varargin{1};
-            end
-        elseif ppgFlag 
-            if isempty(varargin), interval = .7; 
-            else interval = varargin{1};
-            end
-        end
+        
         signal = physioGet(phy,[dataType 'data']);
         srate  = physioGet(phy,[dataType 'srate']);
-
+        
+        if isempty(varargin)
+        % we could use preset minimum interval
+%             if respFlag
+%                 interval = 2; 
+%             elseif ppgFlag 
+%                 interval = .7; 
+%             end
+        % but let's get it from the data:
+            % find the peaks in the autocorrelation function:
+            [peaks_ac,peaks_ac_i] = findpeaks(autocorr(obj.data,500));
+            % the first maximum peak (zero is not included) is the first
+            % autocorrelation time
+            [~,max_peaks_ac_i]=max(peaks_ac);
+            % set the interval at 70% of the ppg/resp rate:
+            interval = .7 * peaks_ac_i(max_peaks_ac_i)/srate;
+        else interval = varargin{1};
+        end
+        
         % set minimum inter-heartbeat interval in seconds
         val = physioPeaks(signal,interval,srate);
         val = val / srate;
@@ -103,7 +113,7 @@ high_s = min(1-delta,high_p+0.1);
 band_sig    = filtfilt(bf_b,bf_a,signal);
 
 % detect peak sample positions
-[~,onsets] = findpeaks(band_sig,'minpeakdistance',interval*srate);
+[~,onsets] = findpeaks(band_sig,'minpeakdistance',round(interval*srate));
 
 end
 
