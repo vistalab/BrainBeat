@@ -17,11 +17,14 @@ if ~exist('slices','var') % do whole brain
     slices=[1:size(ni.data,3)];
 end
 
-% get the stuff we need:
+% get the nifti stuff we need:
 timing=bbGet(ni,'timing');
-ppg_onsets=bbGet(ni,'ppg_peaks');
 mux_f=bbGet(ni,'super slices');
 srate=1/bbGet(ni,'tr');
+
+% get physio stuff we need:
+physio     = physioCreate('nifti',ni);
+ppg_onsets = physioGet(physio,'ppg peaks');
 
 % set epoch times
 epoch_pre=.5;%sec pre-onset

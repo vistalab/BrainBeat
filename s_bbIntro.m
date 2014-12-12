@@ -33,25 +33,7 @@ niAnatomy = niftiRead(anat);
 % The zoom is incomprehensible or broken.
 % mrViewer(anat,'nifti')
 
-%% Deal with physio data
-
-physioFile = bbGet(ni,'physio');
-
-% use the nifti structure:
-physio     = physioCreate('nifti',ni,'figure',1);
-
-% or enter the nifti filename and ppg and resp filenames
-ppgName = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'PPGData_muxarcepi_1017201413_06_39_15');
-respName = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'RESPData_muxarcepi_1017201413_06_39_15');
-physio     = physioCreate('niftiFilename',fmri,'ppg',ppgName,'resp',respName,'figure',1);
-
-
-
-% physio     = physioCreate('filename',physioFile);
-% physioGet(physio,'file name');
-
-
-%% Let's have a look at some of the key parameters
+%% Let's have a look at some of the key parameters in the functionals
 t = bbGet(ni,'timing');
 
 % Each slice has its own timing
@@ -61,6 +43,19 @@ nVolumes = bbGet(ni,'n volumes');
 mesh(1:nVolumes,1:nSlices,t)
 xlabel('nVolumes'); ylabel('n Slices');
 zlabel('Time (sec)');
+
+
+%% Deal with physio data
+
+physioFile = bbGet(ni,'physio');
+
+% use the nifti structure:
+physio     = physioCreate('nifti',ni,'figure',1);
+
+% or enter the nifti filename and ppg and resp filenames
+ppgName  = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'PPGData_muxarcepi_1017201413_06_39_15');
+respName = fullfile(dDir,subj,scan,[scanName '_physio_Unzip'],[scanName '_physio'],'RESPData_muxarcepi_1017201413_06_39_15');
+physio   = physioCreate('niftiFilename',fmri,'ppg',ppgName,'resp',respName,'figure',1);
 
 
 %% Let's pick a physiology file and do something
@@ -98,6 +93,8 @@ ppgRate = physioGet(physio,'ppg rate');
 % get RESP rate
 respRate = physioGet(physio,'resp rate');
 
+% get one PPG curve
+ppgCurve = physioGet(physio,'ppg curve');
 
 %% Let's look at the correlation with PPG in a slice
 
@@ -109,7 +106,7 @@ out_r_map = bbGet(ni,'ppg_correlation',slice_plot);
 
 % make a figure
 figure('Position',[0 0 800 300])
-subplot(1,2,1), imagesc(ni.data(:,:,sl_plot,1))
+subplot(1,2,1), imagesc(ni.data(:,:,slice_plot,1))
 axis image, title('volume 1, for reference')
 subplot(1,2,2), imagesc(out_r_map,[0 1])
 colorbar, axis image, title('correlation with heartbeat (r)')

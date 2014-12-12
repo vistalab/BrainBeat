@@ -89,6 +89,23 @@ switch param
         totalTime = length(obj.data)./physioGet(phy,[dataType ' srate']); % in secs
         val = length(objPeaks) / totalTime; 
         
+    case 'curve' % one response curve, starting at peak
+        objPeaks = physioGet(phy,[dataType ' peaks']);
+        objRate = physioGet(phy,[dataType ' rate']);
+        srate = physioGet(phy,[dataType ' srate']);
+        signal = physioGet(phy,[dataType 'data']);
+        
+        epoch_length = ceil(srate/objRate); % one response curve
+        objPeaks(objPeaks*srate+epoch_length>length(signal))=[]; % get rid of last Peak, may nog capture full response
+        phys_epochs1 = zeros(length(objPeaks),epoch_length);
+        for k=1:length(objPeaks)
+            sample_ppg=round(objPeaks(k)*srate);
+            phys_epochs1(k,:)=signal(sample_ppg:sample_ppg+epoch_length-1);
+        end
+        
+        % get average ppg response
+        val=mean(phys_epochs1,1);
+
     otherwise
         error('Unknown parameter %s\n',param);
 end
@@ -103,9 +120,9 @@ function onsets = physioPeaks(signal,interval,srate)
 % low-pass filter 
 % not necessary, keep in for lower quality data?
 band = 5;
-Rp   = 3; Rs=60; % third order Butterworth
+Rp   = 3; Rs = 60; % third order Butterworth
 high_p =  band(1)*2/srate;
-delta=0.001*2/srate;
+delta = 0.001*2/srate;
 high_s = min(1-delta,high_p+0.1);
 
 [n_band,wn_band] = buttord(high_p,high_s,Rp,Rs);
