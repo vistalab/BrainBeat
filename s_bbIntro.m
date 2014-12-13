@@ -204,6 +204,6 @@ ni1.data=response_matrix;
 ni1.fname=[b '_PPGtrigResponse'];
 niftiWrite(ni1,[data_path subj_name '/' scan_name '/' ni1.fname])
 clear ni1
-save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponseT'],'t')
+save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponseT'],'t') % safe time t
 
 %% End
