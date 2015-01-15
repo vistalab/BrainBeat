@@ -1,16 +1,17 @@
-function [response_matrix,t] = bbResponse2physio(ni,slices)
+function [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
 % function to get brain response after the peak of a heartbeat (or
 % respiration later)
 %
-% [response_matrix,t] = BB_response2physio(ni)
+% [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
 % 
 % ni: a nifti structure loaded by niftiRead
 %
 % optional inputs:
 % slices: slices for which to calculate response function, if no input, do
 % all slices
-% 
-% 
+%
+% [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
+
 % Written by Dora, Copyright Vistasoft Team 2014
 
 if ~exist('slices','var') % do whole brain
@@ -27,45 +28,60 @@ physio     = physioCreate('nifti',ni);
 ppg_onsets = physioGet(physio,'ppg peaks');
 
 % set epoch times
-epoch_pre=.5;%sec pre-onset
-epoch_post=2;%sec post-onset
-step_size=1/srate/mux_f;% in s
-srate_epochs=1/step_size;
-t=[-epoch_pre:step_size:epoch_post];%s timing for 1 epoch
-t_vox=min(timing(:)):step_size:max(timing(:)); % maximal timing accuracy for this scan session
-
-% initiate output matrix to fill:
-response_matrix=zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t));
+epoch_pre = .5;%sec pre-onset
+epoch_post = 2;%sec post-onset
+step_size = 1/srate/mux_f;% in s
+srate_epochs = 1/step_size;
+t = [-epoch_pre:step_size:epoch_post];%s timing for 1 epoch
+t_vox = min(timing(:)):step_size:max(timing(:)); % maximal timing accuracy for this scan session
 
 % only use those ppg onsets that have an entire trial before and after
-ppg_onsets=ppg_onsets((ppg_onsets-epoch_pre)>0); % get rid of early ones
-ppg_onsets=ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of late ones
+ppg_onsets = ppg_onsets((ppg_onsets-epoch_pre)>1); % get rid of early ones, and the first scans
+ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of late ones
 
-for s=1:length(slices)
+% initiate output matrix to fill:
+response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+
+for s = 1:length(slices)
     disp(['slice ' int2str(s) ' of ' int2str(length(slices))])
-    sli=slices(s);
-    d=squeeze(ni.data(:,:,sli,1:end));
+    sli = slices(s);
+    d = squeeze(ni.data(:,:,sli,1:end));
+
+    % demean and z-score 
+    d_norm=reshape(d,[size(d,1) * size(d,2), size(d,3)]);
+    points_use=4:size(d_norm,2); % do not use the first couple of scans
+    for k=1:size(d_norm,1)
+        x = points_use;
+        y = d_norm(k,points_use);
+        p = polyfit(x,y,1);    
+        std_factor = std(d_norm(k,points_use)); % std
+        d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./std_factor;
+    end
+    d=reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);
+    clear d_norm
 
     % get the timing for this slice
-    t_sli=timing(sli,:);
+    t_sli = timing(sli,:);
 
-    % walk through voxels in the slice:
-    temp_resp_mat=NaN(size(d,1),size(d,2),length(ppg_onsets),length(t));
-    for m=1:size(d,1)
-        for n=1:size(d,2)
-            % get the upsampled (NaN) of this voxel
-            s_vox=squeeze(d(m,n,:)); % signal
-            s_vox_up=NaN(length(t_vox),1); % initiate with NaNs
-            s_vox_up(ismember(round(t_vox*mux_f*srate),round(t_sli*mux_f*srate)))=s_vox;
+    % get the upsampled (NaN) of this slice
+    d_up=single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
+    d_up(:,:,ismember(round(t_vox*mux_f*srate),round(t_sli*mux_f*srate)))=d;
 
-            for k=1:length(ppg_onsets); % run through all ppg onsets
-                [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
-                temp_resp_mat(m,n,k,:)=s_vox_up(ppg_find-round(epoch_pre*srate_epochs):ppg_find+round(epoch_post*srate_epochs));
-            end
-            clear s_vox
-        end
+    temp_response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(t),length(ppg_onsets)));
+    % run through all ppg onsets
+    for k=1:length(ppg_onsets); 
+        [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
+        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-round(epoch_pre*srate_epochs):ppg_find+round(epoch_post*srate_epochs));
     end
     
-    response_matrix(:,:,s,:)=squeeze(nanmean(temp_resp_mat,3));
-    clear temp_resp_mat
+    clear d_up d
+    
+    % output:
+    response_matrix(:,:,s,:) = nanmean(temp_response_matrix,4);
+    response_matrix_odd(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
+    response_matrix_even(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
+    clear temp_response_matrix
 end
+
