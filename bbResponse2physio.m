@@ -1,4 +1,4 @@
-function [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
+function [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices,varargin)
 % function to get brain response after the peak of a heartbeat (or
 % respiration later)
 %
@@ -16,6 +16,8 @@ function [response_matrix,t,response_matrix_odd,response_matrix_even] = bbRespon
 
 if ~exist('slices','var') % do whole brain
     slices=[1:size(ni.data,3)];
+elseif exist('slices','var') && isempty(slices)% do whole brain
+    slices=[1:size(ni.data,3)];
 end
 
 % get the nifti stuff we need:
@@ -25,11 +27,22 @@ srate=1/bbGet(ni,'tr');
 
 % get physio stuff we need:
 physio     = physioCreate('nifti',ni);
-ppg_onsets = physioGet(physio,'ppg peaks');
-
+if isempty(varargin) % do PPG
+    ppg_onsets = physioGet(physio,'ppg peaks');
+elseif ~isempty(varargin) && isequal(varargin{2},'ppg') % do PPG
+    ppg_onsets = physioGet(physio,'ppg peaks');
+elseif ~isempty(varargin) && isequal(varargin{2},'resp') % do RESP
+    ppg_onsets = physioGet(physio,'resp peaks');
+end
+    
 % set epoch times
-epoch_pre = .5;%sec pre-onset
-epoch_post = 2;%sec post-onset
+if isempty(varargin)
+    epoch_pre = .5;%sec pre-onset
+    epoch_post = 2;%sec post-onset
+else
+    epoch_pre = varargin{1}(1);%sec pre-onset
+    epoch_post = varargin{1}(2);%sec post-onset
+end
 step_size = 1/srate/mux_f;% in s
 srate_epochs = 1/step_size;
 t = [-epoch_pre:step_size:epoch_post];%s timing for 1 epoch
