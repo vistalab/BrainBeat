@@ -55,6 +55,15 @@ load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
 ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
+
+% scale the time-series matrix by the correlation
+% divide by max %%%% maybe think about z-scoring instead
+ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
+ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
+% multiply by correlation size (absolute)
+ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
+ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
+
 a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 
 %%%%% TEST LOW PASS FILTER START
@@ -163,13 +172,29 @@ title('components')
 
 % print('-painters','-r300','-dpng',['./figures/test_pca/svd_comp_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr)])
 
-%%
+%% put output in structures:
 % put 2 components weights in a matrix
 out = [];
-
 for k=1:2
     out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 end
+
+% %%%%% MODEL WITH 2 COMPONENTS:
+pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
+svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(ppgTS.data,4)]);
+
+%%%%% MODEL ERROR
+% train and test-sets
+train_set = reshape(ppgTS.data,[prod(ppgTS.dim(1:3)) ppgTS.dim(4)]);
+test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
+% test-retest error
+test_train_error = sqrt(sum((test_set - train_set).^2,2));
+% model error
+test_model_error = sqrt(sum((test_set - pred).^2,2));
+% relative RMS error:
+rel_rms_error = test_model_error./test_train_error;
+
+svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 
 % save first component weight:
 % ni_save = ni;
@@ -177,19 +202,17 @@ end
 % ni_save.fname = fullfile(dDir,subj,scan,[scanName '_pc1_weights']);
 % niftiWrite(ni_save,[ni_save.fname])
 
-%% plot spatial distribution of one component
 
-pc_nr = 1;
-
-% max for scaling:
-scale2max = max([out(1).weights(:); out(2).weights(:)]);
+%% plot spatial distribution of model error (2 component model)
 
 % use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 3; 
+sliceThisDim = 2; 
 
 if s_nr==2
     imDims = [-90 -120 -120; 90 130 90]; 
-    curPos = [1,10,-15];
+%     curPos = [1,10,-78];
+    curPos = [-3,2,-52];
+    curPos = [-2,-5,-75];
 elseif s_nr==3
     imDims = [-90 -120 -100; 90 130 110]; 
     curPos = [1,4,38]; 
@@ -203,7 +226,13 @@ interpType = 'n';
 mmPerVox = [4 4 4];
 
 % functionals to ACPC
-imgVol = out(pc_nr).weights;
+% imgVol = svdResults.error;
+imgVol = abs(out(1).weights./max(abs(out(1).weights(:))));
+imgVol = abs(out(2).weights./max(abs(out(2).weights(:))));
+% max for scaling:
+% scale2max = max(imgVol(:));
+scale2max = 1;
+
 [imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
@@ -218,8 +247,7 @@ imgVol = ppgR.data;
 [imgSlice2]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 %%%% left of here, add threshold for correlation to colormap
 
-
-% Anatomy to ACPC
+% % Anatomy to ACPC
 imgVol = niAnatomy.data;
 img2std = niAnatomy.qto_xyz;
 sliceNum =curPos(sliceThisDim);
@@ -234,6 +262,26 @@ elseif sliceThisDim == 2
     y=y(1,:)';
 end
 z=z(1,:)';
+
+
+%%%% get the MRV instead of T1
+%%%% get a slice from the MRV
+% imgVol = niVeno.data;%ni.data(:,:,:,1);
+% img2std = xf_veno.acpcXform;
+% sliceNum = curPos(sliceThisDim);
+% interpType = 'n';
+% mmPerVox = [1 1 1];
+% % mmPerVox = [4 4 4];
+% [imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+% if sliceThisDim == 1 || sliceThisDim == 3
+%     x=x(1,:)';
+%     y=y(:,1);
+% elseif sliceThisDim == 2
+%     x=x(:,1);
+%     y=y(1,:)';
+% end
+% % z=z(1,:)';
+% %%%% get the MRV instead of T1
 
 % for x and y for plotting:
 if sliceThisDim==1
@@ -263,11 +311,14 @@ f=figure;
 cm=colormap(jet);
 close(f)
 
-figure('Position',[0 0 300 400])
+% figure('Position',[0 0 300 400])
+figure('Position',[0 0 600 800])
 
 subplot(1,1,1)
 % show the background:
-image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:)));
+imagesc(x,y,imgSlice/max(imgSlice(:)));
+colormap gray
+set(gca,'CLim',[0 .3])
 hold on
 axis image
 
@@ -278,33 +329,41 @@ for k=1:size(imgSlice1,1)
         m_y = x1(m);
 
         val_plot = imgSlice1(k,m)./scale2max;
+        val_plot(val_plot>1) = 1;
         
-        c_use=cm(ceil(val_plot*31.5+32),:);
+        c_use=cm(ceil(val_plot*31.5+32),:); % fot plotting plus and min
+%         with Jet colorscale
+%         c_use=cm(ceil(val_plot*63)+1,:); % fot plotting 0 - value with HOT
+
+
 %         s_f = 3;
 %         plot(m_y+s_f*[0 1]-2,k_x+s_f*r_curve,'Color',c_use)
-        plot(m_y-2,k_x,'.','Color',c_use,'MarkerSize',5)
+        plot(m_y-2,k_x,'.','Color',c_use,'MarkerSize',8)
 
     end
 end
 
 set(gcf,'PaperPositionMode','auto')
 %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_c' int2str(pc_nr) '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_c' int2str(pc_nr) '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
-%% plot component 1 and 2 combination
+%% plot component 1 and 2 combination on T1
 %%
 %% TODO: plot model shape - curve
-%%
 
 % max for scaling:
-scale2max = max([out(1).weights(:); out(2).weights(:)]);
+scale2max = max(abs([out(1).weights(:); out(2).weights(:)]));
+scale2max = .01;
 
 % use dtiGetSlice to get the same slice from 2 sets
 sliceThisDim = 1; 
 
 if s_nr==2
     imDims = [-90 -120 -120; 90 130 90]; 
-    curPos = [-11,10,-15]; % x -1 or -10
+    curPos = [-1,23,-78]; % x -1 or -10; z -15 or -45
+    curPos = [-3,2,-52]; % x -1 or -10; z -15 or -45
+    curPos = [-2,-3,-68];
+    curPos = [-7,-3,-21];
 elseif s_nr==3
     imDims = [-90 -120 -100; 90 130 110]; 
     curPos = [7,4,30]; 
@@ -347,6 +406,25 @@ elseif sliceThisDim == 2
 end
 z=z(1,:)';
 
+%%%% get the MRV instead of T1
+%%%% get a slice from the MRV
+% imgVol = niVeno.data;%ni.data(:,:,:,1);
+% img2std = xf_veno.acpcXform;
+% sliceNum = curPos(sliceThisDim);
+% interpType = 'n';
+% mmPerVox = [1 1 1];
+% % mmPerVox = [4 4 4];
+% [imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+% if sliceThisDim == 1 || sliceThisDim == 3
+%     x=x(1,:)';
+%     y=y(:,1);
+% elseif sliceThisDim == 2
+%     x=x(:,1);
+%     y=y(1,:)';
+% end
+% z=z(1,:)';
+%%%% get the MRV instead of T1
+
 % for x and y for plotting:
 if sliceThisDim==1
     x1=z1; x=z;
@@ -372,7 +450,8 @@ elseif sliceThisDim==3
 end
 
 
-figure('Position',[0 0 300 400])
+% figure('Position',[0 0 300 400])
+figure('Position',[0 0 600 800])
 
 % show the background:
 imagesc(x,y,imgSlice/max(imgSlice(:)));
@@ -388,17 +467,17 @@ for k=1:size(imgSlice1,1)
         m_y = x1(m);
 
         val_plot = [imgSlice1(k,m) imgSlice2(k,m)]./scale2max;
+        % remove larger values to allow different max scaling
+        val_plot(abs(val_plot)>1)=sign(val_plot(abs(val_plot)>1))*1;
         data_colors_rgb = bbData2Colors(val_plot);
         
-        plot(m_y-2,k_x,'.','Color',data_colors_rgb,'MarkerSize',8)
+        plot(m_y,k_x,'.','Color',data_colors_rgb,'MarkerSize',12)
 
     end
 end
 
 set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-
+% unused    print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 
 
 %%
