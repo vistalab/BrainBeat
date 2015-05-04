@@ -4,6 +4,7 @@ close all
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
 dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/Volumes/My Passport for Mac/data/BrainBeat/data/';
 
 % chdir(dDir)
 
@@ -195,6 +196,8 @@ dDir = '/biac4/wandell/data/BrainBeat/data';
 make_fig = [0 2]; % 0 do not, 1 do make, 2 also save figures: 
 % [0 2] makes and saves figure 2 
 
+in_data = 'PPG';
+
 for s = 2%:3;
 
     s_info = bb_subs(s);
@@ -214,13 +217,13 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     ni = niftiRead(fmri);
 
     % Load the correlation with heartbeat (made with bbCorrelate2physio):
-    ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii.gz']);
+    ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
     ppgR = niftiRead(ppgRname); % correlation with PPG
 
     % Load the timeseries around PPG peak (made with bbResponse2physio):
-    ppgTSname = fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']);
+    ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
     ppgTS = niftiRead(ppgTSname); % ppg triggered time series
-    load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']),'t');
+    load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
     % load coregistration matrix (for the functionals):
     load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
@@ -391,9 +394,13 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     hold on
     axis image
 
-    a=squeeze(imgSlice3(:,:,t>-.2 & t<1)); % 3rd dimension is time
+    if isequal(in_data,'PPG')
+        a=squeeze(imgSlice3(:,:,t>-.2 & t<1)); % 3rd dimension is time
+    elseif isequal(in_data,'RESP')
+        a=squeeze(imgSlice3(:,:,t>-.2 & t<4)); % 3rd dimension is time
+    end
     r2_scale=sqrt(imgSlice2.^2);
-
+    
     for sub_p=1:2
         subplot(1,2,sub_p)
     for k=1:size(a,1)
@@ -424,6 +431,7 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
         % print('-painters','-r300','-depsc',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
         print('-painters','-r300','-dpng',['./figures/check_fa/curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+%         print('-painters','-r300','-dpng',['./figures/test_' in_data '/' in_data 'curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
     end
     end
 end
