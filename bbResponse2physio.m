@@ -49,15 +49,24 @@ for s = 1:length(slices)
     sli = slices(s);
     d = squeeze(ni.data(:,:,sli,1:end));
 
-    % demean and z-score 
+    % demean and express in percent modulation 
     d_norm=reshape(d,[size(d,1) * size(d,2), size(d,3)]);
     points_use=4:size(d_norm,2); % do not use the first couple of scans
     for k=1:size(d_norm,1)
+        % do not use first scans:
         x = points_use;
         y = d_norm(k,points_use);
+        
+        % detrend
         p = polyfit(x,y,1);    
-        std_factor = std(d_norm(k,points_use)); % std
-        d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./std_factor;
+
+        % z-score
+%         std_factor = std(d_norm(k,points_use)); % std
+%         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./std_factor;
+
+        % percent modulation
+        mean_factor = mean(d_norm(k,points_use)); % std
+        d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./mean_factor;
     end
     d=reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);
     clear d_norm
