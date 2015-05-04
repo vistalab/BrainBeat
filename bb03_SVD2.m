@@ -4,6 +4,7 @@ close all
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
 dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/Volumes/My Passport for Mac/data/BrainBeat/data/';
 
 % chdir(dDir)
 
@@ -29,6 +30,8 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 %% now do an SVD on the odd responses:
 %%
 
+data_in = 'PPG';
+
 % load PPG responses
 scan_nr = 1;
 scan=s_info.scan{scan_nr};
@@ -37,19 +40,19 @@ scanName=s_info.scanName{scan_nr};
 % nifti:
 ni=niftiRead(fullfile(dDir,subj,scan,[scanName]));
 
-load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
+load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd']));
+ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd']));
 
 % load average of all odd heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even']));
+ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even']));
 
 % load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii.gz']);
+ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
 a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
@@ -68,8 +71,13 @@ a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 % end
 %%%%% TEST END
 
-a = a(:,t>=-.5 & t<=2);
-t_sel = t(t>=-.5 & t<=2);
+if isequal(data_in,'PPG')
+    a = a(:,t>=-.5 & t<=2);
+    t_sel = t(t>=-.5 & t<=2);
+elseif isequal(data_in,'RESP')
+    a = a(:,t>=-.5 & t<=4);
+    t_sel = t(t>=-.5 & t<=4);
+end
 a = a-repmat(mean(a,2),1,size(a,2)); % subtract the mean
 [u,s,v]=svd(a','econ');
 s=diag(s);
