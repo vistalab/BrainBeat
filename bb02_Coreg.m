@@ -4,7 +4,7 @@ close all
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
 dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/My Passport for Mac/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
 
@@ -188,7 +188,8 @@ save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 
 %% The T2* data are here.  
-dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
@@ -430,7 +431,7 @@ for scan_nr = 3% 1:length(s_info.scan)%;
         set(gcf,'PaperPositionMode','auto')
     %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
         % print('-painters','-r300','-depsc',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-        print('-painters','-r300','-dpng',['./figures/check_fa/curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+%         print('-painters','-r300','-dpng',['./figures/check_fa/curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 %         print('-painters','-r300','-dpng',['./figures/test_' in_data '/' in_data 'curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
     end
     end

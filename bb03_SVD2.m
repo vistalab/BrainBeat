@@ -3,8 +3,8 @@ close all
 
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/My Passport for Mac/data/BrainBeat/data/';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
 
@@ -18,7 +18,7 @@ s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
 % Get the MRVenogram:
 % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
@@ -38,21 +38,21 @@ scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
 % nifti:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName]));
+ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii']));
 
 load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd']));
+ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii']));
 
 % load average of all odd heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even']));
+ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii']));
 
 % load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
+ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
 
@@ -582,7 +582,7 @@ axis equal
 
 set(gcf,'PaperPositionMode','auto')
 %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshape90'])
+% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshape90'])
 
 figure('Position',[0 0 300 300]),hold on
 for k=1:length(v_plot) 
@@ -590,7 +590,7 @@ for k=1:length(v_plot)
 end
 axis tight
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshapeflat'])
+% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshapeflat'])
 
 %%
 
@@ -612,7 +612,7 @@ axis equal
 
 set(gcf,'PaperPositionMode','auto')
 %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_exampleshapes'])
+% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_exampleshapes'])
 %%
 figure('Position',[0 0 700 700]),hold on
 % example data and figure
