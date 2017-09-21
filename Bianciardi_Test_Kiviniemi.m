@@ -18,7 +18,6 @@ Vc = 0.3/TR; % ST/TR (ST = slice thickness) speed at which there is complete inf
 % % Tissue parameters [WM GM CSF] from Bianciardi at 3T
 T1 = [0.8 1.3 4.4]; % seconds longitudinal recovery rate
 
-
 %%
 figure,hold on
 tt_colors = {'y',[.5 .5 .5],'c'};

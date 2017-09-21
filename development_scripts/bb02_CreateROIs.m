@@ -2,7 +2,8 @@
 clear all
 close all
 
-dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 3;
 s_info = bb_subs(s);
@@ -34,36 +35,36 @@ roisToSegmentNames = {...
 
 %%%% MAKE NII DIR IN FREESURFER FOLDER
 
-%% DO ALL TOGETHER
-resample_type= 'weighted';
-subdir   = getenv('SUBJECTS_DIR');
-alignTo=[s_info.freesurferDir s_info.anatName '.nii.gz'];
-segmentFile=[s_info.freesurferDir 'mri/aseg.auto.mgz'];
-outfile=[s_info.freesurferDir 'nii/ventricles.nii.gz'];
+%% make a nifti file from aseg.auto.mgz - then write only the ROIs all together in 1 file
+resample_type = 'weighted';
+alignTo = fullfile(dDir,s_info.subj,s_info.anat,[s_info.anatName '.nii']);
+segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aseg.auto.mgz');
+outfile = fullfile(dDir,s_info.subj,'freesurfer','nii','ventricles.nii.gz');
 
+% make nifti from aseg
 str = sprintf('!mri_convert  --out_orientation RAS --reslice_like %s -rt %s %s %s', alignTo, resample_type, segmentFile, outfile);
 eval(str)
     
-% read in the nifti
-ni = niftiRead(outfile);
+%%%% read in the nifti and only save all ROIs together
+% ni = niftiRead(outfile);
+% 
+% % map the replacement values
+% invals  = [roisToSegment];
+% 
+% ni.data(~ismember(ni.data,invals))=0;
+% ni.data(ismember(ni.data,invals))=1;
+% 
+% % write out the nifti
+% writeFileNifti(ni)
 
-% map the replacement values
-invals  = [roisToSegment];
-
-ni.data(~ismember(ni.data,invals))=0;
-ni.data(ismember(ni.data,invals))=1;
-
-% write out the nifti
-writeFileNifti(ni)
-
-%% DO EACH SEPARATELY
+%% make a nifti file from each ROI in aseg.auto.mgz - ROIs to segment
 
 for k=1:length(roisToSegment)
     resample_type= 'weighted';
-    subdir   = getenv('SUBJECTS_DIR');
-    alignTo=[s_info.freesurferDir s_info.anatName '.nii.gz'];
-    segmentFile=[s_info.freesurferDir 'mri/aseg.auto.mgz'];
-    outfile=[s_info.freesurferDir 'nii/' roisToSegmentNames{k} '.nii.gz'];
+    
+    alignTo = fullfile(dDir,s_info.subj,s_info.anat,[s_info.anatName '.nii']);
+    segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aseg.auto.mgz');
+    outfile = fullfile(dDir,s_info.subj,'freesurfer','nii',[roisToSegmentNames{k} '.nii.gz']);
 
     str = sprintf('!mri_convert  --out_orientation RAS --reslice_like %s -rt %s %s %s', alignTo, resample_type, segmentFile, outfile);
     eval(str)
