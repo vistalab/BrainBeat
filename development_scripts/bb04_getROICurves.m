@@ -1,6 +1,8 @@
 clear all
 close all
 
+% Dora Hermes, 2017 
+
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
@@ -11,8 +13,12 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
+clear all
+close all
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 2;
+scan_nr = 3;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -24,18 +30,14 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 % % load Veno rotation matrix:
 % xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
 
-
-%%
-%% now do an SVD on the odd responses:
-%%
+% now do an SVD on the odd responses:
 
 % load PPG responses
-scan_nr = 2;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
 % nifti:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii']));
+ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 % load coregistration matrix (for the functionals):
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new;
@@ -52,7 +54,7 @@ ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii']);
+ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
 % scale the time-series matrix by the correlation
@@ -99,8 +101,10 @@ svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgT
 %% Get ROI indices in the functional scan 
 %%
 
-ROInames = {'R_lat_ventr','R_inferior_lat_ventr','R_choroid_plexus','3rd_ventr','4th_ventr','CSF'};
-figure('Position',[0 0 200 600])
+% ROInames = {'R_lat_ventr','R_inferior_lat_ventr','R_choroid_plexus','3rd_ventr','4th_ventr','CSF'};
+ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
+ROIplotInd = [1 3 5 2 4 6 7 9 11];
+figure('Position',[0 0 450 700])
 
 for rr = 1:length(ROInames)
 
@@ -138,11 +142,23 @@ for rr = 1:length(ROInames)
         roiTrace(kk,:) = imgVol(ijk_func(kk,2),ijk_func(kk,1),ijk_func(kk,3),:);
     end
 
-    subplot(length(ROInames),1,rr),hold on
+    subplot(length(ROInames)-3,2,ROIplotInd(rr)),hold on
+    
 %     plot(t,roiTrace')
-    plot(t,median(roiTrace,1),'b')
+%     trace2plot = mean(roiTrace,1);
+%     trace2plot_std = 2*std(roiTrace,[],1)/sqrt(size(roiTrace,1));
+    trace2plot = mean(roiTrace,1);
+    trace2plotPlusErr = quantile(roiTrace,.84,1);
+    trace2plotMinErr = quantile(roiTrace,.16,1);
+    
+    fill([t t(end:-1:1)],[trace2plotMinErr trace2plotPlusErr(end:-1:1)],[.7 .7 .7],'EdgeColor',[.7 .7 .7])
+    plot(t,trace2plot,'k','LineWidth',2)
+    plot([0 0],[min(trace2plotMinErr) max(trace2plotPlusErr)],'k')
     ylabel(niROIname)
-    xlim([t(1) t(end)])
+    xlim([t(1) 1.5])
+    
+    subplot(length(ROInames)-3,2,2*(length(ROInames)-3))
+    title('mean model and 68% quantiles')
 end
 
 set(gcf,'PaperPositionMode','auto')

@@ -1,24 +1,31 @@
 clear all
 close all
 
+% script produced transformation matrix between the anatomy and functional
+% scans, walk through step-by-step
+
+addpath(genpath('~/Documents/m-files/kendrick/'))
+
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
 
 %% coregistration functionals to T1 (course)
-
-for s = 2;
+% this can work well for FA - 25, but not for FA = 36/48, thus: allign FA =
+% 25, and align 36/48 to this one with code below
+ 
+for s = 3
     s_info = bb_subs(s);
     subj=s_info.subj;
 
     % Get the anatomicals:
-    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
-    % Get the MRVenogram:
-    niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
+%     % Get the MRVenogram:
+%     niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 
     %%%%% coregister the functionals to the T1:
 
@@ -31,7 +38,7 @@ for s = 2;
 
         ni1=ni;
         %%%%% use the first nifti to allign, this one has the most structural info:
-%         ni1.data=ni1.data(:,:,:,1);
+        ni1.data=ni1.data(:,:,:,1);
         %%%%% or try the mean of all nifti's for the FA48:
 %         ni1.data=mean(ni1.data(:,:,:,4:end),4);
 
@@ -53,6 +60,16 @@ for s = 2;
 
 end
 
+% Only if the current acpcXform is good enough, safe for use
+% ... only use sthe first visualization step from Kendick's code to check...
+% acpcXform_new = acpcXform;
+% save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
+
+
+%% NOTE, Kendrick's FUNCTIONS DO NOT WORK ANYMORE!
+% there is somethin with allignvolumedata that makes my Matlab crash...
+% specifically during alignvolumedata_auto
+
 %%
 %% refine acpcXform by using Kendrick's alignment code:
 %%
@@ -60,10 +77,11 @@ end
 
 clear all
 close all
-dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 2;
-scan_nr = 1;
+scan_nr = 3;
   
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
@@ -77,15 +95,17 @@ ni = niftiRead(fullfile(dDir,subj,scan, [scanName '.nii.gz']));
 ni.data = ni.data(:,:,:,1);
 
 % Get the anatomical:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 % % use other functional instead of anatomical:
 % niAnatomy = niftiRead(fullfile(dDir,subj,s_info.scan{2}, [s_info.scanName{2} '.nii.gz']));
 % niAnatomy.data = niAnatomy.data(:,:,:,1);
 
 % get the initial coregistration matrix
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+acpcXform = acpcXform_new;
 
-%% do actual alignment
+%% Open alignvolumedata gui
+% this still works
 
 % modify initial alignment to KNK format
 % rxAlignment = niAnatomy.qto_ijk * ni.qto_xyz; % for FA48 ?
@@ -110,15 +130,16 @@ alignvolumedata(refpre,niAnatomy.pixdim(1:3),volpre,ni.pixdim(1:3),knk.trORIG);
 % s_nr = 2, scan_nr = 1 
 % mn = [0.5048    0.5059    0.7692];
 % sd = [0.2878    0.3105    0.0714];
-% 
-%% Automatic alignments (coarse)
+mn = [0.5048    0.5589    0.6512];
+sd = [0.2524    0.2782    0.2189];
 
+%% Automatic alignments (coarse)
+% DEFECT
 useMI = false;
 alignvolumedata_auto(mn,sd,0,[4 4 2],[],[],[],useMI) % rigid body, course, mutual information metric
 
-
 %% Automatic alignments (fine)
-
+% DEFECT
 alignvolumedata_auto(mn,sd,0,[1 1 1],[],[],[],useMI) % rigid body, course, mutual information metric
 
 tr = alignvolumedata_exporttransformation;
@@ -137,14 +158,20 @@ acpcXform_new = niAnatomy.qto_xyz * T;
 save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 %%
+%% END TO NOTE, Kendrick's FUNCTIONS DO NOT WORK ANYMORE!
+%%
+
+
+%%
 %% Allign functional to a good functional with SPM
 %%
 clear all
 close all
-dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 3;
-scan_nr = 3;
+scan_nr = 5;
 ref_scan_nr = 2;
 
 s_info = bb_subs(s_nr);
@@ -152,7 +179,7 @@ subj=s_info.subj;
 
 % Get the new ref scan:
 %     niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.scan{ref_scan_nr}, [s_info.scanName{ref_scan_nr} '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.scan{ref_scan_nr}, [s_info.scanName{ref_scan_nr} '.nii']));
 niAnatomy.data = niAnatomy.data(:,:,:,1);
 
 %%%%% coregister the functionals to the ref funx:
@@ -175,12 +202,11 @@ acpcXform = dtiRawAlignToT1(ni1,niAnatomy,[], [], false, 1); % last 1 adds a fig
 % this saves the reallignment matrix in the folder of the functionals, 
 
 % load ref scan acpc x-form
-ref_acpc = load(fullfile(dDir,subj,s_info.scan{ref_scan_nr},[s_info.scanName{ref_scan_nr} 'AcpcXform.mat']));
+ref_acpc = load(fullfile(dDir,subj,s_info.scan{ref_scan_nr},[s_info.scanName{ref_scan_nr} 'AcpcXform_new.mat']));
 
 % now fix the acpcXform such that it goes to T1 space
-acpcXform_new = ref_acpc.acpcXform * niAnatomy.qto_ijk * acpcXform; % funx -> ref xyz -> ref ijk -> ref acpc
+acpcXform_new = ref_acpc.acpcXform_new * niAnatomy.qto_ijk * acpcXform; % funx -> ref xyz -> ref ijk -> ref acpc
 save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
-
 
 %%
 %% NOW MAKE SOME FIGURES
@@ -194,18 +220,18 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-make_fig = [0 2]; % 0 do not, 1 do make, 2 also save figures: 
+make_fig = [0 1]; % 0 do not, 1 do make, 2 also save figures: 
 % [0 2] makes and saves figure 2 
 
 in_data = 'PPG';
 
-for s = 2%:3;
+for s = 3%:3;
 
     s_info = bb_subs(s);
     subj = s_info.subj;
     
     % Get the anatomicals:
-    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
     % % Get the MRVenogram:
     % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
@@ -222,7 +248,7 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     ppgR = niftiRead(ppgRname); % correlation with PPG
 
     % Load the timeseries around PPG peak (made with bbResponse2physio):
-    ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
+    ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii']);
     ppgTS = niftiRead(ppgTSname); % ppg triggered time series
     load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
@@ -236,11 +262,13 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     %%%% now overlay r-map with anatomy
 
     % then use dtiGetSlice to get the same slice from 2 sets
-    sliceThisDim = 3; 
+    sliceThisDim = 1; 
     
     if s==2
         imDims = [-90 -120 -120; 90 130 90]; 
         curPos = [1,10,-20]; 
+        curPos = [-29,-14,-50]; % 03
+        curPos = [-3,30,-43]; % 03
     elseif s==3
         imDims = [-90 -120 -100; 90 130 110]; 
         curPos = [1,4,38]; 
@@ -325,52 +353,52 @@ for scan_nr = 3% 1:length(s_info.scan)%;
     close(f)
 
     if make_fig(1) > 0
-    figure('Position',[0 0 1200 1200])
-    subplot(2,2,1)
-    imagesc(x1,y1,imgSlice1)
-    hold on
-    axis image
-    title('functional 1')
-
-    subplot(2,2,2)
-    image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
-    hold on
-    axis image
-    % tranform imgSlice1 (functionals) to colormap values that I want to use
-    imgSlice1_color=cat(3,zeros(size(imgSlice1)),zeros(size(imgSlice1)),zeros(size(imgSlice1)));
-    for k_x = 1:length(x1)
-        for k_y = 1:length(y1)
-            imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice1(k_y,k_x))*64),:); 
+        figure('Position',[0 0 1200 1200])
+        subplot(2,2,1)
+        imagesc(x1,y1,imgSlice1)
+        hold on
+        axis image
+        title('functional 1')
+        
+        subplot(2,2,2)
+        image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
+        hold on
+        axis image
+        % tranform imgSlice1 (functionals) to colormap values that I want to use
+        imgSlice1_color=cat(3,zeros(size(imgSlice1)),zeros(size(imgSlice1)),zeros(size(imgSlice1)));
+        for k_x = 1:length(x1)
+            for k_y = 1:length(y1)
+                imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice1(k_y,k_x))*64),:);
+            end
         end
-    end
-    h=image(x1,y1,imgSlice1_color); % overlay colormap on image
-    set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
-
-    subplot(2,2,3)
-    imagesc(x1,y1,imgSlice2,[0 1])
-    hold on
-    axis image
-    title('correlation map')
-
-    subplot(2,2,4)
-    image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
-    hold on
-    axis image
-    % tranform imgSlice2 (r-map) to colormap values that I want to use
-    imgSlice1_color=cat(3,zeros(size(imgSlice2)),zeros(size(imgSlice2)),zeros(size(imgSlice2)));
-    for k_x = 1:length(x1)
-        for k_y = 1:length(y1)
-            imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice2(k_y,k_x))*64),:); 
+        h=image(x1,y1,imgSlice1_color); % overlay colormap on image
+        set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
+        
+        subplot(2,2,3)
+        imagesc(x1,y1,imgSlice2,[0 1])
+        hold on
+        axis image
+        title('correlation map')
+        
+        subplot(2,2,4)
+        image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
+        hold on
+        axis image
+        % tranform imgSlice2 (r-map) to colormap values that I want to use
+        imgSlice1_color=cat(3,zeros(size(imgSlice2)),zeros(size(imgSlice2)),zeros(size(imgSlice2)));
+        for k_x = 1:length(x1)
+            for k_y = 1:length(y1)
+                imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice2(k_y,k_x))*64),:);
+            end
         end
-    end
-    h=image(x1,y1,imgSlice1_color); % overlay colormap on image
-    set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
-    
+        h=image(x1,y1,imgSlice1_color); % overlay colormap on image
+        set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
+        
         if make_fig(1) == 2
             % alpha values do not save in png...
             set(gcf,'PaperPositionMode','auto')
         %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_corrPPG_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-            print('-painters','-r300','-dpng',['./figures/check_fa/corr_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+%             print('-painters','-r300','-dpng',['./figures/test_' in_data '/' in_data 'corr_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
         end
     end
     
@@ -391,17 +419,19 @@ for scan_nr = 3% 1:length(s_info.scan)%;
 
     subplot(1,2,2)
     % show the background:
-    image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:)));
+%     image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:)));
+    imagesc(x,y,imgSlice/max(imgSlice(:)));
+    set(gca,'CLim',[0 .3])
     hold on
     axis image
-
+    
     if isequal(in_data,'PPG')
         a=squeeze(imgSlice3(:,:,t>-.2 & t<1)); % 3rd dimension is time
     elseif isequal(in_data,'RESP')
         a=squeeze(imgSlice3(:,:,t>-.2 & t<4)); % 3rd dimension is time
     end
     r2_scale=sqrt(imgSlice2.^2);
-    
+
     for sub_p=1:2
         subplot(1,2,sub_p)
     for k=1:size(a,1)
@@ -431,7 +461,6 @@ for scan_nr = 3% 1:length(s_info.scan)%;
         set(gcf,'PaperPositionMode','auto')
     %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
         % print('-painters','-r300','-depsc',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-%         print('-painters','-r300','-dpng',['./figures/check_fa/curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 %         print('-painters','-r300','-dpng',['./figures/test_' in_data '/' in_data 'curves_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
     end
     end

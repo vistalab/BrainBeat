@@ -9,8 +9,8 @@ close all
 
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-dDir = '/biac4/wandell/data/BrainBeat/data';
-
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
 %% The T2* data are here.  
@@ -18,84 +18,97 @@ dDir = '/biac4/wandell/data/BrainBeat/data';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-subj ='20141017_1242';    % Date _ Time out of NIMS
-scan ='5_1_mux8fov4_r1_25s_4mm';  % A particular data set
-scanName='8202_5_1';
+% Type in scan details:
+% subj ='20141017_1242';    % Date _ Time out of NIMS
+% scan ='5_1_mux8fov4_r1_25s_4mm';  % A particular data set
+% scanName='8202_5_1';
+% fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+% ni = niftiRead(fmri);
+
+% Or call from subject info function
+s_nr = 3;
+scan_nr = 3;
+
+subs = bb_subs(s_nr);
+subj = subs.subj;
+scan = subs.scan{scan_nr};
+scanName = subs.scanName{scan_nr};
 fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+if ~exist(fmri,'file')
+    error('filename %s does not exist',fmri)
+    clear ni
+end
 ni = niftiRead(fmri);
 
-% subj_name='20141017_1242';
-% scan_name='5_1_mux8fov4_r1_25s_4mm';
-% f_name='8202_5_1';
-% scan_name='6_1_mux8fov4_r1_25s_4mmFA25';
-% f_name='8202_6_1';
-% scan_name='7_1_mux8fov4_r1_25s_4mmFA48';
-% f_name='8202_7_1';
+%% Anatomicals
 
-% subj_name='20140911_1411';
-% scan_name='3_1_mux8fov4_r1_35s_3mm';
-% f_name='7944_3_1';
-% scan_name='6_1_mux8fov4_r1_25s_4mm';
-% f_name='7944_6_1';
-
-%% We should get the anatomicals up too at some point
-
-anat      ='9_1_T1w_1mm_sag';   % Anatomical data
-anat      = fullfile(dDir,subj,anat,'8202_9_1.nii.gz');
+anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii']);
 niAnatomy = niftiRead(anat);
 
 %% plot physiology data
 
-physio     = physioCreate('nifti',ni,'figure',1);
-subplot(2,1,1),xlim([0 20])
-subplot(2,1,2),xlim([0 20])
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_physioraw'])
+figure('Position',[0 0 400 600])
 
+% get data
+physio      = physioCreate('nifti',ni);
+ppgData     = physioGet(physio,'ppg data');
+respData    = physioGet(physio,'resp data');
 
-ppgData = physioGet(physio,'ppg data');
-respData = physioGet(physio,'resp data');
-
-% get PPG peaks
-ppgPeaks = physioGet(physio,'ppg peaks');
-
-% plot PPG peaks
+% plot PPG peaks on PPG signal
+subplot(3,4,1:3)
+ppgPeaks    = physioGet(physio,'ppg peaks');
 t = physioGet(physio,'ppg sample times');
 peakVal = max(ppgData(:))*ones(size(ppgPeaks));
-mrvNewGraphWin;
 srate = physioGet(physio,'ppg srate');
 peakSamples = round(ppgPeaks*srate);
 plot(ppgPeaks,ppgData(peakSamples),'ro',t,ppgData,'k-');
-xlabel('secs'); grid on
+xlabel('time (s)'); grid on
 % xlim([0 20])
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_ppgPeaks'])
 
-% get RESP peaks
+% plot one PPG curve
+subplot(3,4,4)
+ppgCurve = physioGet(physio,'ppg curve');
+ppgSrate = physioGet(physio,['PPGsrate']); %  = physio.ppg.srate
+plot((1:length(ppgCurve))/ppgSrate,ppgCurve);
+xlabel('time (s)')
+% get PPG rate
+ppgRate = physioGet(physio,'ppg rate');
+title(['PPG rate = ' num2str(ppgRate)])
+
+% plot RESP peaks on RESP signal
+subplot(3,4,5:7)
 respPeaks = physioGet(physio,'resp peaks');
-
-% plot RESP peaks
 t = physioGet(physio,'resp sample times');
 peakVal = max(respData(:))*ones(size(respPeaks));
-mrvNewGraphWin;
 srate = physioGet(physio,'resp srate');
 peakSamples = round(respPeaks*srate);
 plot(respPeaks,respData(peakSamples),'ro',t,respData,'k-');
-xlabel('secs'); grid on
-% xlim([0 40])
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_respPeaks'])
+xlabel('time (s)'); grid on
 
-% get PPG rate
-ppgRate = physioGet(physio,'ppg rate');
-
+% plot one RESP curve
+subplot(3,4,8)
+respCurve = physioGet(physio,'resp curve');
+respSrate = physioGet(physio,['RESPsrate']);
+plot((1:length(respCurve))/respSrate,respCurve);
+xlabel('time (s)')
 % get RESP rate
 respRate = physioGet(physio,'resp rate');
+title(['RESP rate = ' num2str(respRate)])
 
-% get one PPG curve
-ppgCurve = physioGet(physio,'ppg curve');
+% plot PPG signal with scan onsets
+subplot(3,1,3),hold on
+t = physioGet(physio,'ppg sample times');
+plot(t,ppgData,'k')
+plot(t(physio.ppg.scan_onset==1),0,'r.')
+title('PPG signal (black) and scan onsets (red)')
+xlim([0 10])
 
-%% get responses after PPG peak
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-depsc',['./figures/physio/' subj '_' scan '_physioTrace'])
+print('-painters','-r300','-dpng',['./figures/physio/' subj '_' scan '_physioTrace'])
+
+
+%% get MRI responses after PPG peak
 
 sl_plot = 20;
 [response_matrix,t,temp_resp_mat] = bbResponse2physio(ni,sl_plot);
