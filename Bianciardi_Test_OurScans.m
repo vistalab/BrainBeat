@@ -7,7 +7,8 @@ FA_deg = [5 20 36 48]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
 TE = 0.0116;
 T2s_all = [0.021 0.015 2]; % T2s from Weiskopf 2013 Frontiers in Neuroscience
-TR = 0.050;
+% TR = 0.050;
+TR = 0.350;
 
 V = 0:0.01:11; % cm/s
 Vc = 0.4/TR; % ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
@@ -18,11 +19,12 @@ Vc = 0.4/TR; % ST/TR (ST = slice thickness) speed at which there is complete inf
 % % Tissue parameters [WM GM CSF] from Bianciardi at 3T
 T1 = [0.8 1.3 4.4]; % seconds longitudinal recovery rate
 
-PD = [0.7 0.85 1];
+PD = [0.7 0.85 1]; % this is not used in Bianciardi
 
 %%
-figure
-tt_colors = {'y',[.5 .5 .5],'c'};
+figure('Position',[0 300 800 400])
+tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
+% tt_colors = {'r','b','g'};
 for FA_ind = 1:length(FA_all)
     FA = FA_all(FA_ind);
     subplot(2,length(FA_all),FA_ind),hold on
@@ -68,6 +70,9 @@ for FA_ind = 1:length(FA_all)
         plot(V,Mxy,'LineWidth',2,'Color',tt_colors{tt})
         xlabel('v')
         ylabel('Mxy')
-        xlim([V(1) .8]),ylim([0 .4])
+        xlim([V(1) .8]),ylim([0 1])
     end
 end
+
+subplot(2,length(FA_all),1)
+legend({'WM','GM','CSF'})

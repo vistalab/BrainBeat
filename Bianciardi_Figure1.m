@@ -3,7 +3,6 @@
 % Reproduces figure 1
 
 % MRI acquisition settings:
-TE = 0.0116; % echo time (in sec) .020 for 350 ms, .0116 for 250 ms
 FA_deg = [10 30 45 65 90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
 TE = 0;
@@ -12,14 +11,14 @@ TR = 0.033;
 V = 0:0.01:11; % cm/s
 Vc = 3.6; % ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
 
-% Tissue parameters [blood WM GM CSF] from Bianciardi at 7T
+% 7T tissue parameters [blood WM GM CSF] from Bianciardi
 T1 = [2.5 1.2 2.1 4.4]; % seconds longitudinal recovery rate
-T2s = 1; % displays are for TE = 0, T2s can be anything as equitions have TE/T2s;
+T2s = 1; % displays are for TE = 0, T2s can be anything as equations have TE/T2s;
 
-% % Tissue parameters [blood WM GM CSF] from Bianciardi at 3T
+% 3T tissue parameters [blood WM GM CSF] from Bianciardi
 % T1 = [1.7 0.8 1.3 4.4]; % seconds longitudinal recovery rate
 
-tt = 4; % [1:blood 2:WM 3:GM 4:CSF]
+tt = 1; % tissue type: 1=blood 2=WM 3=GM 4=CSF
 
 %%
 figure,hold on
@@ -50,3 +49,4 @@ for FA = FA_all
     end
     plot(V,Mxy)
 end
+legend(int2str(FA_deg'))
