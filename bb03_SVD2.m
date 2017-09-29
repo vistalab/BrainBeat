@@ -38,7 +38,7 @@ scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
 % nifti:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii']));
+ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 
 load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
@@ -49,10 +49,11 @@ ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.
 ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii']));
 
 % load coregistration matrix:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+acpcXform = acpcXform_new; clear acpcXform_new
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii']);
+ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
 
@@ -87,7 +88,8 @@ elseif isequal(data_in,'RESP')
     a = a(:,t>=-.5 & t<=4);
     t_sel = t(t>=-.5 & t<=4);
 end
-a = a-repmat(mean(a,2),1,size(a,2)); % subtract the mean
+meanTS = mean(a,2);
+a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
 [u,s,v]=svd(a','econ');
 s=diag(s);
 
@@ -171,6 +173,41 @@ xlabel('time (s)')
 title('components')
 
 % print('-painters','-r300','-dpng',['./figures/test_pca/svd_comp_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr)])
+
+%% check whether the second PC only shifts the first in time:
+
+% Get the amplitude spectrum, if the amplitude spectrum is the same, and
+% only the phase differs, the components are very similar, the second only
+% shifts the first one back and forth in time:
+kk = 1;
+f1 = abs(fft(u(:,kk)));
+kk = 2;
+f2 = abs(fft(u(:,kk)));
+
+figure
+subplot(2,1,1),hold on
+plot(u(:,1),'r')
+plot(u(:,2),'b')
+subplot(2,1,2),hold on
+plot(f1,'r')
+plot(f2,'b')
+
+
+%% Plot the mean:
+
+meanSig = ppgTS;
+meanSig.data = reshape(meanTS,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+
+sliceThisDim = 3;
+
+if s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [1,10,-20];
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
+end
+bbOverlayFuncAnat(meanSig,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 %% put output in structures:
 % put 2 components weights in a matrix

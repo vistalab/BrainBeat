@@ -16,7 +16,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 2;
-scan_nr = 1;
+scan_nr = 2;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -137,7 +137,7 @@ xlim([0 10])
 
 in_data = 'PPG';
 
-sliceThisDim = 3;
+sliceThisDim = 1;
 if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [1,10,-20];
@@ -175,6 +175,8 @@ niColor.data = niColor.data.^2; %r^2 - squared correlation coefficient between e
 bbOverlayTimeseriesAnat(ppgTSplot,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 clear niColor ppgTSplot
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 %% get MRI responses after PPG peak
 

@@ -17,7 +17,7 @@ clear all
 close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 2;
+s_nr = 3;
 scan_nr = 1;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
