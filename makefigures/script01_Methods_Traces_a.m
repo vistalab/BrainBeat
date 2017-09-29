@@ -129,22 +129,22 @@ plot(tPPG(physio.ppg.scan_onset==1),0,'b*')
 title('PPG signal (black) and scan onsets (blue)')
 xlim([0 10])
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
-print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
+% print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
 
 %% Plot MRI data
 
 in_data = 'PPG';
 
 sliceThisDim = 3;
-if s_nr == 2
+if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [1,10,-20];
 %     curPos = [-29,-14,-50]; % 03
 %     curPos = [-3,30,-43]; % 03
     curPos = [1,10,-30];
-elseif s_nr == 3
+elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [1,4,38];
 end
@@ -158,10 +158,10 @@ load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
-%%%% Overlay 1: functionals and anatomy
-niFunc = ni;
-niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+% %%%% Overlay 1: functionals and anatomy
+% niFunc = ni;
+% niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 %%%% Overlay 2: timeseries and anatomy
 ppgTSplot = ppgTS;
@@ -204,151 +204,4 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_brain_ppg1'])
 
 
-
-%%
-%%
-%%
-%%
-%% OLD
-%%
-%%
-%%
-%%
- 
-
-%% ONLY MOVIE of 1 slice
-
-% now run for the whole brain:
-[response_matrix,t] = bbResponse2physio(ni);
-
-% safe the response matrix as mat
-save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponse'],'response_matrix','t')
-
-% safe the response matrix as nifti and save  time t
-ni1=ni;
-ni1.data=response_matrix;
-[~,b]=fileparts(ni.fname);
-[~,b]=fileparts(b);
-ni1.fname=[b '_PPGtrigResponse'];
-niftiWrite(ni1,[data_path subj_name '/' scan_name '/' ni1.fname])
-clear ni1
-save([data_path subj_name '/' scan_name '/' b '_PPGtrigResponseT'],'t')
-
-
-%% quick figure for one slice, one row
-figure('Position',[0 0 500 800])
-plot(t,squeeze(response_matrix(28,:,:,20))) % 28/35
-
-% get ppg response curve 
-phys_srate=physio.ppg.srate;
-signal=physio.ppg.data;
-epoch_pre=-t(1)*phys_srate;
-epoch_post=t(end)*phys_srate;
-ppg_t=(-round(epoch_pre)+1:epoch_post)/phys_srate;
-phys_epochs1=zeros(length(ppg_onsets)-6,length(ppg_t));
-for k=2:length(ppg_onsets)-5
-    sample_ppg=round(ppg_onsets(k)*phys_srate);
-    phys_epochs1(k,:)=signal(sample_ppg-round(epoch_pre)+1:sample_ppg+(epoch_post));
-end
-% get average ppg response
-ppg_resp=mean(phys_epochs1,1);
-
-%% make the movie:
-
-% pick a slice:
-sl_plot=28;
-a=squeeze(response_matrix(sl_plot,:,:,:)); % third dimension is time
-
-%%
-
-nFrames=length(t);
-mov(1:nFrames)=struct('cdata',[],'colormap',[]);
-
-figure('Position',[0 0 400 400])
-subplot(2,1,2),hold on
-plot(ppg_t,ppg_resp-mean(ppg_resp));
-
-a_meansub=a-repmat(mean(a,3),[1 1 size(a,3)]);
-
-for k=1:size(a,3)
-    subplot(2,2,1)
-    imagesc(flipud(a(:,:,k)'),[0 max(a(:))])
-%     imagesc(a(:,:,k),[0 max(a(:))])
-    axis image
-    title(['t=' num2str(t(k))])
-    
-    subplot(2,2,2)
-    imagesc(flipud(a_meansub(:,:,k)'),[-2 2])
-%     imagesc(a_meansub(:,:,k),[-2 2])
-    axis image
-    title(['t=' num2str(t(k))])
-
-    subplot(2,1,2),hold on
-    xlim([t(1) t(end)])
-    plot(t(k),0,'r.')
-    
-    pause(1)
-    mov(k)=getframe(gcf);
-end
-close gcf
-
-% [~,b]=fileparts(ni.fname);
-% [~,b]=fileparts(b);
-% movie2avi(mov,fullfile(data_path,subj_name,scan_name,[b '_PPGmov_slice' int2str(sl_plot) '.avi']),'compression','None','fps',1)
-
-%% make figure with curves
-sl_plot=[28 1];
-% sl_plot=[28 2];
-% sl_plot=[20 3];
-
-if sl_plot(2)==1
-    plotting_scan1=squeeze(ni.data(sl_plot(1),:,:,1))';
-    a=squeeze(response_matrix(sl_plot(1),:,:,t>-.2 & t<1)); % fourth dimension is time
-    r2_scale=sqrt(squeeze(out_r_map(sl_plot(1),:,:)).^2);
-elseif sl_plot(2)==2
-    plotting_scan1=squeeze(ni.data(:,sl_plot(1),:,1))';
-    a=squeeze(response_matrix(:,sl_plot(1),:,t>-.2 & t<1)); % fourth dimension is time
-    r2_scale=sqrt(squeeze(out_r_map(:,sl_plot(1),:)).^2);
-elseif sl_plot(2)==3
-    plotting_scan1=squeeze(ni.data(:,:,sl_plot(1),1))';
-    a=squeeze(response_matrix(:,:,sl_plot(1),t>-.2 & t<1)); % fourth dimension is time
-    r2_scale=sqrt(squeeze(out_r_map(:,:,sl_plot(1))).^2);
-end
-
-f=figure;
-cm=colormap(jet);
-close(f)
-
-figure('Position',[0 0 1200 800]),hold on
-imagesc(plotting_scan1)
-colormap gray
-
-for k=1:size(a,1)
-    for m=1:size(a,2)
-        
-        % subtract the mean:
-        r_curve=squeeze(a(k,m,:)-mean(a(k,m,:)));
-        
-        % scale by strength of correlation with heartbeat:
-%         r_curve=r_curve/max(abs(r_curve(:)));
-%         r_curve=r_curve*r2_scale(k,m);
-%         plot(k+[0:size(a,3)-1]/size(a,3)-.5,m+r_curve,'r')
-
-        % just scale by the maximum and color with correlation strength
-        if max(r_curve)>.8
-            r_curve=.8*r_curve/max(r_curve);
-        end
-        c_use=cm(1+floor(r2_scale(k,m)*64),:);
-        plot(k+[0:size(a,3)-1]/size(a,3)-.5,m+r_curve,'Color',c_use)
-        
-        plot(k-.5,m,'.','Color',[.5 .5 .5])
-    end
-end
-axis image
-
-set(gcf,'PaperPositionMode','auto')
-[~,b]=fileparts(ni.fname);
-[~,b]=fileparts(b);
-% print('-painters','-r300','-dpng',[data_path subj_name '/figures/' b '_BBcurves_view' int2str(sl_plot(2)) '_slice' int2str(sl_plot(1))])
-print('-painters','-r300','-dpng',[data_path subj_name '/figures/' b '_BBcurves_view' int2str(sl_plot(2)) '_slice' int2str(sl_plot(1)) '_color'])
 

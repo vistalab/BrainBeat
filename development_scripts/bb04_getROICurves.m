@@ -18,7 +18,7 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 2;
-scan_nr = 3;
+scan_nr = 1;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -49,9 +49,6 @@ ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii']));
 
 % load average of all odd heartbeats:
 ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii']));
-
-% load coregistration matrix:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform.mat']))
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
 ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii.gz']);
@@ -123,13 +120,16 @@ for rr = 1:length(ROInames)
     ijk_func = round(ijk_func); % round to get indices
     ijk_func = unique(ijk_func,'rows'); % only take unique voxels
 
-    % %%%% check for coordinates in functional space
-    % z_slice = 24;
-    % figure,hold on
-    % imagesc(ni.data(:,:,z_slice))
-    % xyz_plot = ijk_func(ijk_func(:,3)==z_slice,:);
-    % plot(xyz_plot(:,2),xyz_plot(:,1),'r.')
-
+%     %%%% check for coordinates in functional space
+%     z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
+%     figure
+%     for kk = 1:length(z_slice)       
+%         subplot(3,4,kk)
+%         imagesc(ni.data(:,:,z_slice(kk))),hold on
+%         xyz_plot = ijk_func(ijk_func(:,3)==z_slice(kk),:);
+%         plot(xyz_plot(:,2),xyz_plot(:,1),'r.')
+%         axis image 
+%     end
     % get ROI curves
     % imgVol = out(1).weights; % PC1 weight
     % imgVol = out(2).weights; % PC2 weight
@@ -171,103 +171,4 @@ imgVol = ppgTS.data;
 imgVol = ppgTSeven.data;
 imgVol = ppgR.data;
 
-%%
-if sliceThisDim == 1 || sliceThisDim == 3
-    x1=x1(1,:)';
-    y1=y1(:,1);
-elseif sliceThisDim == 2
-    x1=x1(:,1);
-    y1=y1(1,:)';
-end
-z1=z1(1,:)';
-
-% Anatomy to ACPC
-imgVol = niAnatomy.data;
-img2std = niAnatomy.qto_xyz;
-sliceNum =curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [1 1 1];
-[imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-if sliceThisDim == 1 || sliceThisDim == 3
-    x=x(1,:)';
-    y=y(:,1);
-elseif sliceThisDim == 2
-    x=x(:,1);
-    y=y(1,:)';
-end
-z=z(1,:)';
-
-%%%% get the MRV instead of T1
-%%%% get a slice from the MRV
-imgVol = niVeno.data;%ni.data(:,:,:,1);
-img2std = xf_veno.acpcXform;
-sliceNum = curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [1 1 1];
-[imgSliceV]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-
-% for x and y for plotting:
-if sliceThisDim==1
-    x1=z1; x=z;
-    % flip x and y
-    x1_t=x1;
-    x1=y1; 
-    y1=x1_t;
-    x_t=x;
-    x=y; 
-    y=x_t;
-    % and for the images
-    imgSlicePC1=imrotate(imgSlicePC1,90);
-    imgSlicePC2=imrotate(imgSlicePC2,90);
-    imgSliceTS=imrotate(imgSliceTS,90);
-    imgSliceTSeven=imrotate(imgSliceTSeven,90);
-    imgSliceModel=imrotate(imgSliceModel,90);
-    imgSliceR=imrotate(imgSliceR,90);
-    imgSlice=imrotate(imgSlice,90);
-    imgSliceV=imrotate(imgSliceV,90);
-elseif sliceThisDim==2
-    y1=z1; y=z;
-    % rotate the images
-    imgSlicePC1=imrotate(imgSlicePC1,90);
-    imgSlicePC2=imrotate(imgSlicePC2,90);
-    imgSliceTS=imrotate(imgSliceTS,90);
-    imgSliceTSeven=imrotate(imgSliceTSeven,90);
-    imgSliceModel=imrotate(imgSliceModel,90);
-    imgSliceR=imrotate(imgSliceR,90);
-    imgSlice=imrotate(imgSlice,90);
-    imgSliceV=imrotate(imgSliceV,90);
-elseif sliceThisDim==3
-    % x and y stay the same
-end
-
-figure('Position',[0 0 900 800])
-
-subplot(3,2,[1 3])
-% show the background:
-imagesc(x,y,imgSlice/max(imgSlice(:)));
-colormap gray, set(gca,'CLim',[0 .3]), hold on ,axis image
-title('mri') 
-plot(getCoord(1),getCoord(2),'ro')
-
-subplot(3,2,[2 4])
-% show the background:
-imagesc(x,y,imgSliceV/max(imgSliceV(:)));
-colormap gray, set(gca,'CLim',[0 .3]), hold on ,axis image
-title('veno') 
-plot(getCoord(1),getCoord(2),'ro')
-
-subplot(3,2,[5 6]),hold on
-[~,x_ind]=min(abs(x1-getCoord(1)));
-[~,y_ind]=min(abs(y1-getCoord(2)));
-plot(t,squeeze(imgSliceModel(x_ind,y_ind,:)),'k','Linewidth',2)
-
-plot(t,squeeze(imgSliceTS(x_ind,y_ind,:)),'r','Linewidth',2)
-plot(t,squeeze(imgSliceTSeven(x_ind,y_ind,:)),'Color',[1 .7 .7],'Linewidth',2)
-legend({'model','data','data even'})
-title(['r=' num2str(imgSliceR(x_ind,y_ind))])
-
-% ylim([-0.1 0.1])
-
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',['./figures/test_pca_curves/' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_' coordName])
 
