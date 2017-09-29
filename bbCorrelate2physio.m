@@ -1,5 +1,7 @@
 function [out_r_map]=bbCorrelate2physio(ni_odd,ni_even,slices)
-% function to get correlation with PPG signal
+%
+% Function calculates correlation between PPG triggered signal for even and odd
+% heartbeats.
 %
 % [out_r_map] = BB_correlate2physio(ni)
 %
@@ -14,7 +16,7 @@ function [out_r_map]=bbCorrelate2physio(ni_odd,ni_even,slices)
 % out_r_map: voxels X voxels X slices maps with 'correlation' to hearbeat
 %
 % Wandell Copyright Vistasoft Team, 2013
-% Written by Dora 2014
+% Written by Dora Hermes 2014
 
 if ~exist('slices','var') % do whole brain
     slices=[1:size(ni_odd.data,3)];

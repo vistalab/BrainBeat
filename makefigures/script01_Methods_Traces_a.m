@@ -8,26 +8,15 @@ close all
 %
 
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
-% dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-% dDir = '/biac4/wandell/data/BrainBeat/data';
+
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
 %% The T2* data are here.  
 
-% The pixdim field in the ni structure has four dimensions, three spatial
-% and the fourth is time in seconds.
-
-% Type in scan details:
-% subj ='20141017_1242';    % Date _ Time out of NIMS
-% scan ='5_1_mux8fov4_r1_25s_4mm';  % A particular data set
-% scanName='8202_5_1';
-% fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-% ni = niftiRead(fmri);
-
-% Or call from subject info function
-s_nr = 3;
-scan_nr = 3;
+% Select a subject and scan nummer
+s_nr = 2;
+scan_nr = 1;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -40,12 +29,47 @@ if ~exist(fmri,'file')
 end
 ni = niftiRead(fmri);
 
+% load coregistration matrix for the functionals:
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+acpcXform = acpcXform_new; clear acpcXform_new
+
+% The pixdim field in the ni structure has four dimensions, three spatial
+% and the fourth is time in seconds.
+
 %% Anatomicals
 
 anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii']);
 niAnatomy = niftiRead(anat);
 
-%% plot physiology data
+%% quick overlay between functionals and anatomy
+sliceThisDim = 1;
+if s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [1,10,-20];
+%     curPos = [-29,-14,-50]; % 03
+%     curPos = [-3,30,-43]; % 03
+    curPos = [1,10,-20];
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
+%     curPos = [0,4,38];
+end
+niFunc = ni;
+
+% niFunc.data = ni.data(:,:,:,1); % overlay the first functional - more structure visible
+% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+% title('First functional on anatomy')
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_Func1onAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+title('Mean functional on anatomy')
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_MeanFuncOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+
+%% Plot physiology data
 
 figure('Position',[0 0 600 600])
 
@@ -57,19 +81,20 @@ respData    = physioGet(physio,'resp data');
 % plot PPG peaks on PPG signal
 subplot(3,4,1:3)
 ppgPeaks    = physioGet(physio,'ppg peaks');
-t = physioGet(physio,'ppg sample times');
-peakVal = max(ppgData(:))*ones(size(ppgPeaks));
+tPPG = physioGet(physio,'ppg sample times');
 srate = physioGet(physio,'ppg srate');
-peakSamples = round(ppgPeaks*srate);
-plot(ppgPeaks,ppgData(peakSamples),'ro',t,ppgData,'k-');
+ppgPeakSamples = round(ppgPeaks*srate);
+plot(ppgPeaks,ppgData(ppgPeakSamples),'ro',tPPG,ppgData,'k-');
 xlabel('time (s)'); grid on
+title('PPG')
 xlim([0 10])
 
 % plot one PPG curve
 subplot(3,4,4)
 ppgCurve = physioGet(physio,'ppg curve');
 ppgSrate = physioGet(physio,['PPGsrate']); %  = physio.ppg.srate
-plot((1:length(ppgCurve))/ppgSrate,ppgCurve);
+plot((1:length(ppgCurve))/ppgSrate,ppgCurve,'k','LineWidth',2);
+xlim([0 max((1:length(ppgCurve))/ppgSrate)])
 xlabel('time (s)')
 % get PPG rate
 ppgRate = physioGet(physio,'ppg rate');
@@ -78,36 +103,78 @@ title(['PPG rate = ' num2str(ppgRate)])
 % plot RESP peaks on RESP signal
 subplot(3,4,5:7)
 respPeaks = physioGet(physio,'resp peaks');
-t = physioGet(physio,'resp sample times');
-peakVal = max(respData(:))*ones(size(respPeaks));
+tResp = physioGet(physio,'resp sample times');
 srate = physioGet(physio,'resp srate');
-peakSamples = round(respPeaks*srate);
-plot(respPeaks,respData(peakSamples),'ro',t,respData,'k-');
+respPeakSamples = round(respPeaks*srate);
+plot(respPeaks,respData(respPeakSamples),'ro',tResp,respData,'k-');
 xlabel('time (s)'); grid on
 xlim([0 50])
+title('RESP')
 
 % plot one RESP curve
 subplot(3,4,8)
 respCurve = physioGet(physio,'resp curve');
 respSrate = physioGet(physio,['RESPsrate']);
-plot((1:length(respCurve))/respSrate,respCurve);
+plot((1:length(respCurve))/respSrate,respCurve,'k','LineWidth',2);
 xlabel('time (s)')
+xlim([0 max((1:length(respCurve))/respSrate)])
 % get RESP rate
 respRate = physioGet(physio,'resp rate');
 title(['RESP rate = ' num2str(respRate)])
 
 % plot PPG signal with scan onsets
 subplot(3,1,3),hold on
-t = physioGet(physio,'ppg sample times');
-plot(t,ppgData,'k')
-plot(t(physio.ppg.scan_onset==1),0,'r.')
-title('PPG signal (black) and scan onsets (red)')
+plot(ppgPeaks,ppgData(ppgPeakSamples),'ro',tPPG,ppgData,'k-');
+plot(tPPG(physio.ppg.scan_onset==1),0,'b*')
+title('PPG signal (black) and scan onsets (blue)')
 xlim([0 10])
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
 print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
 
+%% Plot MRI data
+
+in_data = 'PPG';
+
+sliceThisDim = 3;
+if s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [1,10,-20];
+%     curPos = [-29,-14,-50]; % 03
+%     curPos = [-3,30,-43]; % 03
+    curPos = [1,10,-30];
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [1,4,38];
+end
+
+% load time series and associated time
+ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii']);
+ppgTS = niftiRead(ppgTSname); % ppg triggered time series
+load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
+
+% load correlation between even and odd scans for colors of timeseries
+ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
+ppgR = niftiRead(ppgRname); % correlation with PPG
+
+%%%% Overlay 1: functionals and anatomy
+niFunc = ni;
+niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+
+%%%% Overlay 2: timeseries and anatomy
+ppgTSplot = ppgTS;
+if isequal(in_data,'PPG')
+    ppgTSplot.data(:,:,:,t<-.1 | t>1)=[]; % plot these times from curve
+elseif isequal(in_data,'RESP')
+    ppgTSplot.data(:,:,:,t<-.2 | t>4)=[]; % plot these times from curve
+end
+niColor = ppgR; % use R2 map to scale later: r2_scale=sqrt(imgSlice2.^2);
+niColor.data = niColor.data.^2; %r^2 - squared correlation coefficient between even and odd beats
+bbOverlayTimeseriesAnat(ppgTSplot,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+
+clear niColor ppgTSplot
 
 %% get MRI responses after PPG peak
 
@@ -136,32 +203,6 @@ title('red - all; blue - 1/3 of data')
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_brain_ppg1'])
 
-%%
-%% compute the correlation/ reliability with the PPG for the whole brain and save as a nifti:
-%%
-
-[out_r_map]=bbCorrelate2physio(ni);
-
-ni1=ni;
-ni1.data=out_r_map;
-ni1.fname=[scanName '_corrPPG.nii.gz'];
-niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
-clear ni1
-
-%%
-%% compute the PPG triggered response matrix for the whole brain and save as a nifti:
-%%
-
-% now run for the whole brain:
-[response_matrix,t] = bbResponse2physio(ni);
-
-% safe the response matrix as nifti and save  time t
-ni1=ni;
-ni1.data=response_matrix;
-ni1.fname=[scanName '_PPGtrigResponse'];
-niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
-clear ni1
-save(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
 
 
 %%

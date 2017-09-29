@@ -1,0 +1,138 @@
+function [] = bbOverlayTimeseriesAnat(ni,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+% function to plot a functional and overlay with the anatomy
+
+% Inputs: 
+%   ni: functional scan, plots the mean if a series
+%   ni_time: sample time of the timeseries in the nifti, used for scaling
+%   niAnatomy: anatomical scan
+%   acpcXform: transformation matrix from nifti ijk to anatomy mm
+
+%%%% now overlay r-map with anatomy
+
+% % then use dtiGetSlice to get the same slice from 2 sets
+% sliceThisDim = 2;
+% if s==2
+%     imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [1,10,-20];
+% %     curPos = [-29,-14,-50]; % 03
+% %     curPos = [-3,30,-43]; % 03
+% elseif s==3
+%     imDims = [-90 -120 -100; 90 130 110];
+%     curPos = [1,4,38];
+% end
+
+% functionals to ACPC space
+% settings:
+img2std = acpcXform;
+sliceNum = curPos(sliceThisDim);
+interpType = 'n';
+mmPerVox = ni.pixdim(1:3);
+
+% functional to ACPC
+imgVol = ni.data; % plot the mean timeseries
+[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+% colors to ACPC
+imgVolColor = niColor.data; % plot the mean timeseries
+[imgSlice1Color]=dtiGetSlice(img2std, imgVolColor, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+if sliceThisDim == 1 || sliceThisDim == 3
+    x1=x1(1,:)';
+    y1=y1(:,1);
+elseif sliceThisDim == 2
+    x1=x1(:,1);
+    y1=y1(1,:)';
+end
+z1=z1(1,:)';
+
+% Anatomy to ACPC
+imgVol = niAnatomy.data;
+img2std = niAnatomy.qto_xyz;
+sliceNum =curPos(sliceThisDim);
+interpType = 'n';
+mmPerVox = [1 1 1];
+[imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+if sliceThisDim == 1 || sliceThisDim == 3
+    x=x(1,:)';
+    y=y(:,1);
+elseif sliceThisDim == 2
+    x=x(:,1);
+    y=y(1,:)';
+end
+z=z(1,:)';
+
+% for x and y for plotting:
+if sliceThisDim==1
+    x1=z1; x=z;
+    % flip x and y
+    x1_t=x1;
+    x1=y1;
+    y1=x1_t;
+    x_t=x;
+    x=y;
+    y=x_t;
+    
+    % and for the images
+    imgSlice1=imrotate(imgSlice1,90);
+    imgSlice1Color=imrotate(imgSlice1Color,90);
+    imgSlice=imrotate(imgSlice,90);
+elseif sliceThisDim==2
+    y1=z1; y=z;
+    
+    % rotate the images
+    imgSlice1=imrotate(imgSlice1,90);
+    imgSlice1Color=imrotate(imgSlice1Color,90);
+    imgSlice=imrotate(imgSlice,90);
+    
+elseif sliceThisDim==3
+    % x and y stay the same
+end
+
+%%
+%%%%% overlay with time series
+figure('Position',[0 0 1000 600])
+cm=colormap(jet);
+subplot(1,2,1)
+% show the background:
+imagesc(x1,y1,imgSlice1(:,:,1),[0 1]);
+hold on
+colormap gray
+axis image
+
+subplot(1,2,2)
+% show the background:
+%     image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:)));
+imagesc(x,y,imgSlice/max(imgSlice(:)));
+set(gca,'CLim',[0 .3])
+hold on
+axis image
+
+for sub_p=1:2
+    subplot(1,2,sub_p)
+    % Get scale factor the curves:
+    max_plot = max(abs(imgSlice1(:)));
+    
+    % Get the curve colors:
+    imgColors = imgSlice1Color./max(imgSlice1Color(:));
+    
+    for k=1:size(imgSlice1,1) % rows
+        for m=1:size(imgSlice1,2) % columns
+            % set the max of the curves to 1
+            r_curve=squeeze(imgSlice1(k,m,:))./max_plot;
+
+            % get plotting location
+            k_x = y1(k);
+            m_y = x1(m);
+
+            % scaling factor to make the curve fit in a 4 mm voxels 
+            s_f=3; 
+
+            % select the color for the curve:
+            c_use=cm(1+floor(imgColors(k,m)*63),:);
+            
+            plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,k_x+s_f*r_curve,'Color',c_use)
+
+    %         plot(m_y-2,k_x,'.','Color',[.5 .5 .5])
+        end
+    end
+end
+
+

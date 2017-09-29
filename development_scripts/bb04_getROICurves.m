@@ -162,7 +162,7 @@ for rr = 1:length(ROInames)
 end
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',['./figures/ROI/' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_ROIsTest'])
+% print('-painters','-r300','-dpng',['./figures/ROI/' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_ROIsTest'])
 
 
 %%

@@ -59,7 +59,7 @@ switch param
 %             end
         % but let's get it from the data:
             % find the peaks in the autocorrelation function:
-            [peaks_ac,peaks_ac_i] = findpeaks(autocorr(obj.data,500));
+            [peaks_ac,peaks_ac_i] = findpeaks(acf(obj.data,500));
             % the first maximum peak (zero is not included) is the first
             % autocorrelation time
             [~,max_peaks_ac_i]=max(peaks_ac);
