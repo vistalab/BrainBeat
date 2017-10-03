@@ -2,6 +2,10 @@
 % Play with parameters: 
 % 1) test our Stanfor scan parameters with different flip angles
 
+% since whole brain--> Ernst angle equations would be better
+
+%%
+
 % MRI acquisition settings:
 FA_deg = [5 20 36 48 90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
@@ -26,7 +30,7 @@ PD = [0.7 0.85 1]; % this is not used in Bianciardi
 FA_deg = [1:90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
 
-tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
+% tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
 % tt_colors = {'r','b','g'};
 
 Mxy = NaN(3,length(FA_all));
@@ -42,17 +46,17 @@ for FA_ind = 1:length(FA_all)
 
         q = exp(-TR/T1(tt))*cos(FA);
 
-%         % regime 1 v==0:
-%         kk = find(V==0);
-%         MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
-%         Mxy(tt,FA_ind) = G * sin(FA) * MzV0 *...
-%             exp(-TE/T2s);
-        
-        % regime 2 v<vc:
-        kk = find(V>.4,1);% find(V>0 & V<Vc) 
+        % regime 1 v==0:
+        kk = find(V==0);
         MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
-        Mxy(tt,FA_ind) = G * sin(FA) * (MzV0 + (M0-MzV0)*(1-q.^(Vc/V(kk)))/((Vc/V(kk))*(1-q)) ) *...
+        Mxy(tt,FA_ind) = G * sin(FA) * MzV0 *...
             exp(-TE/T2s);
+        
+%         % regime 2 v<vc:
+%         kk = find(V>.4,1);% find(V>0 & V<Vc) 
+%         MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
+%         Mxy(tt,FA_ind) = G * sin(FA) * (MzV0 + (M0-MzV0)*(1-q.^(Vc/V(kk)))/((Vc/V(kk))*(1-q)) ) *...
+%             exp(-TE/T2s);
 
 %         % regime 3 v>vc:
 %         kk = find(V>=Vc,1);
@@ -69,6 +73,7 @@ ylim([0 1])
 
 
 %%
+
 figure('Position',[0 300 800 400])
 tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
 % tt_colors = {'r','b','g'};

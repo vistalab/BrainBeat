@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 3;
+s_nr = 2;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -33,7 +33,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 1;
+scan_nr = 2;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -43,44 +43,32 @@ ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii']));
+ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
 
 % load average of all odd heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii']));
+ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
 % load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
-% Load the correlation with heartbeat (made with bbCorrelate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
-ppgR = niftiRead(ppgRname); % correlation with PPG
-
-
 % scale the time-series matrix by the correlation
-% divide by max %%%% maybe think about z-scoring instead
+
+% Load the correlation with heartbeat (made with bbCorrelate2physio):
+ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
+ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
+
+% Set maximum of ppgTS to 1 for each voxel
 ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
 ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
-% multiply by correlation size (absolute)
+% Multiply by correlation size (absolute)
 ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
+% reshape to voxel X time
 a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 
-%%%%% TEST LOW PASS FILTER START
-% srate = 20;
-% band = 2;
-% Rp   = 1; Rs = 20; % third order Butterworth
-% high_p =  band(1)*2/srate;
-% delta = 0.001*2/srate;
-% high_s = min(1-delta,high_p+0.1);
-% [n_band,wn_band] = buttord(high_p,high_s,Rp,Rs);
-% [bf_b,bf_a] = butter(n_band,wn_band,'low');
-% for k=1:size(a,1)
-%     a(k,:) = filtfilt(bf_b,bf_a,double(a(k,:)));
-% end
-%%%%% TEST END
-
+% select times to include in SVD
 if isequal(data_in,'PPG')
     a = a(:,t>=-.5 & t<=2);
     t_sel = t(t>=-.5 & t<=2);
@@ -150,25 +138,34 @@ all_pred_acc = zeros(nr_c_test,1);
 a_test = reshape(ppgTSeven.data,[numel(ppgTSeven.data(:,:,:,1)) length(t)]);
 a_test = a_test(:,t>=-.5 & t<=2);
 
-for m=1:nr_c_test
+for mm = 1:nr_c_test
     % prediction:
-    k=[1:m];
-    vect = u(:,k);
-    vect_w = v(:,k);
-    pred = [vect * vect_w']';
-    all_pred_acc(m) = corr(a_test(:),pred(:)).^2;
+    kk = 1:mm;
+    
+%     % squared correlation:
+%     vect = u(:,kk);
+%     vect_w = v(:,kk);
+%     pred = [vect * vect_w']';
+%     all_pred_acc(mm) = corr(a_test(:),pred(:)).^2;
+
+    % COD:
+    pred = [u(:,kk)*diag(s(kk))*v(:,kk)']';
+    % COD with yes to gain and yes to mean subtraction
+    all_pred_acc(mm) = calccod(pred(:),a_test(:),1,0,0)./100;
+    
 end
 
 figure
 subplot(2,1,1)
 plot(all_pred_acc)
-title(['r^2'])
+title(['COD (R)'])
 xlabel('nr of components')
+ylim([0 1])
 
 [~,nr_c_keep] = max(all_pred_acc);
 subplot(2,1,2)
 plot(t_sel,u(:,[1:nr_c_keep]))
-legend('c1','c2','c3')
+legend('c1','c2','c3','c4')
 xlabel('time (s)')
 title('components')
 
@@ -179,21 +176,39 @@ title('components')
 % Get the amplitude spectrum, if the amplitude spectrum is the same, and
 % only the phase differs, the components are very similar, the second only
 % shifts the first one back and forth in time:
-kk = 1;
-f1 = abs(fft(u(:,kk)));
-kk = 2;
-f2 = abs(fft(u(:,kk)));
+L = length(u(:,1));
+Fs = 1./mean(diff(t));
+f = Fs * (0:(L/2))/L;
 
-figure
-subplot(2,1,1),hold on
-plot(u(:,1),'r')
-plot(u(:,2),'b')
-subplot(2,1,2),hold on
-plot(f1,'r')
-plot(f2,'b')
+nr_pc_plot = 2;
+pc_colors = {'r','b','g','y'};
+figure('Position',[0 0 200 400])
+
+for kk = 1:nr_pc_plot
+
+    % plot pc
+    subplot(2,1,1),hold on
+    plot(t,u(:,kk),'Color',pc_colors{kk},'LineWidth',2)
+    xlim([t(1) t(end)])
+    xlabel('time (s)')
+
+    % plot fft of pc
+    p1 = abs(fft(u(:,kk))/L);
+    p1 = p1(1:floor(L/2+1));
+    p1(2:end-1) = 2*p1(2:end-1);
+    
+    subplot(2,1,2),hold on
+    plot(f,p1,'Color',pc_colors{kk},'LineWidth',2)
+    ylabel('|P(f)|')
+    xlabel('frequency (Hz)')
+end
+legend({'pc1','pc2'})%,'pc3','pc4'})
+set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_svdComponents_fft'])
 
 
 %% Plot the mean:
+% Note that ppgTS is rescaled according to cod(R)
 
 meanSig = ppgTS;
 meanSig.data = reshape(meanTS,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
@@ -239,150 +254,38 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) 
 % ni_save.fname = fullfile(dDir,subj,scan,[scanName '_pc1_weights']);
 % niftiWrite(ni_save,[ni_save.fname])
 
+%% plot a component on anatomy 
+niOverlay = ni;
+niOverlay.data = out(1).weights;
+sliceThisDim = 3;
 
-%% plot spatial distribution of model error (2 component model)
-
-% use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 2; 
-
-if s_nr==2
-    imDims = [-90 -120 -120; 90 130 90]; 
-%     curPos = [1,10,-78];
-    curPos = [-3,2,-52];
-    curPos = [-2,-5,-75];
-elseif s_nr==3
-    imDims = [-90 -120 -100; 90 130 110]; 
-    curPos = [1,4,38]; 
+if s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [-10 50 -21];
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
 end
 
-% functionals to ACPC space
-% settings:
-img2std = acpcXform;
-sliceNum = curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [4 4 4];
+maxPlot = .01;
+bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 
-% functionals to ACPC
-% imgVol = svdResults.error;
-imgVol = abs(out(1).weights./max(abs(out(1).weights(:))));
-imgVol = abs(out(2).weights./max(abs(out(2).weights(:))));
-% max for scaling:
-% scale2max = max(imgVol(:));
-scale2max = 1;
-
-[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-if sliceThisDim == 1 || sliceThisDim == 3
-    x1=x1(1,:)';
-    y1=y1(:,1);
-elseif sliceThisDim == 2
-    x1=x1(:,1);
-    y1=y1(1,:)';
-end
-z1=z1(1,:)';
-% corr to ACPC
-imgVol = ppgR.data;
-[imgSlice2]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-%%%% left of here, add threshold for correlation to colormap
-
-% % Anatomy to ACPC
-imgVol = niAnatomy.data;
-img2std = niAnatomy.qto_xyz;
-sliceNum =curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [1 1 1];
-[imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-if sliceThisDim == 1 || sliceThisDim == 3
-    x=x(1,:)';
-    y=y(:,1);
-elseif sliceThisDim == 2
-    x=x(:,1);
-    y=y(1,:)';
-end
-z=z(1,:)';
-
-
-%%%% get the MRV instead of T1
-%%%% get a slice from the MRV
-% imgVol = niVeno.data;%ni.data(:,:,:,1);
-% img2std = xf_veno.acpcXform;
-% sliceNum = curPos(sliceThisDim);
-% interpType = 'n';
-% mmPerVox = [1 1 1];
-% % mmPerVox = [4 4 4];
-% [imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-% if sliceThisDim == 1 || sliceThisDim == 3
-%     x=x(1,:)';
-%     y=y(:,1);
-% elseif sliceThisDim == 2
-%     x=x(:,1);
-%     y=y(1,:)';
-% end
-% % z=z(1,:)';
-% %%%% get the MRV instead of T1
-
-% for x and y for plotting:
-if sliceThisDim==1
-    x1=z1; x=z;
-    % flip x and y
-    x1_t=x1;
-    x1=y1; 
-    y1=x1_t;
-    x_t=x;
-    x=y; 
-    y=x_t;
-    % and for the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice=imrotate(imgSlice,90);
-elseif sliceThisDim==2
-    y1=z1; y=z;
-    % rotate the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice=imrotate(imgSlice,90);
-elseif sliceThisDim==3
-    % x and y stay the same
+%% let's test: only plotting pc 2 for pc1<0/pc1>0
+niOverlay = ni;
+niOverlay.data = out(3).weights;
+niOverlay.data(out(1).weights>0) = 0;
+sliceThisDim = 1;
+if s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [-10 50 -21];
+    curPos = [-1 50 -21];
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
 end
 
-
-%%%%% overlay with time series
-f=figure;
-cm=colormap(jet);
-close(f)
-
-% figure('Position',[0 0 300 400])
-figure('Position',[0 0 600 800])
-
-subplot(1,1,1)
-% show the background:
-imagesc(x,y,imgSlice/max(imgSlice(:)));
-colormap gray
-set(gca,'CLim',[0 .3])
-hold on
-axis image
-
-for k=1:size(imgSlice1,1)
-    for m=1:size(imgSlice1,2)
-        % get plotting location
-        k_x = y1(k);
-        m_y = x1(m);
-
-        val_plot = imgSlice1(k,m)./scale2max;
-        val_plot(val_plot>1) = 1;
-        
-        c_use=cm(ceil(val_plot*31.5+32),:); % fot plotting plus and min
-%         with Jet colorscale
-%         c_use=cm(ceil(val_plot*63)+1,:); % fot plotting 0 - value with HOT
-
-
-%         s_f = 3;
-%         plot(m_y+s_f*[0 1]-2,k_x+s_f*r_curve,'Color',c_use)
-        plot(m_y-2,k_x,'.','Color',c_use,'MarkerSize',8)
-
-    end
-end
-
-set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_c' int2str(pc_nr) '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+maxPlot = .01;
+bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 
 %% plot component 1 and 2 combination on T1
 %%
@@ -393,14 +296,11 @@ scale2max = max(abs([out(1).weights(:); out(2).weights(:)]));
 scale2max = .01;
 
 % use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 1; 
+sliceThisDim = 3; 
 
 if s_nr==2
     imDims = [-90 -120 -120; 90 130 90]; 
-    curPos = [-1,23,-78]; % x -1 or -10; z -15 or -45
-    curPos = [-3,2,-52]; % x -1 or -10; z -15 or -45
-    curPos = [-2,-3,-68];
-    curPos = [-7,-3,-21];
+    curPos = [-10 50 -21];
 elseif s_nr==3
     imDims = [-90 -120 -100; 90 130 110]; 
     curPos = [7,4,30]; 
@@ -514,41 +414,7 @@ for k=1:size(imgSlice1,1)
 end
 
 set(gcf,'PaperPositionMode','auto')
-% unused    print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-
-
-%%
-%% plot clusters
-%%
-
-s_vect = sqrt(v(:,1).^2 + v(:,2).^2);
-
-% quick brain mask:
-brain_vect = ni.data(:,:,:,4);
-brain_vect = brain_vect(:);
-
-% correlation mask:
-ppgR_vect = ppgR.data(:);
-
-% select_voxels = s_vect>0.01 & brain_vect>10 & abs(ppgR_vect)>.3;
-select_voxels = brain_vect>10 & ppgR_vect.^2>.7;
-
-% get colors:
-colors_plot = v(:,1:2);
-colors_plot = colors_plot / max(colors_plot(:));
-colors_plot = bbData2Colors(colors_plot);
-
-figure
-plot(v(select_voxels,1),v(select_voxels,2),'ko')
-axis equal
-
-v_plot = v(select_voxels,:);
-colors_plot = colors_plot(select_voxels,:);
-figure,hold on
-for k=1:length(v_plot)
-    plot(v_plot(k,1),v_plot(k,2),'o','Color',colors_plot(k,:))
-end
-axis equal
+print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 
 %%
@@ -631,7 +497,7 @@ set(gcf,'PaperPositionMode','auto')
 
 %%
 
-figure('Position',[0 0 700 700]),hold on
+figure('Position',[0 0 200 200]),hold on
 % example data and figure
 data_in = [0 0;0 1;1 0;1 1;0 -1;-1 0;-1 -1;-1 1;1 -1];
 data_in = [data_in;.2 * data_in; .4 * data_in; .6 * data_in; .8 * data_in];
@@ -645,11 +511,44 @@ for k=1:length(data_in)
         'LineWidth',2)
 end
 
+xlabel('pc 1 weight')
+ylabel('pc 2 weight')
+
 axis equal
 
-set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_exampleshapes'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
+
+%% Vary PC1 and PC2 combinations:
+
+figure('Position',[0 0 300 300])
+% example data and figure
+% data_in = [0 0;0 1;1 0;1 1;0 -1;-1 0;-1 -1;-1 1;1 -1];
+
+subplot(2,1,1),hold on
+data_in = [(ones(11,1)) (-1:.2:1)'];
+data_colors_rgb = bbData2Colors(data_in);
+
+for k=1:length(data_in)
+    pred_curve = data_in(k,1)*u(:,1) + data_in(k,2)*u(:,2);
+    plot(t(t_select),pred_curve(t_select),...
+        'Color',data_colors_rgb(k,:),...
+        'LineWidth',2)
+end
+
+subplot(2,1,2),hold on
+data_in = [(-ones(11,1)) (-1:.2:1)'];
+data_colors_rgb = bbData2Colors(data_in);
+
+for k=1:length(data_in)
+    pred_curve = data_in(k,1)*u(:,1) + data_in(k,2)*u(:,2);
+    plot(t(t_select),pred_curve(t_select),...
+        'Color',data_colors_rgb(k,:),...
+        'LineWidth',2)
+end
+
+
 %%
 figure('Position',[0 0 700 700]),hold on
 % example data and figure

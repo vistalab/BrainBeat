@@ -73,12 +73,8 @@ for s = 1:length(slices)
         % detrend
         p = polyfit(x,y,1);    
 
-        % z-score
-%         std_factor = std(d_norm(k,points_use)); % std
-%         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./std_factor;
-
         % percent modulation
-        mean_factor = mean(d_norm(k,points_use)); % std
+        mean_factor = mean(d_norm(k,points_use)); % mean
         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./mean_factor;
     end
     d=reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);

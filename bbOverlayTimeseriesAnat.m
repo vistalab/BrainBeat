@@ -6,20 +6,9 @@ function [] = bbOverlayTimeseriesAnat(ni,niColor,niAnatomy,acpcXform,sliceThisDi
 %   ni_time: sample time of the timeseries in the nifti, used for scaling
 %   niAnatomy: anatomical scan
 %   acpcXform: transformation matrix from nifti ijk to anatomy mm
-
-%%%% now overlay r-map with anatomy
-
-% % then use dtiGetSlice to get the same slice from 2 sets
-% sliceThisDim = 2;
-% if s==2
-%     imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [1,10,-20];
-% %     curPos = [-29,-14,-50]; % 03
-% %     curPos = [-3,30,-43]; % 03
-% elseif s==3
-%     imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-% end
+%
+%   The plotted X and Y do not correspond to actual xyz/mm coordinates, but
+%   are in a different frame. The input XYZ are in mm coordinates
 
 % functionals to ACPC space
 % settings:
@@ -96,6 +85,7 @@ imagesc(x1,y1,imgSlice1(:,:,1),[0 1]);
 hold on
 colormap gray
 axis image
+title('First time point in nifti')
 
 subplot(1,2,2)
 % show the background:
@@ -108,17 +98,17 @@ axis image
 for sub_p=1:2
     subplot(1,2,sub_p)
     % Get scale factor the curves:
-    max_plot = max(abs(imgSlice1(:)));
+    max_plot = max(abs(ni.data(:)));
     
     % Get the curve colors:
-    imgColors = imgSlice1Color./max(imgSlice1Color(:));
+    imgColors = imgSlice1Color; % R^2 has a maximum of 1, this should be maintained
     
     for k=1:size(imgSlice1,1) % rows
         for m=1:size(imgSlice1,2) % columns
             % set the max of the curves to 1
             r_curve=squeeze(imgSlice1(k,m,:))./max_plot;
 
-            % get plotting location
+            % get plotting location: index k,m is plotted at m,k
             k_x = y1(k);
             m_y = x1(m);
 
@@ -128,8 +118,15 @@ for sub_p=1:2
             % select the color for the curve:
             c_use=cm(1+floor(imgColors(k,m)*63),:);
             
-            plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,k_x+s_f*r_curve,'Color',c_use)
-
+            if isequal(get(gca,'YDir'),'reverse')
+                plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,...
+                    k_x-s_f*r_curve,...
+                    'Color',c_use)
+            else
+                plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,...
+                    k_x+s_f*r_curve,...
+                    'Color',c_use)
+            end
     %         plot(m_y-2,k_x,'.','Color',[.5 .5 .5])
         end
     end

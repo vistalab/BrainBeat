@@ -18,7 +18,7 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 3;
-scan_nr = 1;
+scan_nr = 2;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -45,10 +45,10 @@ acpcXform = acpcXform_new;
 load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii']));
+ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
 
 % load average of all odd heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii']));
+ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
 
 % Load the correlation with heartbeat (made with bbCorrelate2physio):
 ppgRname = fullfile(dDir,subj,scan,[scanName '_corrPPG.nii.gz']);
@@ -139,7 +139,9 @@ for rr = 1:length(ROInames)
     roiTrace = NaN(size(ijk_func,1),size(imgVol,4));
 
     for kk = 1:size(ijk_func,1)
-        roiTrace(kk,:) = imgVol(ijk_func(kk,2),ijk_func(kk,1),ijk_func(kk,3),:);
+        roiTrace(kk,:) = imgVol(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3),:);
+        % note that x and y are only switched around for plotting position, 
+        % not for getting the actual image values
     end
 
     subplot(length(ROInames)-3,2,ROIplotInd(rr)),hold on
@@ -147,7 +149,7 @@ for rr = 1:length(ROInames)
 %     plot(t,roiTrace')
 %     trace2plot = mean(roiTrace,1);
 %     trace2plot_std = 2*std(roiTrace,[],1)/sqrt(size(roiTrace,1));
-    trace2plot = mean(roiTrace,1);
+    trace2plot = median(roiTrace,1);
     trace2plotPlusErr = quantile(roiTrace,.84,1);
     trace2plotMinErr = quantile(roiTrace,.16,1);
     
