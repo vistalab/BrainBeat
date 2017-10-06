@@ -1,19 +1,19 @@
-function [] = bbOverlayDotsAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
+function [] = bbOverlayDotsVeno(ni,niVeno,acpcXform,acpcXformVeno,sliceThisDim,imDims,curPos,varargin)
 % function to plot a functional and overlay with the anatomy
 
 % Inputs: 
 %   ni: functional scan
-%   niAnatomy: anatomical scan
+%   niVeno: anatomical scan
 %   acpcXform: transformation matrix from nifti ijk to anatomy mm
 % 
 % Examples:
 %
 % This example scales the dots to the maximum from the image:
-%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+%   bbOverlayDotsAnat(niOverlay,niVeno,acpcXform,sliceThisDim,imDims,curPos)
 %
 % This example scales the dots to the maximum specifed in maxPlot:
 %   maxPlot = .1;
-%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+%   bbOverlayDotsAnat(niOverlay,niVeno,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 
 %%%% now overlay r-map with anatomy
 
@@ -36,7 +36,6 @@ else
 end
 
 % functionals to ACPC space
-% settings:
 img2std = acpcXform;
 sliceNum = curPos(sliceThisDim);
 interpType = 'n';
@@ -59,9 +58,9 @@ elseif sliceThisDim == 2
 end
 z1=z1(1,:)';
 
-% Anatomy to ACPC
-imgVol = niAnatomy.data;
-img2std = niAnatomy.qto_xyz;
+% Veno to ACPC
+imgVol = niVeno.data;
+img2std = acpcXformVeno;
 sliceNum =curPos(sliceThisDim);
 interpType = 'n';
 mmPerVox = [1 1 1];
@@ -121,18 +120,17 @@ cm2(20:100,2)=[0:1/80:1]';
 cm2=cm2(end:-1:1,:);
 cm=[cm2; cm1];
 
-colormap gray 
+colormap hot
 
 subplot(1,5,1:4)
-
-% Plot background:
+% Background:
 imagesc(x,y,imgSlice/max(imgSlice(:)));
 colormap gray
 set(gca,'CLim',[0 .3])
 hold on
 axis image
 
-% Plot dots on image
+% Dots:
 for k=1:size(imgSlice1,1)
     for m=1:size(imgSlice1,2)
         % get plotting location

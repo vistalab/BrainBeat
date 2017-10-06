@@ -17,19 +17,19 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % this can work well for FA - 25, but not for FA = 36/48, thus: allign FA =
 % 25, and align 36/48 to this one with code below
  
-for s = 2
+for s = 1
     s_info = bb_subs(s);
     subj=s_info.subj;
 
     % Get the anatomicals:
-    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
+    niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
 %     % Get the MRVenogram:
 %     niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 
     %%%%% coregister the functionals to the T1:
 
-    for scan_nr = 2
+    for scan_nr = 1
         scan=s_info.scan{scan_nr};
         scanName=s_info.scanName{scan_nr};
 
@@ -63,7 +63,7 @@ end
 
 % Only if the current acpcXform is good enough, safe for use
 % Do this for the FA = 25, then coregister other functionals to this one
-% ... only use sthe first visualization step from Kendick's code to check...
+% ... only use the first visualization step from Kendick's code to check...
 acpcXform_new = acpcXform;
 save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
@@ -131,7 +131,7 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s_nr = 2;
-scan_nr = 1;
+scan_nr = 2;
 ref_scan_nr = 2;
 
 s_info = bb_subs(s_nr);
@@ -180,13 +180,14 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-make_fig = [1 0]; % 0 do not, 1 do make, 2 also save figures: 
-% [0 2] makes and saves figure 2 
-
 in_data = 'PPG';
-
 s = 2;
 scan_nr = 1;
+
+curPos = [10,1,1]; 
+sliceThisDim = 1; 
+imDims=[-90 -120 -60; 90 130 90];
+% imDims=[-90 -120 -120; 90 130 90];
 
 s_info = bb_subs(s);
 subj = s_info.subj;
@@ -195,7 +196,7 @@ subj = s_info.subj;
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
 % % Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
+% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
@@ -203,18 +204,17 @@ scanName=s_info.scanName{scan_nr};
 fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
 ni = niftiRead(fmri);
 
-
 % load coregistration matrix (for the functionals):
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
 % load time series and associated time
-ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii']);
+ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
 % load correlation between even and odd scans for colors of timeseries
-ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
+ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' in_data '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
 %%%% Overlay 1: functionals and anatomy
@@ -229,24 +229,35 @@ if isequal(in_data,'PPG')
 elseif isequal(in_data,'RESP')
     ppgTSplot.data(:,:,:,t<-.2 | t>4)=[]; % plot these times from curve
 end
+% Scale time series amplitude by R, plots are generated with respect to the maximum.
 niColor = ppgR; % use R2 map to scale later: r2_scale=sqrt(imgSlice2.^2);
-niColor.data = niColor.data.^2; %r^2 - squared correlation coefficient between even and odd beats
+maxTS = max(abs(ppgTSplot.data),[],4); % get the max of each curve
+ppgTSplot.data = bsxfun(@rdivide,ppgTSplot.data,maxTS); % devide by the max of each curve (sets all curves to 1 max)
+ppgTSplot.data = bsxfun(@times,ppgTSplot.data,niColor.data); % multiply by r^2 to set less reliable curves to zero
+
 bbOverlayTimeseriesAnat(ppgTSplot,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 clear niColor ppgTSplot
 
+%% plot MRV and timeseries
+% Get the MRVenogram:
+niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
+% load coregistration matrix (for the venogram):
+xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
+
+bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
+
 
 %% plot MRV and T1
 
-% % Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
-% % load coregistration matrix (for the venogram):
-% xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
-
+% Get the MRVenogram:
+niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
+% load coregistration matrix (for the venogram):
+xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
 
 % then use dtiGetSlice to get the same slice from 2 sets
-curPos = [20,10,1]; 
-sliceThisDim = 3; 
+curPos = [-1,10,1]; 
+sliceThisDim = 1; 
 % imDims=[-90 -120 -60; 90 130 90];
 imDims=[-90 -120 -120; 90 130 90];
 
@@ -311,9 +322,9 @@ hold on
 % colormap gray
 axis image
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_Veno_T1_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-print('-painters','-r300','-depsc',fullfile(dDir,subj,scan,[scanName '_Veno_T1_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_Veno_T1_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
+% print('-painters','-r300','-depsc',fullfile(dDir,subj,scan,[scanName '_Veno_T1_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 
 
 %% plot first and second functional and T1

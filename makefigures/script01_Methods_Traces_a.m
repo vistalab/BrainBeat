@@ -6,7 +6,7 @@ close all
 % Script to explain how to open and do preliminary brain beat analyses
 %
 
-%% Base data directory on a Mac mounting biac4 (wandell's machine)
+%% Base data directory
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 2;
-scan_nr = 2;
+scan_nr = 3;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -35,19 +35,27 @@ acpcXform = acpcXform_new; clear acpcXform_new
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
+% Get the MRVenogram:
+% niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii']));
+% % load coregistration matrix (for the venogram):
+% xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
+
 %% Anatomicals
 
 anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii']);
 niAnatomy = niftiRead(anat);
 
 %% quick overlay between functionals and anatomy
-sliceThisDim = 1;
+
+sliceThisDim = 2;
 if s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [1,10,-20];
 %     curPos = [-29,-14,-50]; % 03
 %     curPos = [-3,30,-43]; % 03
     curPos = [1,10,-20];
+    curPos = [1,1,-20];
+    curPos = [-11 34 -71]; % Carotid
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
@@ -128,23 +136,27 @@ plot(tPPG(physio.ppg.scan_onset==1),0,'b*')
 title('PPG signal (black) and scan onsets (blue)')
 xlim([0 10])
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
-% print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
+print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
 
 %% Plot MRI data
 
 in_data = 'PPG';
 
 sliceThisDim = 1;
-if s_nr == 2 % subject number
+if s_nr == 1 % subject number
     imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-10 50 -21]; % left lateral ventricle - frontal site
-%     curPos = [-3,40,-48]; % optic chiasm
-%     curPos = [21,10,-80]; % right trigeminal?
+    curPos = [-1 26 -63]; 
+elseif s_nr == 2 % subject number
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [-10 50 -21]; % left lateral ventricle - frontal site
+    curPos = [-1 72 -19]; % ExampleSite ACA
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [1,4,38];
+    curPos = [-14 24 -16]; % LCarotid
+    curPos = [-1 11 -16]; % Basilar
 end
 
 % load time series and associated time
@@ -187,8 +199,9 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+% bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
 %%
 figure('Position',[0 0 100,200]),hold on
@@ -213,10 +226,41 @@ in_data = 'PPG';
 if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [-10 50 -21]; % left lat ventricle - in mm coordinates on the anatomical MRI
-    curPos = [-1,40,-48]; % 
+        % Used in figure traces medial regions:
+%     curPos = [-2 26 -63];    
+%     voxelLabel = 'Basilar1';
+%     curPos = [-1 21 -86]; 
+%     voxelLabel = 'Basilar2';
+%     curPos = [-1 75 -30]; 
+%     voxelLabel = 'ACA';
+%     curPos = [-1 -46 -46];%another site is [-1 -50 -49]; 
+%     voxelLabel = 'MOA';
+%     curPos = [-1 -63 -17];
+%     voxelLabel = 'SagitalSinus1';
+%     curPos = [-1 -41 -65];
+%     voxelLabel = 'StraightSinus';
+%     curPos = [-1 -8 21];
+%     voxelLabel = 'Subarachnoid';
+%     curPos = [-1 43 -22];%[-1 38 -22];% Dual peaked?
+%     voxelLabel = 'LateralVentricle1';
+
+        % Carotid:
+%     curPos = [-11 34 -71]; 
+%     voxelLabel = 'LCarotid1';
+%     curPos = [-11 36 -61]; 
+%     voxelLabel = 'LCarotid2';
+%     curPos = [8 36 -60]; 
+%     voxelLabel = 'RCarotid1';
+
+    curPos = [-1 29 -20]; 
+    voxelLabel = '';
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [1,4,38];
+%     curPos = [1,4,38];
+%     curPos = [-14 24 -16]; % LCarotid
+%     voxelLabel = 'LCarotid1';
+    curPos = [-1 11 -16]; % Basilar
+    voxelLabel = 'Basilar1';
 end
 
 % load time series and associated time
@@ -236,8 +280,8 @@ xlim([t(1) t(end)])
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
-% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/' subj '_' scan '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
 %% plot Raw timeseries with cardiac signal
 

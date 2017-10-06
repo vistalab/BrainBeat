@@ -89,9 +89,9 @@ for s = 1:length(slices)
 
     temp_response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(t),length(ppg_onsets)));
     % run through all ppg onsets
-    for k=1:length(ppg_onsets); 
+    for k=1:length(ppg_onsets)
         [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
-        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-round(epoch_pre*srate_epochs):ppg_find+round(epoch_post*srate_epochs));
+        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
     
     clear d_up d

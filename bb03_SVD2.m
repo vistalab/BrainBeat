@@ -13,27 +13,27 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 2;
+s_nr = 3;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
-% Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
+% % Get the MRVenogram:
+% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 % % load Veno rotation matrix:
-% xf_veno=load(fullfile(dDir,subj,veno,[veno_code 'AcpcXform.mat']));
+% xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
 
 
 %%
-%% now do an SVD on the odd responses:
+%% SVD on the odd responses:
 %%
 
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 2;
+scan_nr = 4;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -150,7 +150,6 @@ for mm = 1:nr_c_test
 
     % COD:
     pred = [u(:,kk)*diag(s(kk))*v(:,kk)']';
-    % COD with yes to gain and yes to mean subtraction
     all_pred_acc(mm) = calccod(pred(:),a_test(:),1,0,0)./100;
     
 end
@@ -204,7 +203,7 @@ for kk = 1:nr_pc_plot
 end
 legend({'pc1','pc2'})%,'pc3','pc4'})
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_svdComponents_fft'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_svdComponents_fft'])
 
 
 %% Plot the mean:
@@ -213,11 +212,14 @@ set(gcf,'PaperPositionMode','auto')
 meanSig = ppgTS;
 meanSig.data = reshape(meanTS,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 
-sliceThisDim = 3;
+sliceThisDim = 1;
 
-if s_nr == 2
+if s_nr == 1
     imDims = [-90 -120 -120; 90 130 90];
-    curPos = [1,10,-20];
+    curPos = [-1,10,-20];
+elseif s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [-1,10,-20];
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
@@ -256,36 +258,132 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) 
 
 %% plot a component on anatomy 
 niOverlay = ni;
-niOverlay.data = out(1).weights;
-sliceThisDim = 3;
-
-if s_nr == 2
-    imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-10 50 -21];
-elseif s_nr == 3
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-end
-
-maxPlot = .01;
-bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
-
-%% let's test: only plotting pc 2 for pc1<0/pc1>0
-niOverlay = ni;
-niOverlay.data = out(3).weights;
-niOverlay.data(out(1).weights>0) = 0;
+w_plot = 1;
+niOverlay.data = out(w_plot).weights;
 sliceThisDim = 1;
+
 if s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-10 50 -21];
-    curPos = [-1 50 -21];
+%     curPos = [-10 50 -21];
+    curPos = [-10 -20 -21];
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
+    curPos = [1,4,38];
 end
 
 maxPlot = .01;
 bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+% bbOverlayDotsVeno(niOverlay,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+ylabel(['PC ' int2str(w_plot) ' max=' num2str(maxPlot,3)])
+
+%% Plot with PC 1 for intensity, PC 2 for color
+
+maxPlot = .008;
+
+sliceThisDim = 1;
+if s_nr == 1
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [0 26 17]; 
+elseif s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [-10 50 -21];
+%     curPos = [-10 -20 -21]; % for figure set
+%     curPos = [-11 34 -71]; % Carotid
+%     curPos = [-2 26 -63]; % Basilar
+    curPos = [-1 26 -63]; % SliceThisDim 1 for Anterior Cerebral Artery
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+%     curPos = [0,4,38];
+%     curPos = [0,4,38]; % for figure set
+    curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
+end
+
+% Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the
+% color intensity, the color indicates the PC2 phase: timing
+niColor = ni;
+niIntensity = ni;
+niColor.data = out(2).weights;
+niIntensity.data = out(1).weights;
+niIntensity.data(niIntensity.data<0) = 0; % only plot positive
+bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+title(['PC1>0, slice ' int2str(curPos(sliceThisDim))])
+set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1pos_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+niColor = ni;
+niIntensity = ni;
+niColor.data = -out(2).weights; % note that we have to flip color, to always give timing effects the same color
+niIntensity.data = -out(1).weights;
+niIntensity.data(niIntensity.data<0) = 0; 
+bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+title(['PC1<0, slice ' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1neg_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+% niColor = ni;
+% niIntensity = ni;
+% niColor.data = out(2).weights; % note that we have to flip color, to always give timing effects the same color
+% niColor.data(out(1).weights<0) = -niColor.data(out(1).weights<0);% flip negative intensities to maintain phase color;
+% niIntensity.data = abs(out(1).weights);
+% bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+% title(['PC1>0 & PC1<0, slice ' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1all_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+%% Plot shapes for PC1 and PC2 with 2D colorscale
+
+maxPlot = .008;
+t_select = (t>-0.2 & t<1);
+
+%%%% Select voxels:
+% Quick brain mask:
+brain_vect = ni.data(:,:,:,4); brain_vect = brain_vect(:); 
+% Correlation mask:
+ppgR_vect = ppgR.data(:); 
+select_voxels = brain_vect>10 & ppgR_vect>.9;
+
+% Model prediction for selected voxels:
+pred = [u(:,1:2)*diag(s(1:2))*v(select_voxels,1:2)']';
+
+% Make 2D colormap: one to vary color, the other varies intensity
+% make 2D colormap: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+gray_vect = .2*ones(200,3);
+cm2D = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
+
+% Get colors for selected voxels
+intensity_plot = v(select_voxels,1)./maxPlot;    
+intensity_plot(intensity_plot>1) = 1;
+intensity_plot(intensity_plot<-1) = -1;
+color_plot = v(select_voxels,2)./maxPlot;
+color_plot(color_plot>1) = 1;
+color_plot(color_plot<-1) = -1;
+
+figure('Position',[0 0 300 450]),hold on
+for kk = 1:size(pred,1)
+    if intensity_plot(kk)>0
+        subplot(2,1,1),hold on
+        c_use = squeeze(cm2D(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
+        plot(t(t_select),pred(kk,t_select),'Color',c_use)
+    elseif intensity_plot(kk)<0
+        subplot(2,1,2),hold on
+        c_use = squeeze(cm2D(ceil(-intensity_plot(kk)*99+1),ceil(-color_plot(kk)*99.5)+100,:));
+        plot(t(t_select),pred(kk,t_select),'Color',c_use)       
+    end
+end
+subplot(2,1,1), axis tight
+title('PC1>0')
+xlabel('Time (s)'),ylabel('Model prediction')
+subplot(2,1,2), axis tight
+title('PC1<0')
+xlabel('Time (s)'),ylabel('Model prediction')
+set(gcf,'PaperPositionMode','auto')
+
+print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
+print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
 
 %% plot component 1 and 2 combination on T1
 %%
@@ -296,11 +394,12 @@ scale2max = max(abs([out(1).weights(:); out(2).weights(:)]));
 scale2max = .01;
 
 % use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 3; 
+sliceThisDim = 1; 
 
 if s_nr==2
     imDims = [-90 -120 -120; 90 130 90]; 
     curPos = [-10 50 -21];
+    curPos = [-8 50 -21];
 elseif s_nr==3
     imDims = [-90 -120 -100; 90 130 110]; 
     curPos = [7,4,30]; 
@@ -315,9 +414,11 @@ mmPerVox = [4 4 4];
 
 % functionals to ACPC
 imgVol = out(1).weights;
-[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+imgVol(out(1).weights>0) = 0;
+[imgSlice1,x1,y1,z1] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 imgVol = out(2).weights;
-[imgSlice2]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+imgVol(out(1).weights>0) = 0;
+[imgSlice2] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
     y1=y1(:,1);
@@ -342,25 +443,6 @@ elseif sliceThisDim == 2
     y=y(1,:)';
 end
 z=z(1,:)';
-
-%%%% get the MRV instead of T1
-%%%% get a slice from the MRV
-% imgVol = niVeno.data;%ni.data(:,:,:,1);
-% img2std = xf_veno.acpcXform;
-% sliceNum = curPos(sliceThisDim);
-% interpType = 'n';
-% mmPerVox = [1 1 1];
-% % mmPerVox = [4 4 4];
-% [imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-% if sliceThisDim == 1 || sliceThisDim == 3
-%     x=x(1,:)';
-%     y=y(:,1);
-% elseif sliceThisDim == 2
-%     x=x(:,1);
-%     y=y(1,:)';
-% end
-% z=z(1,:)';
-%%%% get the MRV instead of T1
 
 % for x and y for plotting:
 if sliceThisDim==1
@@ -414,7 +496,7 @@ for k=1:size(imgSlice1,1)
 end
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/2Dcolorspace/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 
 %%
@@ -455,7 +537,7 @@ brain_vect = brain_vect(:);
 ppgR_vect = ppgR.data(:);
 
 % select_voxels = s_vect>0.01 & brain_vect>10 & abs(ppgR_vect)>.3;
-select_voxels = brain_vect>10 & ppgR_vect.^2>.9;
+select_voxels = brain_vect>10 & ppgR_vect>.9;
 
 % get colors:
 colors_plot = v(:,1:2);
@@ -487,10 +569,18 @@ set(gcf,'PaperPositionMode','auto')
 %     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 % print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshape90'])
 
-figure('Position',[0 0 300 300]),hold on
-for k=1:length(v_plot) 
-    plot(t(t_select),pred(voxel_nr(k),t_select),'Color',colors_plot(k,:))
+figure('Position',[0 0 300 450])
+for kk = 1:length(v_plot) 
+    if v_plot(kk,1)>0
+        subplot(2,1,1),hold on
+        plot(t(t_select),pred(voxel_nr(kk),t_select),'Color',colors_plot(kk,:))
+    elseif v_plot(kk,1)<0
+        subplot(2,1,2),hold on
+        plot(t(t_select),pred(voxel_nr(kk),t_select),'Color',colors_plot(kk,:))
+    end
 end
+subplot(2,1,1), title('first pc>0')
+subplot(2,1,2), title('first pc<0')
 axis tight
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_plotcolorshapeflat'])
@@ -517,17 +607,18 @@ ylabel('pc 2 weight')
 axis equal
 
 % set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
-% print('-painters','-r300','-depsc',[dDir './figures/svd/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/2Dcolorspace/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/2Dcolorspace/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_colors'])
 
 %% Vary PC1 and PC2 combinations:
+t_select = (t>-0.2 & t<1);
 
 figure('Position',[0 0 300 300])
-% example data and figure
-% data_in = [0 0;0 1;1 0;1 1;0 -1;-1 0;-1 -1;-1 1;1 -1];
+% pretend data
+% data_in = [(ones(11,1)) (-1:.2:1)'];
+data_in = [(ones(11,1)) (-1:.2:1)'];
 
 subplot(2,1,1),hold on
-data_in = [(ones(11,1)) (-1:.2:1)'];
 data_colors_rgb = bbData2Colors(data_in);
 
 for k=1:length(data_in)
@@ -538,7 +629,7 @@ for k=1:length(data_in)
 end
 
 subplot(2,1,2),hold on
-data_in = [(-ones(11,1)) (-1:.2:1)'];
+data_in(:,1) = -data_in(:,1);
 data_colors_rgb = bbData2Colors(data_in);
 
 for k=1:length(data_in)
@@ -549,23 +640,3 @@ for k=1:length(data_in)
 end
 
 
-%%
-figure('Position',[0 0 700 700]),hold on
-% example data and figure
-data_in = [0 0;0 1;1 0;1 1;0 -1;-1 0;-1 -1;-1 1;1 -1];
-data_in = [data_in;.2 * data_in; .4 * data_in; .6 * data_in; .8 * data_in];
-data_colors_rgb = bbData2Colors(data_in);
-
-for k=1:length(data_in)
-%     plot(data_in(k,1),data_in(k,2),'k.','MarkerSize',40)
-%     plot(data_in(k,1),data_in(k,2),'.','Color',data_colors_rgb(k,:),'MarkerSize',35)
-    pred_thisval = data_in(k,1)*u(:,1) + data_in(k,2)*u(:,2);
-    plot(t(t_select),pred_thisval(t_select),'Color',data_colors_rgb(k,:),...
-        'LineWidth',2)
-end
-
-axis equal
-
-set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',fullfile(dDir,subj,scan,[scanName '_BBcurves_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-% print('-painters','-r300','-dpng',['./figures/test_pca/svd_' subj '_pc12_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_exampleshapes'])
