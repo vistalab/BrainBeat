@@ -14,6 +14,8 @@ function [] = bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,
 % This example scales the dots to the maximum specifed in maxPlot:
 %   maxPlot = .1;
 %   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+%
+% Dora Hermes, 2017 
 
 %%%% now overlay r-map with anatomy
 
