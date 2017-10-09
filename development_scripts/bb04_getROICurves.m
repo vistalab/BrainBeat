@@ -9,8 +9,8 @@ clear all
 % close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 3;
-scan_nr = 3;
+s_nr = 2;
+scan_nr = 1;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -166,7 +166,8 @@ set(gcf,'PaperPositionMode','auto')
 %%
 
 % ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
-ROInames = {'R_lat_ventr'};
+% ROInames = {'R_lat_ventr'};
+ROInames = {'L_lat_ventr'};
 
 for rr = 1:length(ROInames)
 
@@ -238,6 +239,7 @@ for rr = 1:length(ROInames)
     
     title('SVD PC1 and PC2 weights')
     imagesc(svdVals,[-.02 .02])
+    set(gca,'XTick',[1 2],'XTickLabel',{'PC1','PC2'})
 end
 
 set(gcf,'PaperPositionMode','auto')
@@ -245,3 +247,40 @@ set(gcf,'PaperPositionMode','auto')
 
 % Get coordinates back in acpc:
 xyz_acpc_sparse = mrAnatXformCoords(acpcXform, ijk_func);
+
+%% Plot curves and PC as a function of xyz position
+
+[y_sort,yInd_Sort] = sort(xyz_acpc_sparse(:,2));
+
+figure
+subplot(2,2,1)
+plot(xyz_acpc_sparse(:,2),svdVals(:,2),'k.')
+subplot(2,2,2)
+plot(svdVals(yInd_Sort,2),'k.')
+subplot(2,1,2)
+imagesc(t,[1:size(roiTrace,1)],roiTrace(yInd_Sort,:),[-1 1])
+[r,p] = corr(xyz_acpc_sparse(:,2),svdVals(:,2))
+
+%% Select some voxels within the ROI
+
+% get all indices from pc1 > 0 - this does not get nice results
+% select_crit = svdVals(:,1)>0;
+% get all indices that are more lateral with right lateral ventricle and from pc1 > 0
+% for right lateral ventricle
+% select_crit = xyz_acpc_sparse(:,1)<15 & svdVals(:,1)>0;
+% for left lateral ventricle
+select_crit = xyz_acpc_sparse(:,1)>-15 & svdVals(:,1)>0;
+% select_crit = xyz_acpc_sparse(:,3)>-35 & svdVals(:,1)>0;
+
+xyz_acpc_Sel = xyz_acpc_sparse(select_crit,:);
+
+svd_Sel = svdVals(select_crit,:);
+roiTrace_Sel = roiTrace(select_crit,:);
+
+[y_sort,yInd_Sort] = sort(xyz_acpc_Sel(:,2));
+
+figure
+plot(xyz_acpc_Sel(:,2),svd_Sel(:,2),'k.')
+% plot(svd_PC1(yInd_Sort,2),'k.')
+% imagesc(t,[1:size(roiTrace,1)],roiTrace(yInd_Sort,:),[-1 1])
+[r,p] = corr(xyz_acpc_Sel(:,2),svd_Sel(:,2),'Type','Spearman')

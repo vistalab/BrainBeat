@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 3;
+s_nr = 2;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -33,7 +33,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 4;
+scan_nr = 3;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
