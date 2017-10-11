@@ -20,10 +20,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-for s = 1
+for s = 2
     s_info = bb_subs(s);
     subj = s_info.subj;
-    for scan_nr = 1%1:length(s_info.scan)
+    for scan_nr = 3%1:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -31,7 +31,8 @@ for s = 1
         ni = niftiRead(fmri);
 
         % compute the PPG triggered response matrix for the whole brain and save as a nifti:
-        [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni);
+        [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_sterr] ...
+            = bbResponse2physio(ni);
 
         % safe time T:
         save(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
@@ -40,6 +41,13 @@ for s = 1
         ni1 = ni;
         ni1.data = response_matrix;
         ni1.fname = [scanName '_PPGtrigResponse.nii.gz'];
+        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+        clear ni1
+
+        % save standard error of all heartbeats:
+        ni1 = ni;
+        ni1.data = response_matrix_sterr;
+        ni1.fname = [scanName '_PPGtrigResponse_sterr.nii.gz'];
         niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
         clear ni1
         

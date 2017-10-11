@@ -199,7 +199,7 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
@@ -222,38 +222,26 @@ print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar']
 
 in_data = 'PPG';
 
-% sliceThisDim = 1;
+bb_roi = bb_subs_rois(s_nr);
+roi_ind = 1;
+
+
 if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [-10 50 -21]; % left lat ventricle - in mm coordinates on the anatomical MRI
-        % Used in figure traces medial regions:
-%     curPos = [-2 26 -63];    
-%     voxelLabel = 'Basilar1';
+       
+    % Enter Cursor Position for Voxel
 %     curPos = [-1 21 -86]; 
-%     voxelLabel = 'Basilar2';
-%     curPos = [-1 75 -30]; 
-%     voxelLabel = 'ACA';
-%     curPos = [-1 -46 -46];%another site is [-1 -50 -49]; 
-%     voxelLabel = 'MOA';
-%     curPos = [-1 -63 -17];
-%     voxelLabel = 'SagitalSinus1';
-%     curPos = [-1 -41 -65];
-%     voxelLabel = 'StraightSinus';
-%     curPos = [-1 -8 21];
-%     voxelLabel = 'Subarachnoid';
-%     curPos = [-1 43 -22];%[-1 38 -22];% Dual peaked?
-%     voxelLabel = 'LateralVentricle1';
+%     voxelLabel = '';
 
-        % Carotid:
+    curPos = bb_roi(roi_ind).curPos;
+    voxelLabel = bb_roi(roi_ind).voxelLabel;
+
 %     curPos = [-11 34 -71]; 
 %     voxelLabel = 'LCarotid1';
 %     curPos = [-11 36 -61]; 
 %     voxelLabel = 'LCarotid2';
 %     curPos = [8 36 -60]; 
 %     voxelLabel = 'RCarotid1';
-
-    curPos = [-1 29 -20]; 
-    voxelLabel = '';
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [1,4,38];
@@ -268,20 +256,28 @@ ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
+% load error of time series and associated time
+ppgTSnameError = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse_sterr.nii.gz']);
+ppgTSError = niftiRead(ppgTSnameError); % ppg triggered time series
+
 % get the timeseries
 [voxelTs] = bbGetVoxelTimeseries(ppgTS,acpcXform,curPos);
+[voxelTsStd] = bbGetVoxelTimeseries(ppgTSError,acpcXform,curPos);
 
 % plot the timeseries
 figure('Position',[0 0 150 150]),hold on
 plot(t,zeros(size(t)),'Color',[.5 .5 .5])
 plot([0 0],[-2 2],'Color',[.5 .5 .5])
+upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + 2 standard error
+lowErr = 100*squeeze(voxelTs) - 100*voxelTsStd;
+fill([t t(end:-1:1)],[upErr; lowErr(end:-1:1)],[.5 .5 .5],'EdgeColor',[.5 .5 .5])
 plot(t,100*squeeze(voxelTs),'k','LineWidth',2)
 xlim([t(1) t(end)])
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
-% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
 %% plot Raw timeseries with cardiac signal
 

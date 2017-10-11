@@ -166,8 +166,8 @@ set(gcf,'PaperPositionMode','auto')
 %%
 
 % ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
-% ROInames = {'R_lat_ventr'};
-ROInames = {'L_lat_ventr'};
+ROInames = {'R_lat_ventr'};
+% ROInames = {'L_lat_ventr'};
 
 for rr = 1:length(ROInames)
 

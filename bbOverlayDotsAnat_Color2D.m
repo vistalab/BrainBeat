@@ -122,6 +122,16 @@ for kk = 1:100
     cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
 end
 
+% % TEST
+% cm = hsv(250); cm = cm(26:225,:);
+% cm = cm(end:-1:1,:);
+% cm = cm+.4; cm(cm>1)=1;
+% gray_vect = .2*ones(200,3);
+% cm2D = zeros(100,size(cm,1),3);
+% for kk = 1:100
+%     cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+% end
+
 clear gray_vect
     
 colormap gray 

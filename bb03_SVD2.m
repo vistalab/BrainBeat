@@ -280,17 +280,17 @@ ylabel(['PC ' int2str(w_plot) ' max=' num2str(maxPlot,3)])
 
 maxPlot = .008;
 
-sliceThisDim = 1;
+sliceThisDim = 3;
 if s_nr == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [0 26 17]; 
 elseif s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [-10 50 -21];
+    curPos = [-12 50 -21];
 %     curPos = [-10 -20 -21]; % for figure set
 %     curPos = [-11 34 -71]; % Carotid
 %     curPos = [-2 26 -63]; % Basilar
-    curPos = [-1 26 -63]; % SliceThisDim 1 for Anterior Cerebral Artery
+%     curPos = [-1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [0,4,38];
@@ -382,8 +382,8 @@ title('PC1<0')
 xlabel('Time (s)'),ylabel('Model prediction')
 set(gcf,'PaperPositionMode','auto')
 
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
 
 %% plot component 1 and 2 combination on T1
 %%
@@ -394,12 +394,12 @@ scale2max = max(abs([out(1).weights(:); out(2).weights(:)]));
 scale2max = .01;
 
 % use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 1; 
+sliceThisDim = 3; 
 
 if s_nr==2
     imDims = [-90 -120 -120; 90 130 90]; 
     curPos = [-10 50 -21];
-    curPos = [-8 50 -21];
+    curPos = [8 50 -21];
 elseif s_nr==3
     imDims = [-90 -120 -100; 90 130 110]; 
     curPos = [7,4,30]; 
@@ -414,10 +414,10 @@ mmPerVox = [4 4 4];
 
 % functionals to ACPC
 imgVol = out(1).weights;
-imgVol(out(1).weights>0) = 0;
+imgVol(out(1).weights<0) = 0;
 [imgSlice1,x1,y1,z1] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 imgVol = out(2).weights;
-imgVol(out(1).weights>0) = 0;
+imgVol(out(1).weights<0) = 0;
 [imgSlice2] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
