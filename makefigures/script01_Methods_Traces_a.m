@@ -223,8 +223,7 @@ print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar']
 in_data = 'PPG';
 
 bb_roi = bb_subs_rois(s_nr);
-roi_ind = 1;
-
+for roi_ind = 8%1:length(bb_roi)
 
 if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
@@ -278,6 +277,8 @@ xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+
+end
 
 %% plot Raw timeseries with cardiac signal
 

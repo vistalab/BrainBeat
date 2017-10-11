@@ -19,5 +19,7 @@ switch subj
     bb_roi(6).voxelLabel = 'Subarachnoid';
     bb_roi(7).curPos = [-1 43 -22];%[-1 38 -22] - Dual peaked?
     bb_roi(7).voxelLabel = 'LateralVentricle1';
+    bb_roi(8).curPos = [-1 -30 -15];%[-1 38 -22] - Dual peaked?
+    bb_roi(8).voxelLabel = 'PosteriorGM';
 
 end
