@@ -98,10 +98,11 @@ xlim([0 10])
 
 % plot one PPG curve
 subplot(3,4,4)
-ppgCurve = physioGet(physio,'ppg curve');
-ppgSrate = physioGet(physio,['PPGsrate']); %  = physio.ppg.srate
-plot((1:length(ppgCurve))/ppgSrate,ppgCurve,'k','LineWidth',2);
-xlim([0 max((1:length(ppgCurve))/ppgSrate)])
+ppgCurve = physioGet(physio,'ppg ppgcurve');
+ppgCurveT = physioGet(physio,'ppg ppgtcurve');
+ppgSrate = physioGet(physio,'PPGsrate'); %  = physio.ppg.srate
+plot(ppgCurveT,ppgCurve,'k','LineWidth',2);
+xlim([ppgCurveT(1) ppgCurveT(end)])
 xlabel('time (s)')
 % get PPG rate
 ppgRate = physioGet(physio,'ppg rate');
@@ -120,11 +121,12 @@ title('RESP')
 
 % plot one RESP curve
 subplot(3,4,8)
-respCurve = physioGet(physio,'resp curve');
-respSrate = physioGet(physio,['RESPsrate']);
-plot((1:length(respCurve))/respSrate,respCurve,'k','LineWidth',2);
+respCurve = physioGet(physio,'resp respcurve');
+respCurveT = physioGet(physio,'resp resptcurve');
+respSrate = physioGet(physio,'RESPsrate');
+plot(respCurveT,respCurve,'k','LineWidth',2);
 xlabel('time (s)')
-xlim([0 max((1:length(respCurve))/respSrate)])
+xlim([respCurveT(1) respCurveT(end)])
 % get RESP rate
 respRate = physioGet(physio,'resp rate');
 title(['RESP rate = ' num2str(respRate)])
@@ -137,8 +139,9 @@ title('PPG signal (black) and scan onsets (blue)')
 xlim([0 10])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
-print('-painters','-r300','-dpng',[dDir './figures/physio/' subj '_' scan '_physioTrace'])
+print('-painters','-r300','-depsc',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
+print('-painters','-r300','-dpng',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
+
 
 %% Plot MRI data
 
