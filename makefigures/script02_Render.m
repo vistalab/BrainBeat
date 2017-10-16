@@ -146,9 +146,7 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) 
 
 Rthreshold = .8;
 
-% Make a mask for areas with some level of BOLD signal:
-% brainTH = quantile(reshape(ni.data(:,:,:,1),1,[]),.75); 
-% brainMask = ni.data(:,:,:,1)>brainTH;
+% Make a mask for areas with some level of BOLD signal in the average fMRI:
 brainTH = quantile(reshape(mean(ni.data(:,:,:,5:end),4),1,[]),.75); 
 brainMask = mean(ni.data(:,:,:,5:end),4)>brainTH;
 
@@ -163,10 +161,16 @@ xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
 
 %%
 
+xyz_select = xyz_anat(:,1)>-10;
+xx_plot = xyz_anat(xyz_select,1);
+yy_plot = xyz_anat(xyz_select,2);
+zz_plot = xyz_anat(xyz_select,3);
+
 figure
 brainHandle=bbRenderGifti(g);
-% brainHandle.FaceAlpha=.5; % make the brain transparent
-plot3(xyz_anat(:,1),xyz_anat(:,2),xyz_anat(:,3),'r.','MarkerSize',10)
+% brainHandle.FaceAlpha=.8; % make the brain transparent
+% plot3(xyz_anat(:,1),xyz_anat(:,2),xyz_anat(:,3),'r.','MarkerSize',10)
+plot3(xx_plot,yy_plot,zz_plot,'r.','MarkerSize',10)
 bbViewLight(270,0)
 
 

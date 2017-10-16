@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 2;
-scan_nr = 3;
+s_nr = 3;
+scan_nr = 5;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -157,9 +157,9 @@ elseif s_nr == 2 % subject number
     curPos = [-1 72 -19]; % ExampleSite ACA
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [1,4,38];
-    curPos = [-14 24 -16]; % LCarotid
-    curPos = [-1 11 -16]; % Basilar
+%     curPos = [1,4,38];
+%     curPos = [-14 24 -16]; % LCarotid
+    curPos = [1 11 -16]; % Basilar
 end
 
 % load time series and associated time
@@ -202,7 +202,7 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
@@ -225,8 +225,9 @@ print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar']
 
 in_data = 'PPG';
 
-bb_roi = bb_subs_rois(s_nr);
-for roi_ind = 8%1:length(bb_roi)
+bb_roi = bb_subs_rois(s_nr); % script that lists voxel indices
+
+for roi_ind = 1%1:length(bb_roi)
 
 if s_nr == 2 % subject number
     imDims = [-90 -120 -120; 90 130 90];
@@ -249,8 +250,10 @@ elseif s_nr == 3 %subject number
 %     curPos = [1,4,38];
 %     curPos = [-14 24 -16]; % LCarotid
 %     voxelLabel = 'LCarotid1';
-    curPos = [-1 11 -16]; % Basilar
-    voxelLabel = 'Basilar1';
+%     curPos = [-1 11 -16]; % Basilar
+%     voxelLabel = 'Basilar1';
+    curPos = bb_roi(roi_ind).curPos;
+    voxelLabel = bb_roi(roi_ind).voxelLabel;
 end
 
 % load time series and associated time
@@ -259,7 +262,7 @@ ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
 % load error of time series and associated time
-ppgTSnameError = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse_sterr.nii.gz']);
+ppgTSnameError = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse_std.nii.gz']);
 ppgTSError = niftiRead(ppgTSnameError); % ppg triggered time series
 
 % get the timeseries
@@ -274,7 +277,7 @@ upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + 2 standard error
 lowErr = 100*squeeze(voxelTs) - 100*voxelTsStd;
 fill([t t(end:-1:1)],[upErr; lowErr(end:-1:1)],[.5 .5 .5],'EdgeColor',[.5 .5 .5])
 plot(t,100*squeeze(voxelTs),'k','LineWidth',2)
-xlim([t(1) t(end)])
+axis tight
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')

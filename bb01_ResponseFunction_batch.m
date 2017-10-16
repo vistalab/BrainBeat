@@ -4,26 +4,22 @@ close all
 %% s_bbIntro
 %
 % Script to explain how to open and do preliminary brain beat analyses
-%
-%
+
 
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
-% dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-% dDir = '/biac4/wandell/data/BrainBeat/data';
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-% chdir(dDir)
 
 %% Preprocess the data: PPG time series and correlation
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-for s = 2
+for s = 2:3
     s_info = bb_subs(s);
     subj = s_info.subj;
-    for scan_nr = 3%1:length(s_info.scan)
+    for scan_nr = 1:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -47,7 +43,7 @@ for s = 2
         % save standard error of all heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_sterr;
-        ni1.fname = [scanName '_PPGtrigResponse_sterr.nii.gz'];
+        ni1.fname = [scanName '_PPGtrigResponse_std.nii.gz'];
         niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
         clear ni1
         
@@ -66,34 +62,34 @@ for s = 2
         clear ni1
     end
     
-    for scan_nr = 1%1:length(s_info.scan)
-        scan = s_info.scan{scan_nr};
-        scanName = s_info.scanName{scan_nr};
-
-        ni_odd = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
-        ni_even = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
-        
-%         % compute the correlation between the even and odd repetitions of
+%     for scan_nr = 1%1:length(s_info.scan)
+%         scan = s_info.scan{scan_nr};
+%         scanName = s_info.scanName{scan_nr};
+% 
+%         ni_odd = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
+%         ni_even = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
+%         
+% %         % compute the correlation between the even and odd repetitions of
+% %         % the PPG triggered BOLD signal for the whole brain:
+% %         [out_r_map] = bbCorrelate2physio(ni_odd,ni_even);
+% %         % save as nifti
+% %         ni1 = ni_odd;
+% %         ni1.data = out_r_map;
+% %         ni1.fname = [scanName '_corrPPG.nii.gz'];
+% %         niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+% %         clear ni1 out_r_map
+% 
+%         % compute the cod between the even and odd repetitions of
 %         % the PPG triggered BOLD signal for the whole brain:
-%         [out_r_map] = bbCorrelate2physio(ni_odd,ni_even);
+%         [out_R_map] = bbCod2physio(ni_odd,ni_even);
 %         % save as nifti
-%         ni1 = ni_odd;
-%         ni1.data = out_r_map;
-%         ni1.fname = [scanName '_corrPPG.nii.gz'];
-%         niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
-%         clear ni1 out_r_map
-
-        % compute the cod between the even and odd repetitions of
-        % the PPG triggered BOLD signal for the whole brain:
-        [out_R_map] = bbCod2physio(ni_odd,ni_even);
-        % save as nifti
-        ni2 = ni_odd;
-        ni2.data = out_R_map;
-        ni2.fname = [scanName '_codPPG.nii.gz'];
-        niftiWrite(ni2,fullfile(dDir,subj,scan,ni2.fname))
-        clear ni2 out_R_map
-       
-    end
+%         ni2 = ni_odd;
+%         ni2.data = out_R_map;
+%         ni2.fname = [scanName '_codPPG.nii.gz'];
+%         niftiWrite(ni2,fullfile(dDir,subj,scan,ni2.fname))
+%         clear ni2 out_R_map
+%        
+%     end
 end
 
 %%

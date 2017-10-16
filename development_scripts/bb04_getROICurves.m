@@ -36,8 +36,11 @@ acpcXform = acpcXform_new;
 
 load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
 
+% load all odd heartbeats:
+ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
+
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
+ppgTSodd=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
 
 % load average of all odd heartbeats:
 ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
@@ -48,14 +51,14 @@ ppgR = niftiRead(ppgRname); % correlation with PPG
 
 % Scale the time-series matrix by the COD
 % divide by max
-ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
+ppgTSodd.data = ppgTSodd.data ./ repmat(max(abs(ppgTSodd.data),[],4),[1,1,1,size(ppgTSodd.data,4)]);
 ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
 % multiply by correlation size (absolute)
-ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
+ppgTSodd.data = ppgTSodd.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSodd.data,4)]));
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
 % reshape for SVD
-a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
+a = reshape(ppgTSodd.data,[numel(ppgTSodd.data(:,:,:,1)) length(t)]);
 
 a = a(:,t>=-.5 & t<=2);
 t_sel = t(t>=-.5 & t<=2);
@@ -79,12 +82,12 @@ end
 % put 2 components weights in a matrix
 out = [];
 for k=1:2
-    out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+    out(k).weights = reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 end
 
 % %%%%% MODEL WITH 2 COMPONENTS:
 pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
-svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(ppgTS.data,4)]);
+svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3) size(ppgTSodd.data,4)]);
 
 %%
 %% Get ROI indices in the functional scan 
@@ -126,19 +129,31 @@ for rr = 1:length(ROInames)
     % imgVol = out(1).weights; % PC1 weight
     % imgVol = out(2).weights; % PC2 weight
 %     imgVol = svdResults.model;
-    imgVol = ppgTS.data;
+    imgVol = 100*ppgTS.data;
 
+    roiCod = NaN(size(ijk_func,1),1);
+    roiWeights = NaN(size(ijk_func,1),2);
     roiTrace = NaN(size(ijk_func,1),size(imgVol,4));
 
     for kk = 1:size(ijk_func,1)
         roiTrace(kk,:) = imgVol(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3),:);
         % note that x and y are only switched around for plotting position, 
         % not for getting the actual image values
+        
+        roiCod(kk) = ppgR.data(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3));
+        roiWeights(kk,1) = out(1).weights(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3));
+        roiWeights(kk,2) = out(2).weights(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3));
     end
-
-    subplot(length(ROInames)-3,2,ROIplotInd(rr)),hold on
     
-    plot(t,roiTrace')
+    % Gelect the following voxels to plot:
+    % - good model prediction and positive PC1
+    select_voxels = roiCod>.3 & roiWeights(:,1)>0; 
+    
+    subplot(length(ROInames)-3,2,ROIplotInd(rr)),hold on
+    if ~isempty(find(select_voxels==1,1))
+        plot(t,roiTrace(select_voxels==1,:)')
+%         plot(t,mean(roiTrace(select_voxels==1,:),1))
+    end
 %     trace2plot = mean(roiTrace,1);
 %     trace2plot_std = 2*std(roiTrace,[],1)/sqrt(size(roiTrace,1));
 
@@ -150,15 +165,18 @@ for rr = 1:length(ROInames)
 %     plot([0 0],[min(trace2plotMinErr) max(trace2plotPlusErr)],'k')
     
     ylabel(niROIname)
-    xlim([t(1) 1.5])
+    axis tight
     
     subplot(length(ROInames)-3,2,2*(length(ROInames)-3))
     title('mean model and 68% quantiles')
 end
 
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',['./figures/ROI/' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_ROIsTest'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_roi-CSF_COD-0_3'])
+% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_roi-CSF_COD-0_3'])
 
+% print('-painters','-r300','-dpng',[dDir './figures/ROI/Model_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_roi-CSF_COD-0_3'])
+% print('-painters','-r300','-depsc',[dDir './figures/ROI/Model_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_roi-CSF_COD-0_3'])
 
 
 %%
@@ -200,7 +218,7 @@ for rr = 1:length(ROInames)
     % imgVol = out(1).weights; % PC1 weight
     % imgVol = out(2).weights; % PC2 weight
 %     imgVol = svdResults.model;
-    imgVol = ppgTS.data;
+    imgVol = ppgTSodd.data;
     % Mask by reliability R
 %     imgVol(ppgR.data<.5) = NaN;
     

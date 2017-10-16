@@ -54,7 +54,7 @@ ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of la
 
 % initiate output matrix to fill:
 response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
-response_matrix_sterr = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+response_matrix_std = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 

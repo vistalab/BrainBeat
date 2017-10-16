@@ -22,4 +22,8 @@ switch subj
     bb_roi(8).curPos = [-1 -30 -15];%[-1 38 -22] - Dual peaked?
     bb_roi(8).voxelLabel = 'PosteriorGM';
 
+    case 3
+    % Figure traces medial regions:
+    bb_roi(1).curPos = [1 4 -23];
+    bb_roi(1).voxelLabel = 'Basilar1';
 end
