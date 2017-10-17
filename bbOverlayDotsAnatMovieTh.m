@@ -1,8 +1,10 @@
-function [] = bbOverlayDotsAnatMovie(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,videoName,t)
+function [] = bbOverlayDotsAnatMovieTh(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,videoName,t)
+%
 % Function to plot a functional and overlay with the anatomy
-
+%
+% 
 % Inputs: 
-%   ni: functional scan
+%   ni: functional scan - expected to have a min/max of -1/1.
 %   niAnatomy: anatomical scan
 %   acpcXform: transformation matrix from nifti ijk to anatomy mm
 %
@@ -85,14 +87,22 @@ end
 
 
 %%
-
-cm1 = spring(90);
-a = [(0:1/9:1)' zeros(10,1) (0:1/9:1)']; 
-cm1 = [a; cm1];
-cm2 = winter(100);
-a = [zeros(10,1) zeros(10,1) (0:1/9:1)']; 
-cm2 = [a; cm2];
-cm = [cm1(end:-1:1,:); cm2];
+% make my colormap: cyan - blue - black - red - yellow
+cm1(1:100,2)=[0:1/99:1]';
+cm1=[repmat([0 0 0],100,1)];
+cm1(1:10,1)=[0:0.7/9:0.7]';
+cm1(10:100,1)=[0.7:(1-0.7)/90:1]';
+cm1(1:10,2)=[0]';
+cm1(1:10,3)=[0]';
+cm1(20:100,2)=[0:1/80:1]';
+cm2=[repmat([0 0 0],100,1)];
+cm2(1:10,3)=[0:0.7/9:0.7]';
+cm2(10:100,3)=[0.7:(1-0.7)/90:1]';
+cm2(1:10,2)=[0]';
+cm2(1:10,1)=[0]';
+cm2(20:100,2)=[0:1/80:1]';
+cm2=cm2(end:-1:1,:);
+cm=[cm2; cm1];
 
 %%
 fid = figure('Position',[0 0 500 500]);
@@ -121,23 +131,17 @@ for kk = 1:size(ni.data,4) % loop over 4th dimension in the nifti
             val_plot = currentSlice(kx,mx);
 
             c_use=cm(ceil(val_plot*99.5)+100,:); % fot plotting plus and min
-
-            plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
+            if val_plot~=0
+                plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
+            end
         end
     end
     
+    
     title(['t = ' num2str(t(kk),3)])
     
-    % Let the number of frames to write depend on the timing, such that
-    % peaks can be emphasized
-    if t(kk)>-0.3 && t(kk)<0.3 
-        nr_frames = 20;
-    else
-        nr_frames = 5;
-    end
-    
-    % Write each frame to the file
-    for m=1:nr_frames % write X frames: decides speed
+    % Write each frame to the file.
+    for m=1:5 % write X frames: decides speed
         writeVideo(vidObj,getframe(fid));
     end
     

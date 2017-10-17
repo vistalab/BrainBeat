@@ -137,7 +137,7 @@ for k=1:2
     out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 end
 
-% %%%%% MODEL WITH 2 COMPONENTS:
+%%%%% MODEL WITH 2 COMPONENTS:
 pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
 svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(ppgTS.data,4)]);
 
@@ -256,3 +256,15 @@ print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_med'])
+
+%% plain renders
+figure
+brainHandle=bbRenderGifti(g); hold on
+
+bbViewLight(90,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_lat'])
+
+bbViewLight(270,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_med'])
