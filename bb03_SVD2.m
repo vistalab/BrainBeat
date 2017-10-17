@@ -410,7 +410,6 @@ select_voxels = brain_vect>10 & ppgR_vect>.9;
 pred = [u(:,1:2)*diag(s(1:2))*v(select_voxels,1:2)']';
 
 % Make 2D colormap: one to vary color, the other varies intensity
-% make 2D colormap: one to vary color, the other varies intensity
 cm = jet(250); cm = cm(26:225,:);
 cm = cm(end:-1:1,:);
 cm = cm+.4; cm(cm>1)=1;

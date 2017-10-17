@@ -1,4 +1,4 @@
-function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
+function [] = bbOverlayDotsAnatMovie(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,videoName,t)
 % Function to plot a functional and overlay with the anatomy
 
 % Inputs: 
@@ -22,12 +22,6 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 %     curPos = [1,4,38];
 % end
 
-if ~exist('varargin','var')
-    NrFigures = 1;
-else
-    NrFigures = varargin{1};
-end
-
 % functionals to ACPC space
 % settings:
 img2std = acpcXform;
@@ -36,8 +30,8 @@ interpType = 'n';
 mmPerVox = ni.pixdim(1:3);
 
 % functional to ACPC
-imgVol = ni.data(:,:,:,1); % do the first
-imgVol = imgVol/max(imgVol(:));
+imgVol = ni.data; % do the first
+% imgVol = imgVol/max(imgVol(:));
 [imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
@@ -89,34 +83,68 @@ elseif sliceThisDim==3
     % x and y stay the same
 end
 
-% Make the figure:
-if NrFigures > 1
-    figure('Position',[0 0 1000 500])
-    subplot(1,2,1)
-    imagesc(x1,y1,imgSlice1)
+
+%%
+% make my colormap: cyan - blue - black - red - yellow
+cm1(1:100,2)=[0:1/99:1]';
+cm1=[repmat([0 0 0],100,1)];
+cm1(1:10,1)=[0:0.7/9:0.7]';
+cm1(10:100,1)=[0.7:(1-0.7)/90:1]';
+cm1(1:10,2)=[0]';
+cm1(1:10,3)=[0]';
+cm1(20:100,2)=[0:1/80:1]';
+cm2=[repmat([0 0 0],100,1)];
+cm2(1:10,3)=[0:0.7/9:0.7]';
+cm2(10:100,3)=[0.7:(1-0.7)/90:1]';
+cm2(1:10,2)=[0]';
+cm2(1:10,1)=[0]';
+cm2(20:100,2)=[0:1/80:1]';
+cm2=cm2(end:-1:1,:);
+cm=[cm2; cm1];
+
+%%
+fid = figure('Position',[0 0 500 500]);
+
+vidObj = VideoWriter(videoName,'MPEG-4'); %
+
+open(vidObj); 
+
+for kk = 1:size(ni.data,4) % loop over 4th dimension in the nifti
+    % Background:
+    imagesc(x,y,imgSlice/max(imgSlice(:)));
+    set(gca,'CLim',[0 .3])
     hold on
     axis image
-    colormap gray 
-else
-    figure('Position',[0 0 500 500])
-end
+    colormap gray
+    
+    % Overlay:
+    currentSlice = imgSlice1(:,:,kk);
+    % Plot dots on image
+    for kx=1:size(currentSlice,1)
+        for mx=1:size(currentSlice,2)
+            % get plotting location
+            k_x = y1(kx);
+            m_y = x1(mx);
 
-if NrFigures>1
-    subplot(1,2,2)
-end
+            val_plot = currentSlice(kx,mx);
 
-cm=colormap(jet);
+            c_use=cm(ceil(val_plot*99.5)+100,:); % fot plotting plus and min
 
-image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
-hold on
-axis image
-% tranform imgSlice1 (functionals) to colormap values that I want to use
-imgSlice1_color=cat(3,zeros(size(imgSlice1)),zeros(size(imgSlice1)),zeros(size(imgSlice1)));
-for k_x = 1:length(x1)
-    for k_y = 1:length(y1)
-        imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice1(k_y,k_x))*63),:);
+            plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
+        end
     end
+    
+    
+    title(['t = ' num2str(t(kk),3)])
+    
+    % Write each frame to the file.
+    for m=1:5 % write X frames: decides speed
+        writeVideo(vidObj,getframe(fid));
+    end
+    
+    clf
+    
 end
-h=image(x1,y1,imgSlice1_color); % overlay colormap on image
-set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
+
+close(vidObj);
 
