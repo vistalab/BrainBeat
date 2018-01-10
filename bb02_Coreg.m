@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
 %% coregistration functionals to T1 (course)
-% this can work well for FA - 25, but not for FA = 36/48, thus: allign FA =
-% 25, and align 36/48 to this one with code below
+% this can work well for FA=25, but not for FA=36/48, thus: allign FA=25,
+% and align 36/48 to FA=25 with code further below
  
 for s = 1
     s_info = bb_subs(s);
@@ -63,7 +63,7 @@ end
 
 % Only if the current acpcXform is good enough, safe for use
 % Do this for the FA = 25, then coregister other functionals to this one
-% ... only use the first visualization step from Kendick's code to check...
+% ... only use the first visualization step from Kendrick's code to check...
 acpcXform_new = acpcXform;
 save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 

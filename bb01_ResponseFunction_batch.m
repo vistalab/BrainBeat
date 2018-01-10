@@ -6,7 +6,7 @@ close all
 % Script to explain how to open and do preliminary brain beat analyses
 
 
-%% Base data directory on a Mac mounting biac4 (wandell's machine)
+%% Base data directory 
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 

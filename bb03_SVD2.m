@@ -31,7 +31,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 5;
+scan_nr = 1;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -93,6 +93,7 @@ end
 
 % get to cumulative explained variance:
 var_explained=cumsum(s.^2) / sum(s.^2)
+clear a a_test
 
 %%
 %% plot a number of components:
@@ -404,10 +405,13 @@ t_select = (t>-0.2 & t<1);
 brain_vect = ni.data(:,:,:,4); brain_vect = brain_vect(:); 
 % Correlation mask:
 ppgR_vect = ppgR.data(:); 
-select_voxels = brain_vect>10 & ppgR_vect>.9;
+select_voxels = brain_vect>10 & ppgR_vect>.6;
 
 % Model prediction for selected voxels:
 pred = [u(:,1:2)*diag(s(1:2))*v(select_voxels,1:2)']';
+% Time series for selected voxels:
+% pred = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
+% pred = pred(select_voxels,:);
 
 % Make 2D colormap: one to vary color, the other varies intensity
 cm = jet(250); cm = cm(26:225,:);
@@ -447,8 +451,10 @@ title('PC1<0')
 xlabel('Time (s)'),ylabel('Model prediction')
 set(gcf,'PaperPositionMode','auto')
 
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
-% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_PC1and2'])
+print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
+print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
 
 %% plot component 1 and 2 combination on T1
 %%

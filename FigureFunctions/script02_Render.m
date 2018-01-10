@@ -9,13 +9,14 @@ close all
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 2;
+s_nr = 3;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 hemi_load = 'r';
 
 gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_white_render.gii']);
+% gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_render.gii']);
 if exist(gifti_name,'file')
     g = gifti(gifti_name);
 else
@@ -64,7 +65,7 @@ end
 %% SVD on the odd responses:
 %%
 
-scan_nr = 3;
+scan_nr = 5;
 
 % load PPG responses
 data_in = 'PPG';
@@ -263,8 +264,8 @@ brainHandle=bbRenderGifti(g); hold on
 
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_lat'])
+print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_lat_pial'])
 
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_med'])
+print('-painters','-r300','-dpng',[dDir './figures/render/sub-' int2str(s_nr) '_rh_med_pial'])
