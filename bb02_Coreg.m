@@ -4,8 +4,6 @@ close all
 % script produced transformation matrix between the anatomy and functional
 % scans, walk through step-by-step
 
-addpath(genpath('~/Documents/m-files/kendrick/'))
-
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
 % dDir = '/biac4/wandell/data/BrainBeat/data';
@@ -67,6 +65,38 @@ end
 acpcXform_new = acpcXform;
 save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
+
+%% Check the coregistration
+s = 2;
+s_info = bb_subs(s);
+subj=s_info.subj;
+
+% Get the anatomicals:
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+
+scan_nr = 1; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
+scan=s_info.scan{scan_nr};
+scanName=s_info.scanName{scan_nr};
+
+fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
+ni = niftiRead(fmri);
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
+
+curPos = [1,10,-30]; 
+sliceThisDim = 2; 
+% imDims=[-90 -120 -60; 90 130 90];
+imDims=[-90 -120 -120; 90 130 90];
+
+%%%% Overlay 1: functionals and anatomy
+niFunc = ni;
+niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
+
+
+
+
+
+%% The rest seems to be unnecessary
 
 %% NOTE, Kendrick's FUNCTIONS DO NOT WORK ANYMORE!
 % there is somethin with allignvolumedata that makes my Matlab crash...
