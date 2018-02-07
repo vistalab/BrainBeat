@@ -29,7 +29,7 @@ load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 % reshape into voxel X time
 data_cat = reshape(ni.data,prod(ni.dim(1:3)),size(ni.data,4));
 % get rid of first time points
-data_cat = data_cat(:,5:end);
+data_cat = data_cat(:,6:end);
 
 % calculate temporal snr
 data_snr = mean(data_cat,2)./std(data_cat,[],2);
@@ -65,11 +65,11 @@ niFunc.data = data_std;
 bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
 title('std')
 
-%%%% Overlay 3: mean
-niFunc = ni;
-niFunc.data = data_mean;
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
-title('mean')
+% %%%% Overlay 3: mean
+% niFunc = ni;
+% niFunc.data = data_mean;
+% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
+% title('mean')
 
 %% now average across every 2 scans
 
@@ -110,15 +110,15 @@ niFunc.data = data_snr;
 bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
 title('snr')
 
-%%%% Overlay 2: std
-niFunc = ni;
-niFunc.data = data_std;
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
-title('std')
-
-%%%% Overlay 3: mean
-niFunc = ni;
-niFunc.data = data_mean;
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
-title('mean')
+% %%%% Overlay 2: std
+% niFunc = ni;
+% niFunc.data = data_std;
+% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
+% title('std')
+% 
+% %%%% Overlay 3: mean
+% niFunc = ni;
+% niFunc.data = data_mean;
+% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
+% title('mean')
 
