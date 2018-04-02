@@ -56,7 +56,7 @@ if ~isempty(varargin)
             % Should add physio file handling to niftiGet(ni,'physio ....');
             [fPath,fName] = fileparts(ni.fname);
             [~, fName]    = fileparts(fName);       
-            UnTarpPhysio_dir = fullfile(fPath,[fName '_physio_Unzip']);
+            UnTarpPhysio_dir = fullfile(fPath,[fName '_physio']);
 
             if ~exist(UnTarpPhysio_dir,'dir')
                 % Make the untar'd gunzip'd physio directory
@@ -75,7 +75,7 @@ if ~isempty(varargin)
 
             % So the directory now exists.  Get the physio data.  One of them
             % is the PPG and the other is RESP
-            physioData = dir(fullfile(UnTarpPhysio_dir,[fName,'_physio'],'*Data*'));
+            physioData = dir(fullfile(UnTarpPhysio_dir,'*Data*'));
 
             % This the Matlab structure we return. 
             physio_output = [];
@@ -83,11 +83,11 @@ if ~isempty(varargin)
                 if isequal(physioData(k).name(1:6),'PPGDat');
                     physio_output.ppg.name = 'PPG';
                     physio_output.ppg.srate = 100; % here, we are hardcoding the CNI sampling rate for ECG
-                    physio_output.ppg.rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
+                    physio_output.ppg.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(k).name));
                 elseif isequal(physioData(k).name(1:6),'RESPDa')
                     physio_output.resp.name = 'RESP';
                     physio_output.resp.srate = 25; % here, we are hardcoding the CNI sampling rate for respiration
-                    physio_output.resp.rawdata = load(fullfile(UnTarpPhysio_dir,[fName,'_physio'],physioData(k).name));
+                    physio_output.resp.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(k).name));
                 end
             end
 

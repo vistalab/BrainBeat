@@ -11,12 +11,12 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 3;
+s_nr = 4;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
 % % Get the MRVenogram:
 % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
@@ -31,7 +31,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 1;
+scan_nr = 9;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -222,6 +222,9 @@ elseif s_nr == 2
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
+elseif s_nr == 4
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
 end
 bbOverlayFuncAnat(meanSig,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
@@ -265,6 +268,7 @@ if s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [-10 50 -21];
     curPos = [-10 -20 -21];
+    curPos = [1 -20 -21];
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [1,4,38];
@@ -277,7 +281,8 @@ ylabel(['PC ' int2str(w_plot) ' max=' num2str(maxPlot,3)])
 
 %% Plot with PC 1 for intensity, PC 2 for color
 
-maxPlot = .008;
+maxPlot = .002;
+% maxPlot = .001;
 
 sliceThisDim = 1;
 if s_nr == 1
@@ -295,6 +300,9 @@ elseif s_nr == 3
 %     curPos = [0,4,38];
 %     curPos = [0,4,38]; % for figure set
     curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
+elseif s_nr == 4
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [-2 4 30];%[x x 38]
 end
 
 % Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the
@@ -307,7 +315,7 @@ niIntensity.data(niIntensity.data<0) = 0; % only plot positive
 bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 title(['PC1>0, slice ' int2str(curPos(sliceThisDim))])
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1pos_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1pos_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 niColor = ni;
 niIntensity = ni;
@@ -316,7 +324,7 @@ niIntensity.data = -out(1).weights;
 niIntensity.data(niIntensity.data<0) = 0; 
 bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 title(['PC1<0, slice ' int2str(curPos(sliceThisDim))])
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1neg_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1neg_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 % niColor = ni;
 % niIntensity = ni;
@@ -392,8 +400,8 @@ xlim([min(voxel_peakT)-.05 max(voxel_peakT)+.05 ])
 subplot(2,1,2),hold on
 xlim([min(voxel_peakT)-.05 max(voxel_peakT)+.05 ])
 
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
 
 %% Plot shapes for PC1 and PC2 with 2D colorscale
 
@@ -451,8 +459,8 @@ title('PC1<0')
 xlabel('Time (s)'),ylabel('Model prediction')
 set(gcf,'PaperPositionMode','auto')
 
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2pred_R0_6'])
 % print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
 % print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
 

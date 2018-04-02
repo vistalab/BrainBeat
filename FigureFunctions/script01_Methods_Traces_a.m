@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 3;
-scan_nr = 5;
+s_nr = 4;
+scan_nr = 1;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -42,7 +42,7 @@ acpcXform = acpcXform_new; clear acpcXform_new
 
 %% Anatomicals
 
-anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii']);
+anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
 niAnatomy = niftiRead(anat);
 
 %% quick overlay between functionals and anatomy
@@ -60,6 +60,9 @@ elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 %     curPos = [0,4,38];
+elseif s_nr == 4
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0,4,38];
 end
 niFunc = ni;
 
@@ -73,7 +76,7 @@ niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
 bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 title('Mean functional on anatomy')
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_MeanFuncOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_MeanFuncOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 
 %% Plot physiology data
@@ -139,8 +142,8 @@ title('PPG signal (black) and scan onsets (blue)')
 xlim([0 10])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
-print('-painters','-r300','-dpng',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
+% print('-painters','-r300','-depsc',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
+% print('-painters','-r300','-dpng',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
 
 
 %% Plot MRI data
@@ -160,6 +163,9 @@ elseif s_nr == 3 %subject number
 %     curPos = [1,4,38];
 %     curPos = [-14 24 -16]; % LCarotid
     curPos = [1 11 -16]; % Basilar
+elseif s_nr == 4 %subject number
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [1,4,38];
 end
 
 % load time series and associated time
@@ -202,7 +208,7 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
@@ -214,9 +220,9 @@ for kk = 1:size(cm,1)
 end
 axis off
 set(gcf,'PaperPositionMode','auto')
-
-print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/TScolorbar'])
-print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar'])
+% 
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/TScolorbar'])
+% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar'])
 
 %% Get voxel timeseries
 
@@ -248,12 +254,12 @@ if s_nr == 2 % subject number
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [1,4,38];
-%     curPos = [-14 24 -16]; % LCarotid
-%     voxelLabel = 'LCarotid1';
+    curPos = [-14 24 -16]; % LCarotid
+    voxelLabel = 'LCarotid1';
 %     curPos = [-1 11 -16]; % Basilar
 %     voxelLabel = 'Basilar1';
-    curPos = bb_roi(roi_ind).curPos;
-    voxelLabel = bb_roi(roi_ind).voxelLabel;
+%     curPos = bb_roi(roi_ind).curPos;
+%     voxelLabel = bb_roi(roi_ind).voxelLabel;
 end
 
 % load time series and associated time
@@ -281,14 +287,15 @@ axis tight
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
-print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
 end
 
 %% plot Raw timeseries with cardiac signal
 
 curPos = [-10 50 -21]; % subj = 2, scan_nr = 3
+% curPos = [-14 24 -16];
 
 % get the timeseries 
 [voxelTs] = bbGetVoxelTimeseries(ni,acpcXform,curPos);
@@ -310,8 +317,8 @@ ppgNorm     = zscore(physio.ppg.data);
 ppgNorm     = ppgNorm + mean(voxelTs);
 plot(tPPG,ppgNorm,'r')
 
-xlim([24 29])
-ylim([63 73])
-print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
-print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
+% xlim([24 29])
+% ylim([63 73])
+% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
+% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
 
