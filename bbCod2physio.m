@@ -1,9 +1,9 @@
-function [out_r_map]=bbCorrelate2physio(ni_odd,ni_even,slices)
+function [out_r_map]=bbCod2physio(ni_odd,ni_even,slices)
 %
-% Function calculates correlation between PPG triggered signal for even and odd
-% heartbeats.
+% Function calculates coefficient of determination between PPG triggered
+% signal for even and odd heartbeats.
 %
-% [out_r_map] = BB_correlate2physio(ni)
+% [out_r_map] = bbCod2physio(ni)
 %
 % required input:
 % ni: a nifti structure loaded by niftiRead
@@ -36,8 +36,10 @@ for s=1:length(slices)
     even_resp = squeeze(ni_even.data(:,:,sli,:));
     even_resp = reshape(even_resp,[size(even_resp,1) * size(even_resp,2),size(even_resp,3)]);
     
-    r = corr(odd_resp',even_resp'); %OLD
-    r = diag(r);
+    r = calccod(odd_resp',even_resp',1,0,0)./100; 
+    % make sure values go between 0 and 1, smaller than 0 is just worse...
+    r(r<0)=0;
+    r(r>1)=1;
     r = reshape(r,[size(ni_odd.data,1),size(ni_odd.data,2)]);
     
     out_r_map(:,:,s)=r;

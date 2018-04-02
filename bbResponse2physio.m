@@ -1,4 +1,4 @@
-function [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices,varargin)
+function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] = bbResponse2physio(ni,slices,varargin)
 % function to get brain response after the peak of a heartbeat (or
 % respiration later)
 %
@@ -54,6 +54,7 @@ ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of la
 
 % initiate output matrix to fill:
 response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+response_matrix_std = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 
@@ -73,12 +74,8 @@ for s = 1:length(slices)
         % detrend
         p = polyfit(x,y,1);    
 
-        % z-score
-%         std_factor = std(d_norm(k,points_use)); % std
-%         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./std_factor;
-
         % percent modulation
-        mean_factor = mean(d_norm(k,points_use)); % std
+        mean_factor = mean(d_norm(k,points_use)); % mean
         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./mean_factor;
     end
     d=reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);
@@ -91,19 +88,22 @@ for s = 1:length(slices)
     d_up=single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
     d_up(:,:,ismember(round(t_vox*mux_f*srate),round(t_sli*mux_f*srate)))=d;
 
+    % temporary response matrix for 1 slice: voxel X voxel X time X PPGonset
     temp_response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(t),length(ppg_onsets)));
     % run through all ppg onsets
-    for k=1:length(ppg_onsets); 
+    for k=1:length(ppg_onsets)
         [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
-        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-round(epoch_pre*srate_epochs):ppg_find+round(epoch_post*srate_epochs));
+        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
     
     clear d_up d
     
     % output:
     response_matrix(:,:,s,:) = nanmean(temp_response_matrix,4);
+    response_matrix_std(:,:,s,:) = nanstd(temp_response_matrix,[],4);
     response_matrix_odd(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
     response_matrix_even(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
+    
     clear temp_response_matrix
 end
 

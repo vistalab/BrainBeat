@@ -9,36 +9,39 @@ s = 3;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-roisToSegment = [...
-    4 % left lateral ventricle
-    5 % left inferior lateral ventricle
-    14 % 3rd ventricle
-    15 % 4th ventricle
-    24 % CSF
-    31 % left choroid plexus
-    43 % right lateral ventricle
-    44 % right inferior lateral ventricle
-    63 % right choroid plexus
-    72]; % 5th ventricle
-
-roisToSegmentNames = {...
-    'L_lat_ventr'
-    'L_inferior_lat_ventr'
-    '3rd_ventr'
-    '4th_ventr'
-    'CSF'
-    'L_choroid_plexus'
-    'R_lat_ventr'
-    'R_inferior_lat_ventr'
-    'R_choroid_plexus'
-    '5th_ventricle'};
+% roisToSegment = [...
+%     4 % left lateral ventricle
+%     5 % left inferior lateral ventricle
+%     14 % 3rd ventricle
+%     15 % 4th ventricle
+%     24 % CSF
+%     31 % left choroid plexus
+%     43 % right lateral ventricle
+%     44 % right inferior lateral ventricle
+%     63 % right choroid plexus
+%     72]; % 5th ventricle
+% 
+% roisToSegmentNames = {...
+%     'L_lat_ventr'
+%     'L_inferior_lat_ventr'
+%     '3rd_ventr'
+%     '4th_ventr'
+%     'CSF'
+%     'L_choroid_plexus'
+%     'R_lat_ventr'
+%     'R_inferior_lat_ventr'
+%     'R_choroid_plexus'
+%     '5th_ventricle'};
 
 %%%% MAKE NII DIR IN FREESURFER FOLDER
 
 %% make a nifti file from aseg.auto.mgz - then write only the ROIs all together in 1 file
 resample_type = 'weighted';
 alignTo = fullfile(dDir,s_info.subj,s_info.anat,[s_info.anatName '.nii']);
+% use aseg.auto.mgz for CSF:
 segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aseg.auto.mgz');
+% use aparc+aseg.mgz for Gray matter areas:
+% segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aparc+aseg.mgz');
 outfile = fullfile(dDir,s_info.subj,'freesurfer','nii','ventricles.nii.gz');
 
 % make nifti from aseg

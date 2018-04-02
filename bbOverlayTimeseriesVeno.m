@@ -1,4 +1,4 @@
-function [] = bbOverlayTimeseriesAnat(ni,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+function [] = bbOverlayTimeseriesVeno(ni,niColor,niAnatomy,acpcXform,acpcXformVeno,sliceThisDim,imDims,curPos)
 % function to plot a functional and overlay with the anatomy
 
 % Inputs: 
@@ -32,9 +32,9 @@ elseif sliceThisDim == 2
 end
 z1=z1(1,:)';
 
-% Anatomy to ACPC
+% Veno to ACPC
 imgVol = niAnatomy.data;
-img2std = niAnatomy.qto_xyz;
+img2std = acpcXformVeno;
 sliceNum =curPos(sliceThisDim);
 interpType = 'n';
 mmPerVox = [1 1 1];
@@ -90,8 +90,8 @@ title('First time point in nifti')
 subplot(1,2,2)
 % show the background:
 %     image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:)));
-imagesc(x,y,imgSlice/max(imgSlice(:)));
-set(gca,'CLim',[0 .3])
+imagesc(x,y,imgSlice/max(imgSlice(:)),[0 1]);
+% set(gca,'CLim',[0 .3])
 hold on
 axis image
 
@@ -118,6 +118,8 @@ for sub_p=1:2
             % select the color for the curve:
             c_use=cm(1+floor(imgColors(k,m)*63),:);
             
+            % This makes sure that the curves have the image top as up,
+            % even if the y-axis is reversed
             if isequal(get(gca,'YDir'),'reverse')
                 plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,...
                     k_x-s_f*r_curve,...

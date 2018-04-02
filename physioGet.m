@@ -88,24 +88,61 @@ switch param
         objPeaks = physioGet(phy,[dataType ' peaks']);
         totalTime = length(obj.data)./physioGet(phy,[dataType ' srate']); % in secs
         val = length(objPeaks) / totalTime; 
-        
-    case 'curve' % one response curve, starting at peak
+            
+    case 'ppgcurve' % one response curve, starting at peak -0.5 sec
         objPeaks = physioGet(phy,[dataType ' peaks']);
         objRate = physioGet(phy,[dataType ' rate']);
         srate = physioGet(phy,[dataType ' srate']);
         signal = physioGet(phy,[dataType 'data']);
         
-        epoch_length = ceil(srate/objRate); % one response curve
+%         epoch_length = ceil(srate/objRate); % this would be one response curve
+        epoch_length = floor(srate*2.5); % 2.5 sec 
+        objPeaks(objPeaks*srate-floor(srate*.5)<1)=[]; % get rid of first Peak, may nog capture full response
         objPeaks(objPeaks*srate+epoch_length>length(signal))=[]; % get rid of last Peak, may nog capture full response
         phys_epochs1 = zeros(length(objPeaks),epoch_length);
-        for k=1:length(objPeaks)
+        for k = 1:length(objPeaks)
             sample_ppg=round(objPeaks(k)*srate);
-            phys_epochs1(k,:)=signal(sample_ppg:sample_ppg+epoch_length-1);
+            phys_epochs1(k,:) = signal(sample_ppg-floor(srate*.5):sample_ppg+epoch_length-floor(srate*.5)-1);
         end
         
         % get average ppg response
         val=mean(phys_epochs1,1);
-
+        
+    case 'ppgtcurve' % time for one response curve
+        
+        objRate = physioGet(phy,[dataType ' rate']);
+        srate = physioGet(phy,[dataType ' srate']);       
+        epoch_length = floor(srate*2.5);
+        tcurve = [1:epoch_length]/srate -.5;
+        
+        val = tcurve;
+    
+    case 'respcurve' % one response curve, starting at peak -0.5 sec
+        objPeaks = physioGet(phy,[dataType ' peaks']);
+        objRate = physioGet(phy,[dataType ' rate']);
+        srate = physioGet(phy,[dataType ' srate']);
+        signal = physioGet(phy,[dataType 'data']);
+        
+        epoch_length = ceil(srate/objRate); % this would be one response curve
+        objPeaks(objPeaks*srate+epoch_length>length(signal))=[]; % get rid of last Peak, may nog capture full response
+        phys_epochs1 = zeros(length(objPeaks),epoch_length);
+        for k = 1:length(objPeaks)
+            sample_ppg=round(objPeaks(k)*srate);
+            phys_epochs1(k,:) = signal(sample_ppg:sample_ppg+epoch_length-1);
+        end
+        
+        % get average ppg response
+        val=mean(phys_epochs1,1);
+        
+    case 'resptcurve' % time for one response curve
+        
+        objRate = physioGet(phy,[dataType ' rate']);
+        srate = physioGet(phy,[dataType ' srate']);       
+        epoch_length = ceil(srate/objRate); % .5 sec + one response curve
+        tcurve = [1:epoch_length]/srate;
+        
+        val = tcurve;
+        
     otherwise
         error('Unknown parameter %s\n',param);
 end
