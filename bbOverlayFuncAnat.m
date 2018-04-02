@@ -22,7 +22,9 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 %     curPos = [1,4,38];
 % end
 
-if ~exist('varargin','var')
+if ~exist('varargin','var') 
+    NrFigures = 1;
+elseif isempty(varargin)
     NrFigures = 1;
 else
     NrFigures = varargin{1};

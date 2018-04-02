@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % this can work well for FA=25, but not for FA=36/48, thus: allign FA=25,
 % and align 36/48 to FA=25 with code further below
  
-for s = 1
+for s = 4
     s_info = bb_subs(s);
     subj=s_info.subj;
 
@@ -27,7 +27,7 @@ for s = 1
 
     %%%%% coregister the functionals to the T1:
 
-    for scan_nr = 1
+    for scan_nr = 9
         scan=s_info.scan{scan_nr};
         scanName=s_info.scanName{scan_nr};
 
@@ -211,10 +211,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % and the fourth is time in seconds.
 
 in_data = 'PPG';
-s = 2;
+s = 4;
 scan_nr = 1;
 
-curPos = [10,1,1]; 
+curPos = [-5,1,30]; 
 sliceThisDim = 1; 
 imDims=[-90 -120 -60; 90 130 90];
 % imDims=[-90 -120 -120; 90 130 90];
@@ -223,7 +223,7 @@ s_info = bb_subs(s);
 subj = s_info.subj;
     
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
 % % Get the MRVenogram:
 % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
@@ -238,6 +238,12 @@ ni = niftiRead(fmri);
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
+%%%% Overlay 1: functionals and anatomy
+
+niFunc = ni;
+niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+
 % load time series and associated time
 ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
@@ -246,11 +252,6 @@ load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 % load correlation between even and odd scans for colors of timeseries
 ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' in_data '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
-
-%%%% Overlay 1: functionals and anatomy
-niFunc = ni;
-niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 %%%% Overlay 2: timeseries and anatomy
 ppgTSplot = ppgTS;
