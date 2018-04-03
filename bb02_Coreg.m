@@ -27,7 +27,7 @@ for s = 4
 
     %%%%% coregister the functionals to the T1:
 
-    for scan_nr = 9
+    for scan_nr = 8
         scan=s_info.scan{scan_nr};
         scanName=s_info.scanName{scan_nr};
 
