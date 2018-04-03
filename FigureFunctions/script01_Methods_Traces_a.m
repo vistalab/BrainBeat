@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 4;
-scan_nr = 1;
+scan_nr = 4;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -47,7 +47,7 @@ niAnatomy = niftiRead(anat);
 
 %% quick overlay between functionals and anatomy
 
-sliceThisDim = 2;
+sliceThisDim = 3;
 if s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [1,10,-20];

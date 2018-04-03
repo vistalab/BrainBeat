@@ -62,7 +62,7 @@ for s = 4
         clear ni1
     end
     
-    for scan_nr = 9%1:length(s_info.scan)
+    for scan_nr = [2 4 5 7 8]%1:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
