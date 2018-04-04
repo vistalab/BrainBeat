@@ -10,7 +10,7 @@ switch subj
         subs.scan{2}='6_1_mux8fov4_r1_25s_4mm';
         subs.scanName{2}='7944_6_1';
     case 2
-        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/wandell/20141017/';    % freesurfer data in anatomy folder
+        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';    % freesurfer data in anatomy folder
         subs.subj = '20141017_1242';    % Date _ Time out of NIMS
         subs.anat = '9_1_T1w_1mm_sag';   % Anatomical data
         subs.anatName = '8202_9_1';

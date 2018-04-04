@@ -1,22 +1,24 @@
 clear all
 close all
 
-%% Base data directory on a Mac mounting biac4 (wandell's machine)
+%% Base data directory 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
 
 %% The T2* data are here.  
 
+% TODO: Also try first half and second half reliability
+
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 4;
+s_nr = 2;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
 % % Get the MRVenogram:
 % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
@@ -31,7 +33,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 9;
+scan_nr = 1;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -46,16 +48,15 @@ ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.
 % load average of all odd heartbeats:
 ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
-% load coregistration matrix:
+% Load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
-% scale the time-series matrix by the correlation
-
-% Load the correlation with heartbeat (made with bbCorrelate2physio):
+%%%% Scale the time-series matrix by the reliability
+% Get odd/even corr/corr (made with bbCod/Correlate2physio):
 ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
+% ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
-
 % Set maximum of ppgTS to 1 for each voxel
 ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
 ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
@@ -63,37 +64,81 @@ ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,s
 ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
-% reshape to voxel X time
+% Reshape to voxel X time:
 a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 
-% select times to include in SVD
-if isequal(data_in,'PPG')
-    a = a(:,t>=-.5 & t<=2);
-    t_sel = t(t>=-.5 & t<=2);
-elseif isequal(data_in,'RESP')
-    a = a(:,t>=-.5 & t<=4);
-    t_sel = t(t>=-.5 & t<=4);
-end
+% Select times to include in SVD:
+physio      = physioCreate('nifti',ni);
+ppg_cycle   = 1./physioGet(physio,'PPGrate');
+a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+
+% Do the SVD:
 meanTS = mean(a,2);
 a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
-[u,s,v]=svd(a','econ');
-s=diag(s);
+[u,s,v] = svd(a','econ');
+s = diag(s);
 
-%%%% test for the sign of the 2nd component (also check for 1st???)
-% in the 2nd component, the first peak should be negative
-[~,pm_i]=findpeaks(double(u(:,2)),'minpeakdistance',10);
-[~,nm_i]=findpeaks(-double(u(:,2)),'minpeakdistance',10);
-first_peak = min([pm_i; nm_i]);
-if u(first_peak,2)<0
-    % do nothing
-elseif u(first_peak,2)>0
-    % reverse sign pc and weights
-    u(:,2)=-u(:,2); v(:,2) = -v(:,2);
-end
-
-% get to cumulative explained variance:
-var_explained=cumsum(s.^2) / sum(s.^2)
+% Get to cumulative explained variance:
+var_explained=cumsum(s.^2) / sum(s.^2);
 clear a a_test
+
+% Plot 2 components:
+L = length(u(:,1));
+Fs = 1./mean(diff(t));
+f = Fs * (0:(L/2))/L;
+
+nr_pc_plot = 2;
+pc_colors = {'r','b','g','y'};
+% figure('Position',[0 0 300 400])
+figure('Position',[0 0 130 250])
+
+for kk = 1:nr_pc_plot
+
+    % plot pc
+    subplot(2,1,1),hold on
+    plot(t_sel,u(:,kk),'Color',pc_colors{kk},'LineWidth',2)
+    xlim([t_sel(1) t_sel(end)])
+    xlabel('time (s)')
+    title(['FlipA = ' int2str(s_info.scanFA{scan_nr})])
+
+    % plot fft of pc
+    p1 = abs(fft(u(:,kk))/L);
+    p1 = p1(1:floor(L/2+1));
+    p1(2:end-1) = 2*p1(2:end-1);
+    
+    subplot(2,1,2),hold on
+    plot(f,p1,'Color',pc_colors{kk},'LineWidth',2)
+    ylabel('|P(f)|')
+    xlabel('frequency (Hz)')
+    
+    
+end
+subplot(2,1,1),hold on
+plot(t_sel,sqrt(u(:,1).^2+u(:,2).^2),':','Color',[.5 .5 .5],'LineWidth',1)
+set(gca,'XTick',[0 1])
+subplot(2,1,2),hold on
+legend({'pc1','pc2'})%,'pc3','pc4'})
+set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft'])
+% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft'])
+
+%% Resample the eigenvectors and test whether they span a subspace
+figure
+subplot(2,1,1),hold on
+plot(u(:,1:2))
+
+% y1 = resample(double(u(:,1)),128,length(t_sel));
+% y2 = resample(double(u(:,2)),128,length(t_sel));
+t_hr = linspace(min(t_sel),max(t_sel),128);
+y1 = interp1(t_sel,double(u(:,1)),t_hr);
+y2 = interp1(t_sel,double(u(:,2)),t_hr);
+
+subplot(2,1,2),hold on
+plot([y1' y2'])
+
+save(['./local/s-' int2str(s_nr) '_scan-' int2str(scan_nr) 'pc12'],'y1','y2','t_hr')
+
 
 %%
 %% plot a number of components:
@@ -169,42 +214,6 @@ title('components')
 
 % print('-painters','-r300','-dpng',['./figures/test_pca/svd_comp_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr)])
 
-%% check whether the second PC only shifts the first in time:
-
-% Get the amplitude spectrum, if the amplitude spectrum is the same, and
-% only the phase differs, the components are very similar, the second only
-% shifts the first one back and forth in time:
-L = length(u(:,1));
-Fs = 1./mean(diff(t));
-f = Fs * (0:(L/2))/L;
-
-nr_pc_plot = 2;
-pc_colors = {'r','b','g','y'};
-figure('Position',[0 0 200 400])
-
-for kk = 1:nr_pc_plot
-
-    % plot pc
-    subplot(2,1,1),hold on
-    plot(t,u(:,kk),'Color',pc_colors{kk},'LineWidth',2)
-    xlim([t(1) t(end)])
-    xlabel('time (s)')
-
-    % plot fft of pc
-    p1 = abs(fft(u(:,kk))/L);
-    p1 = p1(1:floor(L/2+1));
-    p1(2:end-1) = 2*p1(2:end-1);
-    
-    subplot(2,1,2),hold on
-    plot(f,p1,'Color',pc_colors{kk},'LineWidth',2)
-    ylabel('|P(f)|')
-    xlabel('frequency (Hz)')
-end
-legend({'pc1','pc2'})%,'pc3','pc4'})
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' subj '_scan' int2str(scan_nr) '_svdComponents_fft'])
-
-
 %% Plot the mean:
 % Note that ppgTS is rescaled according to cod(R)
 
@@ -258,7 +267,7 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) 
 % ni_save.fname = fullfile(dDir,subj,scan,[scanName '_pc1_weights']);
 % niftiWrite(ni_save,[ni_save.fname])
 
-%% plot a component on anatomy 
+%% Plot one component on anatomy 
 niOverlay = ni;
 w_plot = 1;
 niOverlay.data = out(w_plot).weights;
@@ -334,6 +343,62 @@ title(['PC1<0, slice ' int2str(curPos(sliceThisDim))])
 % bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 % title(['PC1>0 & PC1<0, slice ' int2str(curPos(sliceThisDim))])
 % print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1all_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+%% Plot PC1 versus PC2 weights
+
+% Quick brain mask:
+brain_vect = ni.data(:,:,:,4);
+brain_vect = brain_vect(:);
+
+% Correlation mask:
+ppgR_vect = ppgR.data(:);
+
+% Select volxels with decent reliability:
+select_voxels = brain_vect>10 & ppgR_vect>.9;
+% select_voxels = brain_vect>10 & ppgR_vect>.1;
+
+figure,hold on
+% plot(v(select_voxels,1),v(select_voxels,2),'ko')
+set_1 = select_voxels & v(:,1)>=0; % CSF
+set_2 = select_voxels & v(:,1)<0 & v(:,2)>0; % veins
+set_3 = select_voxels & v(:,1)<0 & v(:,2)<0; % arteries
+plot(v(set_1,1),v(set_1,2),'go')
+plot(v(set_2,1),v(set_2,2),'ro')
+plot(v(set_3,1),v(set_3,2),'bo')
+axis equal
+
+sliceThisDim = 1;
+if s_nr == 1
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [0 26 17]; 
+elseif s_nr == 2
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [-12 50 -21];
+%     curPos = [-10 -20 -21]; % for figure set
+%     curPos = [-11 34 -71]; % Carotid
+%     curPos = [-2 26 -63]; % Basilar
+    curPos = [1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
+elseif s_nr == 3
+    imDims = [-90 -120 -100; 90 130 110];
+%     curPos = [0,4,38];
+%     curPos = [0,4,38]; % for figure set
+    curPos = [01 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
+elseif s_nr == 4
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [-5 4 30];%[x x 38]
+end
+
+niColor = [1 0 0;0 0 1; 0 1 0];
+R_th = 0.5;% .0001; % This does not make sense now?
+niIntensity = ni;
+niIntensity.data = out(1).weights;
+niIntensity.data(ppgR.data<R_th) = 0;
+niIntensity.data(out(1).weights>0 & ppgR.data>=R_th) = 3;
+niIntensity.data(out(1).weights<0 & out(2).weights>0 & ppgR.data>=R_th) = 1;
+niIntensity.data(out(1).weights<0 & out(2).weights<0 & ppgR.data>=R_th) = 2;
+
+bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
+
 
 %% Convert PC2 weight colorscale to timing:
 
@@ -464,119 +529,6 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
 % print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_PC1and2rawTS_R0_6'])
 
-%% plot component 1 and 2 combination on T1
-%%
-%% TODO: plot model shape - curve
-
-% max for scaling:
-scale2max = max(abs([out(1).weights(:); out(2).weights(:)]));
-scale2max = .01;
-
-% use dtiGetSlice to get the same slice from 2 sets
-sliceThisDim = 3; 
-
-if s_nr==2
-    imDims = [-90 -120 -120; 90 130 90]; 
-    curPos = [-10 50 -21];
-    curPos = [8 50 -21];
-elseif s_nr==3
-    imDims = [-90 -120 -100; 90 130 110]; 
-    curPos = [7,4,30]; 
-end
-
-% functionals to ACPC space
-% settings:
-img2std = acpcXform;
-sliceNum = curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [4 4 4];
-
-% functionals to ACPC
-imgVol = out(1).weights;
-imgVol(out(1).weights<0) = 0;
-[imgSlice1,x1,y1,z1] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-imgVol = out(2).weights;
-imgVol(out(1).weights<0) = 0;
-[imgSlice2] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-if sliceThisDim == 1 || sliceThisDim == 3
-    x1=x1(1,:)';
-    y1=y1(:,1);
-elseif sliceThisDim == 2
-    x1=x1(:,1);
-    y1=y1(1,:)';
-end
-z1=z1(1,:)';
-
-% Anatomy to ACPC
-imgVol = niAnatomy.data;
-img2std = niAnatomy.qto_xyz;
-sliceNum =curPos(sliceThisDim);
-interpType = 'n';
-mmPerVox = [1 1 1];
-[imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
-if sliceThisDim == 1 || sliceThisDim == 3
-    x=x(1,:)';
-    y=y(:,1);
-elseif sliceThisDim == 2
-    x=x(:,1);
-    y=y(1,:)';
-end
-z=z(1,:)';
-
-% for x and y for plotting:
-if sliceThisDim==1
-    x1=z1; x=z;
-    % flip x and y
-    x1_t=x1;
-    x1=y1; 
-    y1=x1_t;
-    x_t=x;
-    x=y; 
-    y=x_t;
-    % and for the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice2=imrotate(imgSlice2,90);
-    imgSlice=imrotate(imgSlice,90);
-elseif sliceThisDim==2
-    y1=z1; y=z;
-    % rotate the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice2=imrotate(imgSlice2,90);
-    imgSlice=imrotate(imgSlice,90);
-elseif sliceThisDim==3
-    % x and y stay the same
-end
-
-
-% figure('Position',[0 0 300 400])
-figure('Position',[0 0 600 800])
-
-% show the background:
-imagesc(x,y,imgSlice/max(imgSlice(:)));
-colormap gray
-set(gca,'CLim',[0 .3])
-hold on
-axis image
-
-for k=1:size(imgSlice1,1)
-    for m=1:size(imgSlice1,2)
-        % get plotting location
-        k_x = y1(k);
-        m_y = x1(m);
-
-        val_plot = [imgSlice1(k,m) imgSlice2(k,m)]./scale2max;
-        % remove larger values to allow different max scaling
-        val_plot(abs(val_plot)>1)=sign(val_plot(abs(val_plot)>1))*1;
-        data_colors_rgb = bbData2Colors(val_plot);
-        
-        plot(m_y,k_x,'.','Color',data_colors_rgb,'MarkerSize',12)
-
-    end
-end
-
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/2Dcolorspace/subj' subj '_scan' int2str(scan_nr) '_SVD2comp_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-
 
 %%
 %% reliability
@@ -617,6 +569,7 @@ ppgR_vect = ppgR.data(:);
 
 % select_voxels = s_vect>0.01 & brain_vect>10 & abs(ppgR_vect)>.3;
 select_voxels = brain_vect>10 & ppgR_vect>.9;
+% select_voxels = brain_vect>10 & ppgR_vect>.1;
 
 % get colors:
 colors_plot = v(:,1:2);

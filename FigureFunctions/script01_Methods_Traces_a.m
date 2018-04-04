@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 4;
-scan_nr = 4;
+scan_nr = 9;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -165,7 +165,7 @@ elseif s_nr == 3 %subject number
     curPos = [1 11 -16]; % Basilar
 elseif s_nr == 4 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [1,4,38];
+    curPos = [-5,4,38];
 end
 
 % load time series and associated time
@@ -260,6 +260,14 @@ elseif s_nr == 3 %subject number
 %     voxelLabel = 'Basilar1';
 %     curPos = bb_roi(roi_ind).curPos;
 %     voxelLabel = bb_roi(roi_ind).voxelLabel;
+elseif s_nr == 4 %subject number
+    imDims = [-90 -120 -100; 90 130 110];
+%     curPos = [1,4,38];
+%     curPos = [-14 24 -16]; % LCarotid
+%     voxelLabel = 'LCarotid1';
+    curPos = bb_roi(roi_ind).curPos;
+    voxelLabel = bb_roi(roi_ind).voxelLabel;
+
 end
 
 % load time series and associated time
@@ -287,8 +295,8 @@ axis tight
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
-% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
 end
 

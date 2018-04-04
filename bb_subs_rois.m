@@ -26,4 +26,10 @@ switch subj
     % Figure traces medial regions:
     bb_roi(1).curPos = [1 4 -23];
     bb_roi(1).voxelLabel = 'Basilar1';
+
+    case 4
+    % Figure traces medial regions:
+    bb_roi(1).curPos = [0 19 39];
+    bb_roi(1).voxelLabel = 'LateralVentricle1';
+
 end
