@@ -24,10 +24,12 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 
 if ~exist('varargin','var') 
     NrFigures = 1;
-elseif isempty(varargin)
-    NrFigures = 1;
 else
-    NrFigures = varargin{1};
+    if isempty(varargin)
+        NrFigures = 1;
+    else
+        NrFigures = varargin{1};
+    end
 end
 
 % functionals to ACPC space
