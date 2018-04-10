@@ -92,7 +92,7 @@ elseif sliceThisDim==3
 end
 
 % now plot stuff:
-figure('Position',[0 0 600 500])
+% figure('Position',[0 0 600 500])
 % cm=hsv(200);
 
 colormap gray 
@@ -129,4 +129,5 @@ text(1.5,size(cm,1),'max')
 text(1.5,size(cm,1)/2,'0')
 text(1.5,0,'min')
 axis off
+drawnow
 

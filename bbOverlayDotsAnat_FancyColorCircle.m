@@ -1,4 +1,4 @@
-function [] = bbOverlayDotsAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
+function [] = bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
 % function to plot a functional and overlay with the anatomy
 
 % Inputs: 
@@ -14,6 +14,8 @@ function [] = bbOverlayDotsAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 % This example scales the dots to the maximum specifed in maxPlot:
 %   maxPlot = .1;
 %   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+%
+% Dora Hermes, 2017 
 
 %%%% now overlay r-map with anatomy
 
@@ -30,7 +32,7 @@ function [] = bbOverlayDotsAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 % end
 
 if isempty(varargin)
-    maxPlot = max(ni.data(:));
+    maxPlot = max(ni1.data(:));
 else
     maxPlot = varargin{1};
 end
@@ -40,16 +42,21 @@ end
 img2std = acpcXform;
 sliceNum = curPos(sliceThisDim);
 interpType = 'n';
-mmPerVox = ni.pixdim(1:3);
+mmPerVox = ni1.pixdim(1:3);
 
 % functional to ACPC
-imgVol = ni.data;
-% rescale: and set max from -1:1
-imgVol = imgVol/maxPlot;
-imgVol(imgVol>1) = 1;
-imgVol(imgVol<-1) = -1;
-% get the slice
-[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+imgVol1 = ni1.data;
+imgVol1 = imgVol1/maxPlot; % rescale: and set max from -1:1
+imgVol1(imgVol1>1) = 1; % clip larger vals
+imgVol1(imgVol1<-1) = -1; % clip smaller vals
+imgVol2 = ni2.data;
+imgVol2 = imgVol2/maxPlot;% rescale: and set max from -1:1
+imgVol2(imgVol2>1) = 1; % clip larger vals
+imgVol2(imgVol2<-1) = -1; % clip smaller vals
+% get the slice from the Color
+[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol1, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+% get the slice from the Intensity
+[imgSlice2]=dtiGetSlice(img2std, imgVol2, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
     y1=y1(:,1);
@@ -88,12 +95,14 @@ if sliceThisDim==1
     
     % and for the images
     imgSlice1=imrotate(imgSlice1,90);
+    imgSlice2=imrotate(imgSlice2,90);
     imgSlice=imrotate(imgSlice,90);
 elseif sliceThisDim==2
     y1=z1; y=z;
     
     % rotate the images
     imgSlice1=imrotate(imgSlice1,90);
+    imgSlice2=imrotate(imgSlice2,90);
     imgSlice=imrotate(imgSlice,90);
     
 elseif sliceThisDim==3
@@ -102,57 +111,51 @@ end
 
 % now plot stuff:
 figure('Position',[0 0 600 500])
-% cm=hsv(200);
-
-% make my colormap: cyan - blue - black - red - yellow
-cm1(1:100,2)=[0:1/99:1]';
-cm1=[repmat([0 0 0],100,1)];
-cm1(1:10,1)=[0:0.7/9:0.7]';
-cm1(10:100,1)=[0.7:(1-0.7)/90:1]';
-cm1(1:10,2)=[0]';
-cm1(1:10,3)=[0]';
-cm1(20:100,2)=[0:1/80:1]';
-cm2=[repmat([0 0 0],100,1)];
-cm2(1:10,3)=[0:0.7/9:0.7]';
-cm2(10:100,3)=[0.7:(1-0.7)/90:1]';
-cm2(1:10,2)=[0]';
-cm2(1:10,1)=[0]';
-cm2(20:100,2)=[0:1/80:1]';
-cm2=cm2(end:-1:1,:);
-cm=[cm2; cm1];
 
 colormap gray 
 
-subplot(1,5,1:4)
-
-% Plot background:
+subplot(1,1,1)
+% Background:
 imagesc(x,y,imgSlice/max(imgSlice(:)));
 colormap gray
 set(gca,'CLim',[0 .3])
 hold on
 axis image
-
-% Plot dots on image
-for k=1:size(imgSlice1,1)
-    for m=1:size(imgSlice1,2)
+ 
+% Dots on image:
+for k = 1:size(imgSlice1,1)
+    for m = 1:size(imgSlice1,2)
         % get plotting location
         k_x = y1(k);
         m_y = x1(m);
 
-        val_plot = imgSlice1(k,m);
-        if val_plot ~=0
-            c_use=cm(ceil(val_plot*99.5)+100,:); % fot plotting plus and min
-            plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
-        end
+        v1 = imgSlice1(k,m);
+        v2 = imgSlice2(k,m);
+        
+        data_colors_rgb = bbData2Colors([v1,v2]);
+                
+        plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',12)
     end
-    
 end
-subplot(1,5,5),hold on
-for kk = 1:size(cm,1)
-    plot(1,kk,'.','Color',cm(kk,:),'MarkerSize',20)
-end
-text(1.5,size(cm,1),'max')
-text(1.5,size(cm,1)/2,'0')
-text(1.5,0,'min')
-axis off
+%% to plot colorscale
+% 
+% % make 2D colormap: one to vary color, the other varies intensity
+% cm = jet(250); cm = cm(26:225,:);
+% cm = cm(end:-1:1,:);
+% cm = cm+.4; cm(cm>1)=1;
+% gray_vect = .2*ones(200,3);
+% cm2D = zeros(100,size(cm,1),3);
+% for kk = 1:100
+%     cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+% end
+% 
+% figure,hold on
+% for kk = 1:size(cm2D,1)
+%     for mm = 1:size(cm2D,2)
+%         plot(kk,mm,'.','MarkerSize',25,'Color',cm2D(kk,mm,:))
+%     end
+% end
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-depsc',[dDir './figures/2DcolormapNew'])
+% print('-painters','-r300','-dpng',[dDir './figures/2DcolormapNew'])
 
