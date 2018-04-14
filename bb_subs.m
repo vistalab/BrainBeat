@@ -82,10 +82,10 @@ switch subj
         subs.scanFA{7}=20;
         subs.scan{8} ='19_1_mux8_25s_3mmFA34';  % subject awake, eyes closed
         subs.scanName{8}='17178_19_1';
-        subs.scanFA{8}=48;
+        subs.scanFA{8}=34;
         subs.scan{9} ='18_1_mux8_25s_3mmFA48';  % subject awake, eyes closed
         subs.scanName{9}='17178_18_1';
-        subs.scanFA{9}=34;
+        subs.scanFA{9}=48;
         
         % GE hyperband, no physio (order is top: 2 bottom: 40)
         subs.scan{10} ='15_1_HB8_025s_4mm_FA20';  % subject awake, eyes closed
@@ -93,9 +93,9 @@ switch subj
         subs.scanFA{10}=20;
         subs.scan{11} ='13_1_HB8_025s_4mm_FA34';  % subject awake, eyes closed
         subs.scanName{11}='17178_13_1';
-        subs.scanFA{11}=48;
+        subs.scanFA{11}=34;
         subs.scan{12} ='11_1_HB8_025s_4mm_FA48';  % subject awake, eyes closed
         subs.scanName{12}='17178_11_1';
-        subs.scanFA{12}=34;
+        subs.scanFA{12}=48;
         
 end

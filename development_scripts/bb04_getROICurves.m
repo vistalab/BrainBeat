@@ -92,6 +92,8 @@ svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) siz
 %%
 %% Get ROI indices in the functional scan 
 %%
+%% %%%% TODO:
+%% %%%% CHANGE WITH CODE FROM bb02_CreateROIs
 
 % ROInames = {'R_lat_ventr','R_inferior_lat_ventr','R_choroid_plexus','3rd_ventr','4th_ventr','CSF'};
 % ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};

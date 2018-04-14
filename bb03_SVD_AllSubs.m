@@ -55,7 +55,7 @@ load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 
 % Load PPG responses:
 s_nr = 4;
-scan_nr = 1;
+scan_nr = 9;
 
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
