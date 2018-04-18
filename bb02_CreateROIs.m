@@ -94,7 +94,7 @@ eval(str)
 % read in the nifti
 % ni = niftiRead(outfile);
 
-%% Write in the space of a functional scan
+%% Write aseg.auto in the space of a functional scan
 
 clear all
 close all
@@ -123,8 +123,6 @@ niFunc = niftiRead(fmri);
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
-%%
-
 % Create output file
 niFuncSeg = niFunc;
 niFuncSeg.data = niFuncSeg.data(:,:,:,1);
@@ -152,3 +150,61 @@ for ii = 1:size(niFunc.data,1)
 end
 
 niftiWrite(niFuncSeg,fullfile(dDir,subj,scan,niFuncSeg.fname))
+
+%% Write venogram in the space of a functional scan
+
+
+clear all
+close all
+
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
+s = 4;
+scan_nr = 3;
+
+s_info = bb_subs(s);
+subj = s_info.subj;
+
+% Get the MRVenogram:
+niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii.gz']));
+% load coregistration matrix (for the venogram):
+xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
+
+% read the functional data
+scan = s_info.scan{scan_nr};
+scanName = s_info.scanName{scan_nr};
+fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+niFunc = niftiRead(fmri);
+
+% Load coregistration matrix:
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+acpcXform = acpcXform_new; clear acpcXform_new
+
+% Create output file
+niFuncVeno = niFunc;
+niFuncVeno.data = niFuncVeno.data(:,:,:,1);
+niFuncVeno.data = zeros(size(niFuncVeno.data));
+niFuncVeno.fname = [scanName '_r_veno.nii.gz'];
+
+% for each func index, find a struct voxel
+for ii = 1:size(niFunc.data,1)
+    for jj = 1:size(niFunc.data,2)
+        for kk = 1:size(niFunc.data,3)
+            % func voxel indices to acpc
+            xyz_acpc = mrAnatXformCoords(acpcXform, [ii,jj,kk]);
+            % acpc index to anat ijk
+            ijk_anat = mrAnatXformCoords(niVeno.qto_ijk,xyz_acpc);
+            % just take neirest neighbour value
+            ijk_anat = round(ijk_anat);
+            
+            % check if the voxel index does not exceed anatomical
+            if sum(ijk_anat<size(niVeno.data))==3 && sum(ijk_anat<1)==0
+                % get the image value and put it back in the functional
+                niFuncVeno.data(ii,jj,kk) = niVeno.data(ijk_anat(1),ijk_anat(2),ijk_anat(3));
+            end
+        end
+    end
+end
+
+niftiWrite(niFuncVeno,fullfile(dDir,subj,scan,niFuncVeno.fname))

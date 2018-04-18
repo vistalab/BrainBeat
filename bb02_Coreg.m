@@ -67,14 +67,14 @@ save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 
 %% Check the coregistration
-s = 4;
+s = 2;
 s_info = bb_subs(s);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
 
-scan_nr = 9; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
+scan_nr = 2; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -91,7 +91,7 @@ imDims=[-90 -120 -120; 90 130 90];
 niFunc = ni;
 niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the first functional
 % niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos)
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos,100)
 
 
 

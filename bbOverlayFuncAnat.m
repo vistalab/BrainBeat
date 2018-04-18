@@ -22,13 +22,11 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 %     curPos = [1,4,38];
 % end
 
-if ~exist('varargin','var') 
-    NrFigures = 1;
+if isempty(varargin)
+    maxOverlay = max(double(ni.data(:))); % scale to maximum of data
 else
-    if isempty(varargin)
-        NrFigures = 1;
-    else
-        NrFigures = varargin{1};
+    if ~isempty(varargin{1})
+        maxOverlay = varargin{1}; % scale to maximum of data       
     end
 end
 
@@ -40,8 +38,9 @@ interpType = 'n';
 mmPerVox = ni.pixdim(1:3);
 
 % functional to ACPC
-imgVol = ni.data(:,:,:,1); % do the first
-imgVol = imgVol/max(imgVol(:));
+imgVol = double(ni.data); % do the first
+imgVol = imgVol/maxOverlay; % scale to max
+imgVol(imgVol>1) = 1; % set everything larger than max to max
 [imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1=x1(1,:)';
@@ -93,24 +92,11 @@ elseif sliceThisDim==3
     % x and y stay the same
 end
 
-% Make the figure:
-if NrFigures > 1
-    figure('Position',[0 0 1000 500])
-    subplot(1,2,1)
-    imagesc(x1,y1,imgSlice1)
-    hold on
-    axis image
-    colormap gray 
-else
-    figure('Position',[0 0 500 500])
-end
 
-if NrFigures>1
-    subplot(1,2,2)
-end
+figure('Position',[0 0 500 500])
 
+subplot(1,5,[1:4])
 cm=colormap(jet);
-
 image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
 hold on
 axis image
@@ -124,3 +110,10 @@ end
 h=image(x1,y1,imgSlice1_color); % overlay colormap on image
 set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
 
+subplot(1,5,5),hold on
+cm_vals = 0:maxOverlay/(size(cm,1)-1):maxOverlay;
+for kk = 1:length(cm_vals)
+    plot([1],cm_vals(kk),'.','Color',cm(kk,:),'MarkerSize',40)
+end
+text(1.5,cm_vals(end),['>=' num2str(maxOverlay)])
+axis off

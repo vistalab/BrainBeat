@@ -157,6 +157,95 @@ end
 
 %% Whole brain measurement of reliability
 
+% Select a subject and scan nummer
+s_nr = 4;
+scan_nr = 3;
+
+roisToSegment = {[...
+    4 % left lateral ventricle
+    5 % left inferior lateral ventricle
+    14 % 3rd ventricle
+    15 % 4th ventricle
+    24 % CSF
+    31 % left choroid plexus
+    43 % right lateral ventricle
+    44 % right inferior lateral ventricle
+    63 % right choroid plexus
+    72],... % 5th ventricle
+    [2 % left white matter
+    41],... % right white matter
+    [3 % left gray matter
+    42]}; % right gray matter
+
+subs = bb_subs(s_nr);
+subj = subs.subj;
+scan = subs.scan{scan_nr};
+scanName = subs.scanName{scan_nr};
+fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+if ~exist(fmri,'file')
+    clear ni
+    error('filename %s does not exist',fmri)
+end
+ni = niftiRead(fmri);
+
+% load coregistration matrix for the functionals:
+load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+acpcXform = acpcXform_new; clear acpcXform_new
+
+% Get the MRVenogram:
+niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii.gz']));
+% load coregistration matrix (for the venogram):
+xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
+
+% Anatomical
+anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
+niAnatomy = niftiRead(anat);
+
+% COD even/odd
+ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
+ppgR = niftiRead(ppgRname); % correlation with PPG
+
+% Segmentation file:
+segName = fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']);
+niSeg = niftiRead(segName);
+ 
+% Veno file:
+venoName = fullfile(dDir,subj,scan,[scanName '_r_veno.nii.gz']);
+niVeno = niftiRead(venoName);
+
+% % Get voxels with mean signal above brain_th
+% brain_th = 50;
+% brain_vect = mean(ni.data(:,:,:,4:end),4);
+% brain_vect = brain_vect>brain_th;
+
+clear out
+
+totalNrVox = 0;
+for rr = 1:length(roisToSegment)
+    niROIcode = roisToSegment{rr};
+    voxels_inroi = ismember(niSeg.data(:),niROIcode);
+    out(rr).roi_ppgR = ppgR.data(voxels_inroi);
+    totalNrVox = totalNrVox+length(find(voxels_inroi>0));
+end
+
+voxels_inroi = niVeno.data(:)>500;
+out(rr+1).roi_ppgR = ppgR.data(voxels_inroi);
+
+r_th = .3;
+
+figure('Position',[0 0 500 400])
+hold on
+for rr = 1:length(out)
+    bar(rr,length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR));
+end
+
+
+
+
+
+%% OLD:
+%% Whole brain measurement of reliability
+
 %%% TODO: change this to include code from bb02_CreateROIs to get a better
 %%% estimate for voxels in each roi
 
