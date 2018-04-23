@@ -6,7 +6,7 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 %   niAnatomy: anatomical scan
 %   acpcXform: transformation matrix from nifti ijk to anatomy mm
 %
-%   varargin{1} = nr of figures: 2 plots the overlay additionally in a separate figure
+%   varargin{1} = maximum value of the overlay.
 %
 %%%% now overlay r-map with anatomy
 

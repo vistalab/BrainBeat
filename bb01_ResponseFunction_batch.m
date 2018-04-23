@@ -159,257 +159,119 @@ end
 
 % Select a subject and scan nummer
 s_nr = 4;
-scan_nr = 3;
 
-roisToSegment = {[...
-    4 % left lateral ventricle
-    5 % left inferior lateral ventricle
-    14 % 3rd ventricle
-    15 % 4th ventricle
-    24 % CSF
-    31 % left choroid plexus
-    43 % right lateral ventricle
-    44 % right inferior lateral ventricle
-    63 % right choroid plexus
-    72],... % 5th ventricle
-    [2 % left white matter
-    41],... % right white matter
-    [3 % left gray matter
-    42]}; % right gray matter
+for scan_nr = [1:9]
 
-subs = bb_subs(s_nr);
-subj = subs.subj;
-scan = subs.scan{scan_nr};
-scanName = subs.scanName{scan_nr};
-fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-if ~exist(fmri,'file')
-    clear ni
-    error('filename %s does not exist',fmri)
-end
-ni = niftiRead(fmri);
+    roisToSegment = {[...
+        4 % left lateral ventricle
+        5 % left inferior lateral ventricle
+        14 % 3rd ventricle
+        15 % 4th ventricle
+        24 % CSF
+        31 % left choroid plexus
+        43 % right lateral ventricle
+        44 % right inferior lateral ventricle
+        63 % right choroid plexus
+        72],... % 5th ventricle
+        [2 % left white matter
+        41],... % right white matter
+        [3 % left gray matter
+        42]}; % right gray matter
+    roiNames = {'CSF','WM','GM','Veno'};
 
-% load coregistration matrix for the functionals:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
-acpcXform = acpcXform_new; clear acpcXform_new
+    subs = bb_subs(s_nr);
+    subj = subs.subj;
+    scan = subs.scan{scan_nr};
+    scanName = subs.scanName{scan_nr};
+    fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+    if ~exist(fmri,'file')
+        clear ni
+        error('filename %s does not exist',fmri)
+    end
+    ni = niftiRead(fmri);
 
-% Get the MRVenogram:
-niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii.gz']));
-% load coregistration matrix (for the venogram):
-xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
+    % load coregistration matrix for the functionals:
+    load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+    acpcXform = acpcXform_new; clear acpcXform_new
 
-% Anatomical
-anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
-niAnatomy = niftiRead(anat);
+    % Get the MRVenogram:
+    niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii.gz']));
+    % load coregistration matrix (for the venogram):
+    xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
 
-% COD even/odd
-ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
-ppgR = niftiRead(ppgRname); % correlation with PPG
+    % Anatomical
+    anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
+    niAnatomy = niftiRead(anat);
 
-% Segmentation file:
-segName = fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']);
-niSeg = niftiRead(segName);
- 
-% Veno file:
-venoName = fullfile(dDir,subj,scan,[scanName '_r_veno.nii.gz']);
-niVeno = niftiRead(venoName);
+    % COD even/odd
+    ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
+    ppgR = niftiRead(ppgRname); % correlation with PPG
 
-% % Get voxels with mean signal above brain_th
-% brain_th = 50;
-% brain_vect = mean(ni.data(:,:,:,4:end),4);
-% brain_vect = brain_vect>brain_th;
+    % Segmentation file:
+    segName = fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']);
+    niSeg = niftiRead(segName);
 
-clear out
+    % Veno file:
+    venoName = fullfile(dDir,subj,scan,[scanName '_r_veno.nii.gz']);
+    niVeno = niftiRead(venoName);
 
-totalNrVox = 0;
-for rr = 1:length(roisToSegment)
-    niROIcode = roisToSegment{rr};
-    voxels_inroi = ismember(niSeg.data(:),niROIcode);
-    out(rr).roi_ppgR = ppgR.data(voxels_inroi);
-    totalNrVox = totalNrVox+length(find(voxels_inroi>0));
-end
+    % % Get voxels with mean signal above brain_th
+    % brain_th = 50;
+    % brain_vect = mean(ni.data(:,:,:,4:end),4);
+    % brain_vect = brain_vect>brain_th;
 
-voxels_inroi = niVeno.data(:)>500;
-out(rr+1).roi_ppgR = ppgR.data(voxels_inroi);
+    clear out
 
-r_th = .3;
-
-figure('Position',[0 0 500 400])
-hold on
-for rr = 1:length(out)
-    bar(rr,length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR));
-end
-
-
-
-
-
-%% OLD:
-%% Whole brain measurement of reliability
-
-%%% TODO: change this to include code from bb02_CreateROIs to get a better
-%%% estimate for voxels in each roi
-
-% Select a subject and scan nummer
-s_nr = 4;
-scan_nr = 9;
-
-subs = bb_subs(s_nr);
-subj = subs.subj;
-scan = subs.scan{scan_nr};
-scanName = subs.scanName{scan_nr};
-fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-if ~exist(fmri,'file')
-    clear ni
-    error('filename %s does not exist',fmri)
-end
-ni = niftiRead(fmri);
-
-% load coregistration matrix for the functionals:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
-acpcXform = acpcXform_new; clear acpcXform_new
-
-% Get the MRVenogram:
-niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii.gz']));
-% load coregistration matrix (for the venogram):
-xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
-
-% Anatomical
-anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
-niAnatomy = niftiRead(anat);
-
-% COD even/odd
-ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
-ppgR = niftiRead(ppgRname); % correlation with PPG
-
-% Get voxels with mean signal above brain_th
-brain_th = 50;
-brain_vect = mean(ni.data(:,:,:,4:end),4);
-brain_vect = brain_vect>brain_th;
-
-% Which percentage of voxels with mean signal above threshold had
-% replicable brain-beat curves?
-total_nr = length(find(brain_vect==1));
-
-r_th = .3;
-reliable_nr = length(find(brain_vect == 1 & ppgR.data>r_th));
-roisToSegmentNames = {...
-    'L_lat_ventr'
-    'L_inferior_lat_ventr'
-    '3rd_ventr'
-    '4th_ventr'
-    'CSF'
-    'L_choroid_plexus'
-    'R_lat_ventr'
-    'R_inferior_lat_ventr'
-    'R_choroid_plexus'
-    '5th_ventricle'
-    'L_white'
-    'L_gray'
-    'R_white'
-    'R_gray'};
-
-clear out
-
-for rr = 1:length(roisToSegmentNames)
-
-    niROIname = roisToSegmentNames{rr};
-    niROI = niftiRead(fullfile(dDir,subj,'freesurfer','nii',[niROIname '.nii.gz']));
-
-    % get ROI indices:
-    [xx,yy,zz] = ind2sub(size(niROI.data),find(niROI.data>0));
-
-    % now ROI indices to ACPC (mm):
-    xyz_acpc = mrAnatXformCoords(niROI.qto_xyz, [xx,yy,zz]);
-    clear xx yy zz % housekeeping
-
-    % now ACPC coordinates to functional indices:
-    ijk_func = mrAnatXformCoords(inv(acpcXform), xyz_acpc);
-    ijk_func = round(ijk_func); % round to get indices
-    ijk_func = unique(ijk_func,'rows'); % only take unique voxels
-
-    %%%% check for coordinates in functional space
-    z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
-    figure
-    for kk = 1:length(z_slice)       
-        subplot(3,4,kk)
-        imagesc(ni.data(:,:,z_slice(kk))),hold on
-        xyz_plot = ijk_func(ijk_func(:,3)==z_slice(kk),:);
-        plot(xyz_plot(:,2),xyz_plot(:,1),'r.')
-        axis image 
+    totalNrVox = 0;
+    for rr = 1:length(roisToSegment)
+        voxels_inroi = ismember(niSeg.data(:),roisToSegment{rr});
+        out(rr).roi_ppgR = ppgR.data(voxels_inroi);
+        totalNrVox = totalNrVox+length(find(voxels_inroi>0));
     end
 
-    % remove ijk smaller than 1 - indices do not fit in fMRI data
-    ijk_func(sum(ijk_func<1,2)==1,:) = [];
+    voxels_inroi = niVeno.data(:)>1000;
+    out(rr+1).roi_ppgR = ppgR.data(voxels_inroi);
 
-    out(rr).roi_ppgR = zeros(size(ijk_func,1),1);
-    for kk = 1:size(ijk_func,1)
-        out(rr).roi_ppgR(kk) = ppgR.data(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3));
-    end
+    r_th = .3;
+
+%     figure('Position',[0 0 180 200])
+%     hold on
+%     for rr = 1:length(out)
+%         bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR));
+%     end
+%     ylabel(['Percent voxels with R>' num2str(r_th,3)])
+%     set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames)
+%     title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
+%     xlim([0 length(out)+1]),ylim([0 100])
+%     grid on
+%     
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+%     print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+
+    % Look at all voxels with R>threshold, and show a pie-chart for how many
+    % are in each tissue type.
+    r_th = .3;
+    veno_th = 1000;
+    func_mean = mean(ni.data(:,:,:,5:end),4);
+    brain_th = mean(func_mean(:));
+    
+    allR = ppgR.data(:)>r_th & func_mean(:)>brain_th;
+    allVeno = allR(:) & niVeno.data(:)>veno_th & func_mean(:)>brain_th;
+    nrCSF = length(find(allR & ismember(niSeg.data(:),roisToSegment{1}) & ~allVeno));
+    nrWhite = length(find(allR & ismember(niSeg.data(:),roisToSegment{2}) & ~allVeno));
+    nrGray = length(find(allR & ismember(niSeg.data(:),roisToSegment{3}) & ~allVeno));
+    nrVeno = length(find(allVeno>0));
+    nrOther = length(find(allR>0)) - sum([nrCSF,nrWhite,nrGray,nrVeno]);
+
+    figure('Position',[0 0 200 200])
+    labels = {'Other','CSF','White','Gray','Veno'};
+    pie([nrOther,nrCSF,nrWhite,nrGray,nrVeno],labels) 
+    title(['flip angle = ' int2str(subs.scanFA{scan_nr})])
+
+    set(gcf,'PaperPositionMode','auto')
+    print('-painters','-r300','-dpng',[dDir './figures/reliable/pie_subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+    print('-painters','-r300','-depsc',[dDir './figures/reliable/pie_subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+
 end
 
-% Get venogram ROI
-niVeno.data = single(niVeno.data);
-% get ROI indices:
-[xx,yy,zz] = ind2sub(size(niVeno.data),find(niVeno.data>1500));
-
-% now ROI indices to ACPC (mm):
-xyz_acpc = mrAnatXformCoords(niVeno.qto_xyz, [xx,yy,zz]);
-clear xx yy zz % housekeeping
-
-% now ACPC coordinates to functional indices:
-ijk_func = mrAnatXformCoords(inv(acpcXform), xyz_acpc);
-ijk_func = round(ijk_func); % round to get indices
-ijk_func = unique(ijk_func,'rows'); % only take unique voxels
-%%% check for coordinates in functional space
-% z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
-% figure
-% for kk = 1:length(z_slice)       
-%     subplot(3,4,kk)
-%     imagesc(ni.data(:,:,z_slice(kk))),hold on
-%     xyz_plot = ijk_func(ijk_func(:,3)==z_slice(kk),:);
-%     plot(xyz_plot(:,2),xyz_plot(:,1),'r.')
-%     axis image 
-% end
-
-% remove ijk smaller than 1 - indices do not fit in fMRI data
-ijk_func(sum(ijk_func<1,2)==1,:) = [];
-
-out(rr+1).roi_ppgR = zeros(size(ijk_func,1),1);
-for kk = 1:size(ijk_func,1)
-    out(rr+1).roi_ppgR(kk) = ppgR.data(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3));
-end
-
-ROInames = {...
-    'lLV'
-    'lILV'
-    '3V'
-    '4V'
-    'CSF'
-    'lCh'
-    'rLV'
-    'rILV'
-    'rCh'
-    '5V'
-    'lW'
-    'lG'
-    'rW'
-    'rG'
-    'veno'};
-
-figure('Position',[0 0 500 400])
-hold on
-for rr = 1:length(ROInames)
-    bar(rr,length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR));
-end
-
-% Add total
-bar(rr+1,reliable_nr./total_nr)
-
-set(gca,'XTick',[1:rr+1],'XTickLabel',{ROInames{:},'all'})
-ylim([0 1])
-ylabel(['% voxels with R>' num2str(r_th,3)])
-title(['flip' int2str(subs.scanFA{scan_nr})])
-
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
