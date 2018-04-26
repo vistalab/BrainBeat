@@ -156,28 +156,115 @@ for s=2
 end
 
 %% Whole brain measurement of reliability
+clear all
+close all
+
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 4;
 
 for scan_nr = [1:9]
 
-    roisToSegment = {[...
-        4 % left lateral ventricle
-        5 % left inferior lateral ventricle
-        14 % 3rd ventricle
-        15 % 4th ventricle
-        24 % CSF
-        31 % left choroid plexus
-        43 % right lateral ventricle
-        44 % right inferior lateral ventricle
-        63 % right choroid plexus
-        72],... % 5th ventricle
-        [2 % left white matter
-        41],... % right white matter
-        [3 % left gray matter
-        42]}; % right gray matter
-    roiNames = {'CSF','WM','GM','Veno'};
+    roiNames = {'GM','WM','Ventricles','CSF','Veno'};
+
+    subs = bb_subs(s_nr);
+    subj = subs.subj;
+    scan = subs.scan{scan_nr};
+    scanName = subs.scanName{scan_nr};
+    fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+%     if ~exist(fmri,'file')
+%         clear ni
+%         error('filename %s does not exist',fmri)
+%     end
+%     ni = niftiRead(fmri);
+% 
+%     % load coregistration matrix for the functionals:
+%     load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+%     acpcXform = acpcXform_new; clear acpcXform_new
+        
+%     % Anatomical
+%     anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
+%     niAnatomy = niftiRead(anat);
+
+    % COD even/odd
+    ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
+    ppgR = niftiRead(ppgRname); % correlation with PPG
+
+    % Segmentation file:
+    segName = fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']);
+    niSeg = niftiRead(segName);
+
+    clear out
+
+    totalNrVox = 0;
+    for rr = 1:length(roiNames)
+        voxels_inroi = ismember(niSeg.data(:),rr);
+        out(rr).roi_ppgR = ppgR.data(voxels_inroi);
+        totalNrVox = totalNrVox+length(find(voxels_inroi>0));
+    end
+
+    figure('Position',[0 0 700 500])
+    subplot(2,2,1),hold on
+    r_th = 0.3;
+    for rr = 1:length(out)
+        bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR),'FaceColor',[.5 .5 .5]);
+    end
+    ylabel(['Percent voxels with R>' num2str(r_th,3)])
+    set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames)
+    title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
+    xlim([0 length(out)+1]),ylim([0 100])
+    grid on
+    
+
+    % Look at all voxels with R>threshold, and show a pie-chart for how many
+    % are in each tissue type.
+    subplot(2,2,2),hold on
+    nrGray = length(find(ppgR.data(:)>r_th & niSeg.data(:)==1));
+    nrWhite = length(find(ppgR.data(:)>r_th & niSeg.data(:)==2));
+    nrVentr = length(find(ppgR.data(:)>r_th & niSeg.data(:)==3));
+    nrCSF = length(find(ppgR.data(:)>r_th & niSeg.data(:)==4));
+    nrVeno = length(find(ppgR.data(:)>r_th & niSeg.data(:)==5));
+    
+    pie([nrGray,nrWhite,nrVentr,nrCSF,nrVeno],roiNames) 
+    axis square
+    title(['Location of ' int2str(length(find(ppgR.data(:)>r_th & niSeg.data(:)>0))) ' voxels with R>' num2str(r_th,3)])
+    axis off
+   
+    for kk = 1:5
+        subplot(2,5,5+kk)
+        hist(ppgR.data(niSeg.data(:)==kk),[0:.1:1])
+        h = findobj(gca,'Type','patch');
+        h.FaceColor = [.5 .5 .5];
+        xlim([0 1])
+        title(roiNames{kk})
+        xlabel('R'),ylabel('# voxels')
+    end
+    
+    set(gcf,'PaperPositionMode','auto')
+    print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+    print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+end
+
+%%
+%% Mean / std signals in different tissue types
+%%
+
+clear all
+close all
+
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
+% Select a subject and scan nummer
+s_nr = 4;
+
+figure('Position',[0 0 1000 400])
+scan_nrs = [1:9];
+for ss = scan_nrs
+    
+    scan_nr = scan_nrs(ss);
+    
+    roiNames = {'G','W','V','C','Veno'};
 
     subs = bb_subs(s_nr);
     subj = subs.subj;
@@ -189,89 +276,46 @@ for scan_nr = [1:9]
         error('filename %s does not exist',fmri)
     end
     ni = niftiRead(fmri);
-
-    % load coregistration matrix for the functionals:
-    load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
-    acpcXform = acpcXform_new; clear acpcXform_new
-
-    % Get the MRVenogram:
-    niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii.gz']));
-    % load coregistration matrix (for the venogram):
-    xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
-
-    % Anatomical
-    anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
-    niAnatomy = niftiRead(anat);
-
-    % COD even/odd
-    ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
-    ppgR = niftiRead(ppgRname); % correlation with PPG
+ 
+%     % load coregistration matrix for the functionals:
+%     load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+%     acpcXform = acpcXform_new; clear acpcXform_new
+        
+%     % Anatomical
+%     anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
+%     niAnatomy = niftiRead(anat);
 
     % Segmentation file:
-    segName = fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']);
+    segName = fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']);
     niSeg = niftiRead(segName);
-
-    % Veno file:
-    venoName = fullfile(dDir,subj,scan,[scanName '_r_veno.nii.gz']);
-    niVeno = niftiRead(venoName);
-
-    % % Get voxels with mean signal above brain_th
-    % brain_th = 50;
-    % brain_vect = mean(ni.data(:,:,:,4:end),4);
-    % brain_vect = brain_vect>brain_th;
 
     clear out
 
     totalNrVox = 0;
-    for rr = 1:length(roisToSegment)
-        voxels_inroi = ismember(niSeg.data(:),roisToSegment{rr});
-        out(rr).roi_ppgR = ppgR.data(voxels_inroi);
-        totalNrVox = totalNrVox+length(find(voxels_inroi>0));
+    for rr = 1:length(roiNames)
+        voxels_inroi = ismember(niSeg.data(:),rr);
+        niMean = mean(ni.data(:,:,:,10:end));
+        out(rr).mean = niMean(voxels_inroi);
     end
 
-    voxels_inroi = niVeno.data(:)>1000;
-    out(rr+1).roi_ppgR = ppgR.data(voxels_inroi);
-
-    r_th = .3;
-
-%     figure('Position',[0 0 180 200])
-%     hold on
-%     for rr = 1:length(out)
-%         bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR));
-%     end
-%     ylabel(['Percent voxels with R>' num2str(r_th,3)])
-%     set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames)
-%     title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
-%     xlim([0 length(out)+1]),ylim([0 100])
-%     grid on
-%     
-%     set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-%     print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-
-    % Look at all voxels with R>threshold, and show a pie-chart for how many
-    % are in each tissue type.
-    r_th = .3;
-    veno_th = 1000;
-    func_mean = mean(ni.data(:,:,:,5:end),4);
-    brain_th = mean(func_mean(:));
     
-    allR = ppgR.data(:)>r_th & func_mean(:)>brain_th;
-    allVeno = allR(:) & niVeno.data(:)>veno_th & func_mean(:)>brain_th;
-    nrCSF = length(find(allR & ismember(niSeg.data(:),roisToSegment{1}) & ~allVeno));
-    nrWhite = length(find(allR & ismember(niSeg.data(:),roisToSegment{2}) & ~allVeno));
-    nrGray = length(find(allR & ismember(niSeg.data(:),roisToSegment{3}) & ~allVeno));
-    nrVeno = length(find(allVeno>0));
-    nrOther = length(find(allR>0)) - sum([nrCSF,nrWhite,nrGray,nrVeno]);
-
-    figure('Position',[0 0 200 200])
-    labels = {'Other','CSF','White','Gray','Veno'};
-    pie([nrOther,nrCSF,nrWhite,nrGray,nrVeno],labels) 
-    title(['flip angle = ' int2str(subs.scanFA{scan_nr})])
-
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',[dDir './figures/reliable/pie_subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-    print('-painters','-r300','-depsc',[dDir './figures/reliable/pie_subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-
+    subplot(1,length(scan_nrs),ss),hold on
+    r_th = 0.3;
+    for rr = 1:length(out)
+        bar(rr,mean(out(rr).mean),'FaceColor',[.5 .5 .5]);
+        errorbar(rr,mean(out(rr).mean),2*std(out(rr).mean)./sqrt(length(out(rr).mean)),'k');
+    end
+    
+    set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames,'YTick',[1500:500:4000],'YTickLabel',[])
+    title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
+    xlim([0 length(out)+1]),ylim([1500 4000])
+    grid on
 end
+
+subplot(1,length(scan_nrs),1),hold on
+ylabel(['Mean signal'])
+set(gca,'YTick',[1500:500:4000],'YTickLabel',{'','2000','','3000','','4000'})
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
+print('-painters','-r300','-depsc',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
 

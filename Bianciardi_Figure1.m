@@ -21,7 +21,8 @@ T2s = 1; % displays are for TE = 0, T2s can be anything as equations have TE/T2s
 tt = 1; % tissue type: 1=blood 2=WM 3=GM 4=CSF
 
 %%
-figure,hold on
+
+% figure,hold on
 for FA = FA_all
     
     G = 1; % a gain factor

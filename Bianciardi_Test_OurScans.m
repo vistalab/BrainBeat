@@ -16,11 +16,11 @@ TR = 0.250;
 V = 0:0.01:11; % cm/s
 Vc = 0.4/TR; % ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
 
-% Tissue parameters [WM GM CSF] from Bianciardi at 7T
-% T1 = [1.2 2.1 4.4]; % seconds longitudinal recovery rate
+% Tissue parameters [WM GM CSF blood] from Bianciardi at 7T
+T1 = [1.2 2.1 4.4 1.7]; % seconds longitudinal recovery rate
 
 % % Tissue parameters [WM GM CSF] from Bianciardi at 3T
-T1 = [0.8 1.3 4.4]; % seconds longitudinal recovery rate
+% T1 = [0.8 1.3 4.4]; % seconds longitudinal recovery rate
 % T1=[0.9  1.67  4]; % old: previous used longitudinal recovery rate 
 
 PD = [0.7 0.85 1]; % this is not used in Bianciardi
@@ -70,9 +70,12 @@ end
 figure('Position',[0 300 800 400])
 plot(Mxy')
 ylim([0 1])
-
+legend({'WM','GM','CSF'})
+xlabel('flip angle')
 
 %%
+FA_deg = [5 20 36 48 90]; % flip angle in degrees to plot
+FA_all = (FA_deg*2*pi)/360; % flip angle in radians
 
 figure('Position',[0 300 800 400])
 tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
