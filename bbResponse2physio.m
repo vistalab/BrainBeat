@@ -12,7 +12,7 @@ function [response_matrix,t,response_matrix_odd,response_matrix_even,response_ma
 %
 % [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
 
-% Written by Dora, Copyright Vistasoft Team 2014
+% DHermes, Copyright Vistasoft Team 2014
 
 if ~exist('slices','var') % do whole brain
     slices=[1:size(ni.data,3)];

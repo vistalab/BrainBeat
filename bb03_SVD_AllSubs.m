@@ -184,17 +184,17 @@ ni_r.data(ni_r.data<0.2) = 0;
 % bbOverlayDotsAnat(ni_r,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
 
 niColor = [1 0 0;0 0 1; 0 1 0];
-R_th = 0.5;
+R_th = 0.3;
 niIntensity = ni;
 niIntensity.data = zeros(size(ppgR.data));
 niIntensity.data(ni_r.data<R_th) = 0;
 niIntensity.data(beta_weights(:,1)>0 & r_weights>=R_th) = 3;
 niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)>0 & r_weights>=R_th) = 1;
 niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)<0 & r_weights>=R_th) = 2;
-
+%%
 figure
 sliceThisDim = 1;
-curPos = [-1 17 28];%[-1/-9 18 28] % zero
+curPos = [-20 -14 36];%[-1/-9 18 28] % zero
 bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
 
 %%
@@ -207,4 +207,50 @@ ni2.data = ni2.data(:,:,:,1);
 ni2.data(:) = beta_weights(:,2);
 bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 
+%% plot beta weights for different tissue types
+
+% Segmentation file:
+segName = fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']);
+niSeg = niftiRead(segName);
+
+r_th = .3;
+clear pc1w pc1w
+
+for kk = 1:5
+    pc1w(kk).beta = ni1.data(niSeg.data==kk & ppgR.data>r_th);
+    pc2w(kk).beta = ni2.data(niSeg.data==kk & ppgR.data>r_th);
+end
+
+roiNames = {'GM','WM','Ventricles','CSF','Veno'};
+figure('Position',[0 0 400 150])
+for kk = 1:5
+    subplot(1,5,kk),hold on
+    histogram(pc1w(kk).beta,[-2.5:.4:2.5],'FaceColor',[.7 .7 .7])
+    xlim([-2.5 2.5])
+    title(roiNames{kk})
+end
+subplot(1,5,1)
+ylabel(['number of voxels R>' num2str(r_th,3)])
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
+print('-painters','-r300','-depsc',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
+
+%%
+figure
+for kk = 1:5
+    subplot(1,5,kk),hold on
+    hist(pc1w(kk).beta,[-2.5:.4:2.5])
+    xlim([-2.5 2.5])
+    title(roiNames{kk})
+    
+%     subplot(2,5,5+kk),hold on
+%     hist(pc2w(kk).beta,[-2.5:.2:2.5])
+% %     xlim([-2.5 2.5])
+%     title(roiNames{kk})
+end
+
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
+% print('-painters','-r300','-depsc',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
 
