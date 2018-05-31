@@ -85,12 +85,12 @@ ppgTSname = fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']);
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']),'t');
 
-
 %% 
 
-exampl_coords = [27 51 20];
+exampl_coords = [27 51 20];%[27 51 20] = superior saggital sinus
+plot_nrs = [13:2:20]; % heartbeat nrs to plot
 
-figure
+figure('Position',[0 0 250 400])
 
 slices=[1:size(ni.data,3)];
 
@@ -105,7 +105,7 @@ ppg_onsets = physioGet(physio,'ppg peaks');
 
 % epoch definitions
 epoch_pre = .5;%sec pre-onset
-epoch_post = 2;%sec post-onset
+epoch_post = 1;%sec post-onset
 
 step_size = 1/srate/mux_f;% in s
 srate_epochs = 1/step_size;
@@ -115,14 +115,6 @@ t_vox = min(timing(:)):step_size:max(timing(:)); % maximal timing accuracy for t
 % only use those ppg onsets that have an entire trial before and after
 ppg_onsets = ppg_onsets((ppg_onsets-epoch_pre)>1); % get rid of early ones, and the first scans
 ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of late ones
-
-% initiate output matrix to fill:
-response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
-response_matrix_std = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
-response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
-response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
-
-figure
 
 for s = exampl_coords(3)%1:length(slices)
     disp(['slice ' int2str(s) ' of ' int2str(length(slices))])
@@ -152,11 +144,22 @@ for s = exampl_coords(3)%1:length(slices)
 
     subplot(4,1,1),hold on
     plot([1:length(physio.ppg.data)]./physio.ppg.srate,physio.ppg.data,'k')
-    plot(ppg_onsets,physio.ppg.data(round(ppg_onsets*physio.ppg.srate)),'ro')
-
+    %  plot(ppg_onsets,physio.ppg.data(round(ppg_onsets*physio.ppg.srate)),'ko','MarkerSize',10)
+    plot([ppg_onsets ppg_onsets],[-20 50],'k:') 
+    xlim([ppg_onsets(plot_nrs(1))-epoch_pre ppg_onsets(plot_nrs(end)+1)+epoch_post])
+    title('PPG signal')
+    ylim([-20 50])
+    
     subplot(4,1,2),hold on
-    plot(t_sli,squeeze(ni.data(exampl_coords(1),exampl_coords(2),exampl_coords(3),:)),'k');
-
+    plot(t_sli,squeeze(d(exampl_coords(1),exampl_coords(2),:)),...
+        'Color',[.3 .3 .3]);
+    plot(t_sli,squeeze(d(exampl_coords(1),exampl_coords(2),:)),...
+        '.','Color',[.3 .3 .3]);
+    xlim([ppg_onsets(plot_nrs(1))-epoch_pre ppg_onsets(plot_nrs(end)+1)+epoch_post])
+%     plot(ppg_onsets,0,'ko','MarkerSize',10)
+    plot([ppg_onsets ppg_onsets],[-.8 .5],'k:') 
+    title('T2^* signal')
+    ylim([-.8 .5])
     
     % get the upsampled (NaN) of this slice
     d_up = single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
@@ -169,34 +172,116 @@ for s = exampl_coords(3)%1:length(slices)
         [~,ppg_find] = min(abs(t_vox-ppg_onsets(kk)));
         temp_response_matrix(:,:,:,kk) = d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
-    
-    plot_colors = lines(8);
-    plot_nrs = [51:58];
-    for kk = 1:length(plot_nrs)
-        plot_nr = plot_nrs(kk);
-        subplot(4,1,3),hold on
-        t_physio = [-epoch_pre*physio.ppg.srate:epoch_post*physio.ppg.srate]./physio.ppg.srate;
-        plot(t_physio,...
-            physio.ppg.data(round(ppg_onsets(plot_nr)*physio.ppg.srate)-(epoch_pre*physio.ppg.srate):...
-            round(ppg_onsets(plot_nr)*physio.ppg.srate)+(epoch_post*physio.ppg.srate)),...
-            'Color',plot_colors(kk,:))
-        xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
 
-        subplot(4,1,4),hold on
-        t_mri = [1:size(temp_response_matrix,3)]./(mux_f*srate)-epoch_pre;
-        plot(t_mri,...
-            squeeze(temp_response_matrix(exampl_coords(1),exampl_coords(2),:,plot_nr)),...
-            '.','Color',plot_colors(kk,:))
-        xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+    t_mri = [1:size(temp_response_matrix,3)]./(mux_f*srate)-epoch_pre;
+    
+    % code for plotting ppg for each trial:
+%     for kk = 1:length(plot_nrs)
+%     plot_nr = plot_nrs(kk);
+%         subplot(4,2,5),hold on
+%         t_physio = [-epoch_pre*physio.ppg.srate:epoch_post*physio.ppg.srate]./physio.ppg.srate;
+%         plot(t_physio,...
+%             physio.ppg.data(round(ppg_onsets(plot_nr)*physio.ppg.srate)-(epoch_pre*physio.ppg.srate):...
+%             round(ppg_onsets(plot_nr)*physio.ppg.srate)+(epoch_post*physio.ppg.srate)),...
+%             'Color',plot_colors(kk,:))
+%         xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+%     end
+    plot_colors = lines(8);
+    
+    subplot(4,2,5),hold on
+    for kk = 1:length(t_mri)
+        if mod(kk,2)==0
+            x_fill = [t_mri(kk)-.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)-.5*mean(diff(t_mri))];
+            fill(x_fill,[-1 -1 1 1],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
+        end
     end
+    clear x_fill
+    for kk = 1:length(plot_nrs) % even trials
+        plot_nr = plot_nrs(kk);
+        data_plot = squeeze(temp_response_matrix(exampl_coords(1),exampl_coords(2),:,plot_nr));
+        plot(t_mri(~isnan(data_plot)),data_plot(~isnan(data_plot)),...
+            'Color',[.3 .3 .3])
+        plot(t_mri,data_plot,...
+            '.','Color',[.3 .3 .3],'MarkerSize',10)%,plot_colors(kk,:))
+    end
+    xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+    ylim([-.8 .5])
+    plot([0 0],[-.8 .5],'k:')
     
-    clear d_up d
+    subplot(4,2,6),hold on % odd trials
+    for kk = 1:length(t_mri)
+        if mod(kk,2)==0
+            x_fill = [t_mri(kk)-.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)-.5*mean(diff(t_mri))];
+            fill(x_fill,[-1 -1 1 1],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
+        end
+    end
+    clear x_fill
+    for kk = 1:length(plot_nrs)
+        plot_nr = plot_nrs(kk)+1;
+        data_plot = squeeze(temp_response_matrix(exampl_coords(1),exampl_coords(2),:,plot_nr));
+        plot(t_mri(~isnan(data_plot)),data_plot(~isnan(data_plot)),...
+            'Color',[.3 .3 .3])
+        plot(t_mri,data_plot,...
+            '.','Color',[.3 .3 .3],'MarkerSize',10)%,plot_colors(kk,:))
+    end
+    xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+    ylim([-.8 .5])
+    plot([0 0],[-.8 .5],'k:')
     
-    % output:
-    response_matrix(:,:,s,:) = nanmean(temp_response_matrix,4);
-    response_matrix_std(:,:,s,:) = nanstd(temp_response_matrix,[],4);
-    response_matrix_odd(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
-    response_matrix_even(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
+    subplot(4,2,7),hold on
+    for kk = 1:length(t_mri)
+        if mod(kk,2)==0
+            x_fill = [t_mri(kk)-.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)-.5*mean(diff(t_mri))];
+            fill(x_fill,[-1 -1 1 1],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
+        end
+    end
+    data_plot_even = nanmean(squeeze(temp_response_matrix(exampl_coords(1),exampl_coords(2),:,[2:2:end])),2);
+    plot(t_mri,data_plot_even,...
+        '-','Color',[0 0 0],'LineWidth',1)
+    plot(t_mri,data_plot_even,...
+        '.','Color',[0 0 0],'MarkerSize',10)
+    xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+    title('average even')
+    ylim([-.8 .5])
+    plot([0 0],[-.8 .5],'k:')
+
+    subplot(4,2,8),hold on
+    for kk = 1:length(t_mri)
+        if mod(kk,2)==0
+            x_fill = [t_mri(kk)-.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)+.5*mean(diff(t_mri)) t_mri(kk)-.5*mean(diff(t_mri))];
+            fill(x_fill,[-1 -1 1 1],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
+        end
+    end
+    data_plot_odd = nanmean(squeeze(temp_response_matrix(exampl_coords(1),exampl_coords(2),:,[1:2:end])),2);
+    plot(t_mri,data_plot_odd,...
+        '-','Color',[0 0 0],'LineWidth',1)
+    plot(t_mri,data_plot_odd,...
+        '.','Color',[0 0 0],'MarkerSize',10)
+    xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
+    title('average odd')
+    ylim([-.8 .5])
+    plot([0 0],[-.8 .5],'k:')
+%     clear d_up d
     
-    clear temp_response_matrix
 end
+
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces'])
+% print('-painters','-r300','-depsc',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces'])
+%%
+
+
+curPos = mrAnatXformCoords(acpcXform,exampl_coords); % xyz coordinates
+imDims = [-90 -120 -100; 90 130 110];
+
+niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the mean functional
+[imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
+
+figure
+image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
+hold on
+axis image
+plot(curPos(1),curPos(2),'w*','MarkerSize',10)
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces_Location'])

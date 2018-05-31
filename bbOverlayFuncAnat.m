@@ -1,4 +1,4 @@
-function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
+function [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,varargin)
 % Function to plot a functional and overlay with the anatomy
 
 % Inputs: 
@@ -8,6 +8,10 @@ function [] = bbOverlayFuncAnat(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPo
 %
 %   varargin{1} = maximum value of the overlay.
 %
+% Outputs:
+% imgSlice: anatomical slide
+% imgSlice1: overlay in the same space
+% 
 %%%% now overlay r-map with anatomy
 
 % % then use dtiGetSlice to get the same slice from 2 sets
@@ -117,3 +121,5 @@ for kk = 1:length(cm_vals)
 end
 text(1.5,cm_vals(end),['>=' num2str(maxOverlay)])
 axis off
+
+subplot(1,5,[1:4])

@@ -16,10 +16,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-for s = 4
+for s = 5
     s_info = bb_subs(s);
     subj = s_info.subj;
-    for scan_nr = [2 4 5 7 8]%:length(s_info.scan)
+    for scan_nr = [1]%:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -62,7 +62,7 @@ for s = 4
         clear ni1
     end
     
-    for scan_nr = [1:9]%1:length(s_info.scan)
+    for scan_nr = [1]%1:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -157,12 +157,12 @@ end
 
 %% Whole brain measurement of reliability
 clear all
-close all
+% close all
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
-s_nr = 4;
+s_nr = 2;
 
 for scan_nr = 3%[1:3]
 
@@ -205,8 +205,8 @@ for scan_nr = 3%[1:3]
     end
 
     figure('Position',[0 0 700 500])
-    subplot(2,2,1),hold on
-    r_th = 0.3;
+    subplot(3,2,1),hold on
+    r_th = 0.5;
     for rr = 1:length(out)
         bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR),'FaceColor',[.5 .5 .5]);
     end
@@ -218,7 +218,7 @@ for scan_nr = 3%[1:3]
 
     % Look at all voxels with R>threshold, and show a pie-chart for how many
     % are in each tissue type.
-    subplot(2,2,2),hold on
+    subplot(3,2,2),hold on
     nrGray = length(find(ppgR.data(:)>r_th & niSeg.data(:)==1));
     nrWhite = length(find(ppgR.data(:)>r_th & niSeg.data(:)==2));
     nrVentr = length(find(ppgR.data(:)>r_th & niSeg.data(:)==3));
@@ -231,7 +231,7 @@ for scan_nr = 3%[1:3]
     axis off
    
     for kk = 1:5
-        subplot(2,5,5+kk)
+        subplot(3,5,5+kk)
         hist(ppgR.data(niSeg.data(:)==kk),[0:.1:1])
         h = findobj(gca,'Type','patch');
         h.FaceColor = [.5 .5 .5];
@@ -240,6 +240,39 @@ for scan_nr = 3%[1:3]
         xlabel('R'),ylabel('# voxels')
     end
     
+    
+    % load even and odd responses:
+    ni_odd = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
+    ni_even = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
+    load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
+
+    for kk = 1:5
+        subplot(6,5,20+kk),hold on
+        
+        oddSignals = reshape(ni_odd.data,prod(ni_odd.dim(1:3)),prod(ni_odd.dim(4)));        
+        oddThisTissue = oddSignals(ppgR.data(:)>r_th & niSeg.data(:)==kk,:);
+        
+        plot(t,oddThisTissue)
+        xlim([min(t) max(t)])
+        ylim([-0.5 .5])
+    end
+    
+    for kk = 1:5
+        subplot(6,5,25+kk),hold on
+        % rescale:
+        oddSignals = ni_odd.data ./ repmat(max(abs(ni_odd.data),[],4),[1,1,1,size(ni_odd.data,4)]);
+        % Multiply by correlation size (absolute)
+        oddSignals = oddSignals .* abs(repmat(ppgR.data,[1,1,1,size(oddSignals,4)]));
+        
+        oddSignals = reshape(oddSignals,prod(ni_odd.dim(1:3)),prod(ni_odd.dim(4)));        
+        oddThisTissue = oddSignals(ppgR.data(:)>r_th & niSeg.data(:)==kk,:);
+        
+        plot(t,oddThisTissue,'Color',[.7 .7 .7])
+        plot(t,median(oddThisTissue),'k','LineWidth',2)
+        
+        xlim([min(t) max(t)])
+%         ylim([-0.5 .5])
+    end
 %     set(gcf,'PaperPositionMode','auto')
 %     print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
 %     print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
@@ -310,25 +343,27 @@ for ss = scan_nrs
     title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
     xlim([0 length(out)+1]),ylim([1500 4000])
     grid on
+    
+    
 end
 
 subplot(1,length(scan_nrs),1),hold on
 ylabel(['Mean signal'])
 set(gca,'YTick',[1500:500:4000],'YTickLabel',{'','2000','','3000','','4000'})
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
-print('-painters','-r300','-depsc',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
+% print('-painters','-r300','-dpng',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
+% print('-painters','-r300','-depsc',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
 
 
 %%
 %% Reliability in SPM segmentation
 clear all
-close all
+% close all
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
-s_nr = 4;
+s_nr = 3;
 
 for scan_nr = 3%[1:3]
 
@@ -369,7 +404,7 @@ for scan_nr = 3%[1:3]
     end
 
     figure('Position',[0 0 700 500])
-    subplot(2,2,1),hold on
+    subplot(3,2,1),hold on
     r_th = 0.5;
     for rr = 1:length(out)
         bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR),'FaceColor',[.5 .5 .5]);
@@ -382,7 +417,7 @@ for scan_nr = 3%[1:3]
 
     % Look at all voxels with R>threshold, and show a pie-chart for how many
     % are in each tissue type.
-    subplot(2,2,2),hold on
+    subplot(3,2,2),hold on
     nrGray = length(find(ppgR.data(:)>r_th & niSPM.data(:)==1));
     nrWhite = length(find(ppgR.data(:)>r_th & niSPM.data(:)==2));
     nrCSF = length(find(ppgR.data(:)>r_th & niSPM.data(:)==3));
@@ -393,13 +428,28 @@ for scan_nr = 3%[1:3]
     axis off
    
     for kk = 1:length(out)
-        subplot(2,length(out),length(out)+kk)
+        subplot(3,length(out),length(out)+kk)
         hist(ppgR.data(niSPM.data(:)==kk),[0:.1:1])
         h = findobj(gca,'Type','patch');
         h.FaceColor = [.5 .5 .5];
         xlim([0 1])
         title(roiNames{kk})
         xlabel('R'),ylabel('# voxels')
+    end
+    
+    % load even and odd responses:
+    ni_odd = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
+    ni_even = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
+    load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
+
+    for kk = 1:length(out)
+        subplot(3,length(out),2*length(out)+kk),hold on
+        
+        oddSignals = reshape(ni_odd.data,prod(ni_odd.dim(1:3)),prod(ni_odd.dim(4)));        
+        oddThisTissue = oddSignals(ppgR.data(:)>r_th & niSPM.data(:)==kk,:);
+        
+        plot(t,oddThisTissue)
+        xlim([min(t) max(t)])
     end
     
 %     set(gcf,'PaperPositionMode','auto')

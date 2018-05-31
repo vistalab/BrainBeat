@@ -97,5 +97,39 @@ switch subj
         subs.scan{12} ='11_1_HB8_025s_4mm_FA48';  % subject awake, eyes closed
         subs.scanName{12}='17178_11_1';
         subs.scanFA{12}=48;
+    case 5
+        %v people at scan: Hua Wu and Dora Hermes
+        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
+        subs.subj = '20180529_17677';    % Date _ Time out of NIMS
+        subs.anat = '11_1_T1w_1mm_sag';   % Anatomical data
+        subs.anatName = '17677_11_1';
+        subs.veno = '12_1_2D_MRV';   % Venogram data
+        subs.venoName = '17677_12_1';
+        
+        % mux 4 mm scans
+        subs.scan{1} = '4_1_mux8_25s_4mmFA48';  % subject awake, eyes open, watching a movie
+        subs.scanName{1} = '17677_4_1';
+        subs.scanFA{1} = 48;
+        
+        % mux 4 mm scans reverse order 
+        subs.scan{2} = '5_1_mux8_25s_4mmFA20';  % subject awake, eyes open, watching a movie
+        subs.scanName{2} = '17677_5_1';
+        subs.scanFA{2} = 48;
+        
+        % 3 mm voxel
+        subs.scan{3} = '9_1_mux8_25s_4mmFA20';  % subject awake, eyes open, watching a movie
+        subs.scanName{3} = '17677_9_1';
+        subs.scanFA{3} = 48;
+        
+        % mux 4 mm scans, double echo
+        subs.scan{4} = ' 6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{4} = '';
+        subs.scanFA{4} = 48;
+        
+        subs.scan{5} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{5} = '';
+        subs.scanFA{5} = 48;
+        
+        % GE hyperband, did not run, don't know why
         
 end
