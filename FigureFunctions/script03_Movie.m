@@ -42,10 +42,10 @@ acpcXform = acpcXform_new; clear acpcXform_new
 
 %% Anatomicals
 
-anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii']);
+anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
 niAnatomy = niftiRead(anat);
 
-%% Overlay between functionals and anatomy
+%% Scale timeseries to R to get ready for overlay
 
 sliceThisDim = 1;
 if s_nr == 2
@@ -76,7 +76,7 @@ movieName = [dDir 'movies/PPGtimeseries/sub-' int2str(s_nr) '_scan-' int2str(sca
 bbOverlayFuncAnatMovie(ppgTSplot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,movieName,t)
 
 %% Movie with dots
-movieName = [dDir 'movies/PPGtimeseries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_dots'];
+movieName = [dDir 'movies/PPGtimeseries/smooth_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_dots'];
 
 bbOverlayDotsAnatMovie(ppgTSplot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,movieName,t)
 

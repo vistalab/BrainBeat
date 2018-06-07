@@ -19,7 +19,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 for s = 5
     s_info = bb_subs(s);
     subj = s_info.subj;
-    for scan_nr = [1]%:length(s_info.scan)
+    for scan_nr = [2]%:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -62,7 +62,7 @@ for s = 5
         clear ni1
     end
     
-    for scan_nr = [1]%1:length(s_info.scan)
+    for scan_nr = [2]%1:length(s_info.scan)
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -289,11 +289,11 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
-s_nr = 4;
+s_nr = 2;
 
 figure('Position',[0 0 1000 400])
-scan_nrs = [1:9];
-for ss = scan_nrs
+scan_nrs = [3];
+for ss = 1:length(scan_nrs)
     
     scan_nr = scan_nrs(ss);
     
@@ -341,7 +341,7 @@ for ss = scan_nrs
     
     set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames,'YTick',[1500:500:4000],'YTickLabel',[])
     title(['flip angle = ' int2str(subs.scanFA{scan_nr}) ])
-    xlim([0 length(out)+1]),ylim([1500 4000])
+    xlim([0 length(out)+1])%,ylim([1500 4000])
     grid on
     
     
@@ -363,11 +363,12 @@ clear all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
-s_nr = 3;
+s_nr = 5;
 
-for scan_nr = 3%[1:3]
+for scan_nr = 1%[1:3]
 
     roiNames = {'GM','WM','CSF'};
+    roiColormap = ([.5 .5 .5;1 1 1;0 .4 .8]);
 
     subs = bb_subs(s_nr);
     subj = subs.subj;
@@ -404,10 +405,10 @@ for scan_nr = 3%[1:3]
     end
 
     figure('Position',[0 0 700 500])
-    subplot(3,2,1),hold on
+    subplot(3,5,1),hold on
     r_th = 0.5;
     for rr = 1:length(out)
-        bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR),'FaceColor',[.5 .5 .5]);
+        bar(rr,100*length(find(out(rr).roi_ppgR>r_th))./length(out(rr).roi_ppgR),'FaceColor',roiColormap(rr,:));
     end
     ylabel(['Percent voxels with R>' num2str(r_th,3)])
     set(gca,'XTick',[1:length(out)],'XTickLabel',roiNames)
@@ -424,6 +425,7 @@ for scan_nr = 3%[1:3]
     
     pie([nrGray,nrWhite,nrCSF],roiNames) 
     axis square
+    colormap(roiColormap)
     title(['Location of ' int2str(length(find(ppgR.data(:)>r_th & niSPM.data(:)>0))) ' voxels with R>' num2str(r_th,3)])
     axis off
    
@@ -448,11 +450,12 @@ for scan_nr = 3%[1:3]
         oddSignals = reshape(ni_odd.data,prod(ni_odd.dim(1:3)),prod(ni_odd.dim(4)));        
         oddThisTissue = oddSignals(ppgR.data(:)>r_th & niSPM.data(:)==kk,:);
         
-        plot(t,oddThisTissue)
+        plot(t,100*oddThisTissue)
         xlim([min(t) max(t)])
+        ylabel('percent change')
     end
     
-%     set(gcf,'PaperPositionMode','auto')
-%     print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-%     print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+    set(gcf,'PaperPositionMode','auto')
+    print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+    print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
 end

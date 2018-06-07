@@ -94,6 +94,22 @@ a = [zeros(10,1) zeros(10,1) (0:1/9:1)'];
 cm2 = [a; cm2];
 cm = [cm1(end:-1:1,:); cm2];
 
+% cm = hot(210);
+
+%% Upsample timeseries (imgSlice1)
+
+upFactor = 4;
+tUp = interp(t,upFactor);
+imgSliceUp = zeros(size(imgSlice1,1),size(imgSlice1,2),length(tUp));
+
+for kx = 1:size(imgSlice1,1)
+    for ky = 1:size(imgSlice1,2)
+        imgSliceUp(kx,ky,:) = interp(squeeze(imgSlice1(kx,ky,:)),upFactor);
+        %imgSliceUp(kx,ky,:) = smooth(imgSliceUp(kx,ky,:),20); %maybe smooth
+    end
+end
+    
+
 %%
 fid = figure('Position',[0 0 500 500]);
 
@@ -101,7 +117,7 @@ vidObj = VideoWriter(videoName,'MPEG-4'); %
 
 open(vidObj); 
 
-for kk = 1:size(ni.data,4) % loop over 4th dimension in the nifti
+for kk = 1:size(imgSliceUp,3) % loop over time
     % Background:
     imagesc(x,y,imgSlice/max(imgSlice(:)));
     set(gca,'CLim',[0 .3])
@@ -110,34 +126,40 @@ for kk = 1:size(ni.data,4) % loop over 4th dimension in the nifti
     colormap gray
     
     % Overlay:
-    currentSlice = imgSlice1(:,:,kk);
+    currentSlice = imgSliceUp(:,:,kk);
     % Plot dots on image
-    for kx=1:size(currentSlice,1)
-        for mx=1:size(currentSlice,2)
+    for kx = 1:size(currentSlice,1)
+        for mx = 1:size(currentSlice,2)
             % get plotting location
             k_x = y1(kx);
             m_y = x1(mx);
 
             val_plot = currentSlice(kx,mx);
+            if val_plot > 1
+                val_plot = 1;
+            elseif val_plot < -1
+                val_plot = -1;
+            end
 
-            c_use=cm(ceil(val_plot*99.5)+100,:); % fot plotting plus and min
+            c_use = cm(ceil(val_plot*99.5)+100,:); % fot plotting plus and min
 
             plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
         end
     end
     
-    title(['t = ' num2str(t(kk),3)])
+    title(['t = ' num2str(tUp(kk),3)])
     
     % Let the number of frames to write depend on the timing, such that
     % peaks can be emphasized
-    if t(kk)>-0.3 && t(kk)<0.3 
-        nr_frames = 20;
-    else
-        nr_frames = 5;
-    end
+    nr_frames = 1;
+%     if t(kk)>-0.3 && t(kk)<0.3 
+%         nr_frames = 20;
+%     else
+%         nr_frames = 5;
+%     end
     
     % Write each frame to the file
-    for m=1:nr_frames % write X frames: decides speed
+    for m = 1:nr_frames % write X frames: decides speed
         writeVideo(vidObj,getframe(fid));
     end
     

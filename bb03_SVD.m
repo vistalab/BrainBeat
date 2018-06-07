@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 4;
+s_nr = 5;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
@@ -33,7 +33,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 3;
+scan_nr = 1;
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -124,6 +124,8 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft'])
 
 %% Resample the eigenvectors and test whether they span a subspace
+%% Save for later use
+
 figure
 subplot(2,1,1),hold on
 plot(u(:,1:2))
@@ -240,18 +242,18 @@ bbOverlayFuncAnat(meanSig,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 %% put output in structures:
 % put 2 components weights in a matrix
 out = [];
-for k=1:2
+for k=1:3
     out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 end
 
 % %%%%% MODEL WITH 2 COMPONENTS:
 pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
-svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(ppgTS.data,4)]);
+svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(pred,2)]);
 
 %%%%% MODEL ERROR
 % train and test-sets
-train_set = reshape(ppgTS.data,[prod(ppgTS.dim(1:3)) ppgTS.dim(4)]);
-test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
+train_set = reshape(ppgTS.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTS.dim(1:3)) size(pred,2)]);
+test_set = reshape(ppgTSeven.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTSeven.dim(1:3)) size(pred,2)]);
 % test-retest error
 test_train_error = sqrt(sum((test_set - train_set).^2,2));
 % model error
@@ -312,6 +314,9 @@ elseif s_nr == 3
 elseif s_nr == 4
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [-2 4 30];%[x x 38]
+elseif s_nr == 5
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [1 18 53];
 end
 
 % Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the

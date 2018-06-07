@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % this can work well for FA=25, but not for FA=36/48, thus: allign FA=25,
 % and align 36/48 to FA=25 with code further below
  
-for s = 4
+for s = 5
     s_info = bb_subs(s);
     subj=s_info.subj;
 
@@ -27,7 +27,7 @@ for s = 4
 
     %%%%% coregister the functionals to the T1:
 
-    for scan_nr = 9
+    for scan_nr = 5
         scan=s_info.scan{scan_nr};
         scanName=s_info.scanName{scan_nr};
 
@@ -48,6 +48,13 @@ for s = 4
         % allign functionals to the T1:
         acpcXform = dtiRawAlignToT1(ni1,niAnatomy,[], [], false, 1); % last 1 adds a figure
         % this saves the reallignment matrix in the folder of the functionals, 
+        
+        % Only if the current acpcXform is good enough, safe for use
+        % Do this for the FA = 25, then coregister other functionals to this one
+        % ... only use the first visualization step from Kendrick's code to check...
+        acpcXform_new = acpcXform;
+        save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
+
     end
     
 %     %%%%% coregister the venogram to the T1:
@@ -59,22 +66,17 @@ for s = 4
 
 end
 
-% Only if the current acpcXform is good enough, safe for use
-% Do this for the FA = 25, then coregister other functionals to this one
-% ... only use the first visualization step from Kendrick's code to check...
-acpcXform_new = acpcXform;
-save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 
 %% Check the coregistration
-s = 2;
+s = 5;
 s_info = bb_subs(s);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
-scan_nr = 2; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
+scan_nr = 4; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
 scan=s_info.scan{scan_nr};
 scanName=s_info.scanName{scan_nr};
 
@@ -84,16 +86,13 @@ load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 curPos = [1,18,35]; 
 sliceThisDim = 1; 
-% imDims=[-90 -120 -60; 90 130 90];
-imDims=[-90 -120 -120; 90 130 90];
+imDims=[-90 -120 -120; 90 130 120];
 
 %%%% Overlay 1: functionals and anatomy
 niFunc = ni;
 niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the first functional
 % niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos,100)
-
-
+bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos);
 
 
 

@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 4;
-scan_nr = 9;
+s_nr = 5;
+scan_nr = 1;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -60,7 +60,7 @@ elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 %     curPos = [0,4,38];
-elseif s_nr == 4
+elseif s_nr == 4x
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 end
@@ -146,7 +146,7 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
 
 
-%% Plot MRI data
+%% Overlay timeseries
 
 in_data = 'PPG';
 
@@ -165,7 +165,10 @@ elseif s_nr == 3 %subject number
     curPos = [1 11 -16]; % Basilar
 elseif s_nr == 4 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-5,4,38];
+    curPos = [-2,4,38]; %-5 or 02
+elseif s_nr == 5 %subject number
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [6,18,38];
 end
 
 % load time series and associated time
@@ -208,11 +211,12 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
-%%
+%% Plot colorbar for timeseries
+
 figure('Position',[0 0 100,200]),hold on
 cm = colormap(jet);
 for kk = 1:size(cm,1)
@@ -220,7 +224,7 @@ for kk = 1:size(cm,1)
 end
 axis off
 set(gcf,'PaperPositionMode','auto')
-% 
+ 
 % print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/TScolorbar'])
 % print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar'])
 
@@ -329,4 +333,58 @@ plot(tPPG,ppgNorm,'r')
 % ylim([63 73])
 % print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
 % print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
+
+
+%% Overlay T1 with segmentation in functional space
+
+in_data = 'PPG';
+
+sliceThisDim = 1;
+if s_nr == 1 % subject number
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [-1 26 -63]; 
+elseif s_nr == 2 % subject number
+    imDims = [-90 -120 -120; 90 130 90];
+%     curPos = [-10 50 -21]; % left lateral ventricle - frontal site
+    curPos = [-1 72 -19]; % ExampleSite ACA
+elseif s_nr == 3 %subject number
+    imDims = [-90 -120 -100; 90 130 110];
+%     curPos = [1,4,38];
+%     curPos = [-14 24 -16]; % LCarotid
+    curPos = [1 11 -16]; % Basilar
+elseif s_nr == 4 %subject number
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [-2,4,38]; %-5 or 02
+elseif s_nr == 5 %subject number
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [6,18,38];
+end
+
+
+% %%%% Overlay spm segmentation and anatomy
+
+% SPM segmentation
+niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
+
+% All segmentation
+niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+
+% bbOverlayFuncAnat(niSPM,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,3.5);
+% the plotted X and Y do not correspond to actual xyz/mm coordinates, but
+% are in a different frame
+
+% SPM segmentation
+figure('Position',[0 0 300 300])
+% roiColormap = ([.2 .2 .2;1 1 1;0 1 1]);
+roiColormap = ([.5 .5 .5;1 1 1;0 .4 .8]);
+bbOverlayDotsAnat_PickColor(niSPM,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,roiColormap)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/segmentation/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_SPMSegOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+
+figure('Position',[0 0 300 300])
+% all segmentation together
+roiColormap = ([.5 .5 .5;1 1 1;0 .4 .8;1 0 0;0 1 0]);
+bbOverlayDotsAnat_PickColor(niSeg,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,roiColormap)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/segmentation/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_allSegOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 

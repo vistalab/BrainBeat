@@ -98,7 +98,7 @@ switch subj
         subs.scanName{12}='17178_11_1';
         subs.scanFA{12}=48;
     case 5
-        %v people at scan: Hua Wu and Dora Hermes
+        % people at scan: Hua Wu and Dora Hermes
         subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
         subs.subj = '20180529_17677';    % Date _ Time out of NIMS
         subs.anat = '11_1_T1w_1mm_sag';   % Anatomical data
@@ -112,24 +112,35 @@ switch subj
         subs.scanFA{1} = 48;
         
         % mux 4 mm scans reverse order 
-        subs.scan{2} = '5_1_mux8_25s_4mmFA20';  % subject awake, eyes open, watching a movie
+        subs.scan{2} = '5_1_mux8_25s_4mmFA48';  % subject awake, eyes open, watching a movie
         subs.scanName{2} = '17677_5_1';
         subs.scanFA{2} = 48;
         
         % 3 mm voxel
-        subs.scan{3} = '9_1_mux8_25s_4mmFA20';  % subject awake, eyes open, watching a movie
+        subs.scan{3} = '9_1_mux8_25s_3mmFA48';  % subject awake, eyes open, watching a movie
         subs.scanName{3} = '17677_9_1';
         subs.scanFA{3} = 48;
         
-        % mux 4 mm scans, double echo
-        subs.scan{4} = ' 6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
-        subs.scanName{4} = '';
+        % mux 4 mm scans, double echo, echo 1
+        subs.scan{4} = '6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{4} = '17677_6_1_te0008';
         subs.scanFA{4} = 48;
         
-        subs.scan{5} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
-        subs.scanName{5} = '';
+        % mux 4 mm scans, double echo, echo 2
+        subs.scan{5} = '6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{5} = '17677_6_1_te0028';
         subs.scanFA{5} = 48;
+
+        % mux 4 mm scans, double echo, echo 1
+        subs.scan{6} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{6} = '17677_7_1_te0008';
+        subs.scanFA{6} = 48;
         
+        % mux 4 mm scans, double echo, echo 2
+        subs.scan{7} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scanName{7} = '17677_7_1_te0028';
+        subs.scanFA{7} = 48;
+
         % GE hyperband, did not run, don't know why
         
 end

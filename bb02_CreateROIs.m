@@ -5,7 +5,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 4;
+s = 5;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -69,7 +69,7 @@ for k=1:length(roisToSegment)
 end
 
 
-%% Convert entire aseg data to nifti in t1 and functional space:
+%% Convert entire aseg data to nifti in t1 space:
 
 clear all
 close all
@@ -77,7 +77,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 2;
+s = 5;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -102,7 +102,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 2;
+s = 5;
 
 for scan_nr = [1:3]
 
@@ -152,6 +152,7 @@ for scan_nr = [1:3]
 
     niftiWrite(niFuncSeg,fullfile(dDir,subj,scan,niFuncSeg.fname))
 end
+
 %% Write venogram in the space of a functional scan
 
 clear all
@@ -160,7 +161,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 2;
+s = 5;
 
 for scan_nr = 1:3
     s_info = bb_subs(s);
@@ -212,17 +213,19 @@ end
 
 %% Write SPM segmentation of the T1 in the space of a functional scan
 
+% run SPM segment on anatomical
+
 clear all
 close all
 
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 4;
+s = 5;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-for scan_nr = [1:9]
+for scan_nr = [1:3]
     % read gray, white and csf segmentations (respectively c1, c2, c3)
     segm_file1 = niftiRead(fullfile(dDir,s_info.subj,s_info.anat,['c1f' s_info.anatName '.nii']));
     segm_file2 = niftiRead(fullfile(dDir,s_info.subj,s_info.anat,['c2f' s_info.anatName '.nii']));
@@ -287,11 +290,11 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 4;
+s = 5;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-for scan_nr = 1:9
+for scan_nr = 1:3
     % read the functional data
     scan = s_info.scan{scan_nr};
     scanName = s_info.scanName{scan_nr};

@@ -77,7 +77,7 @@ end
 
 %%
 %%%%% overlay with time series
-figure('Position',[0 0 1000 600])
+figure('Position',[0 0 700 400])
 cm=colormap(jet);
 subplot(1,2,1)
 % show the background:
@@ -121,11 +121,11 @@ for sub_p=1:2
             if isequal(get(gca,'YDir'),'reverse')
                 plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,...
                     k_x-s_f*r_curve,...
-                    'Color',c_use)
+                    'Color',c_use,'LineWidth',1)
             else
                 plot(m_y+s_f*[0:size(imgSlice1,3)-1]/size(imgSlice1,3)-2,...
                     k_x+s_f*r_curve,...
-                    'Color',c_use)
+                    'Color',c_use,'LineWidth',1)
             end
     %         plot(m_y-2,k_x,'.','Color',[.5 .5 .5])
         end
