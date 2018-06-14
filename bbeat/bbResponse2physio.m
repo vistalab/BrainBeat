@@ -46,7 +46,9 @@ end
 step_size = 1/srate/mux_f;% in s
 srate_epochs = 1/step_size;
 t = [-epoch_pre:step_size:epoch_post];%s timing for 1 epoch
-t_vox = min(timing(:)):step_size:max(timing(:)); % maximal timing accuracy for this scan session
+
+% adding 1 time point in case there 
+t_vox = min(timing(:)):step_size:(max(timing(:)+step_size)); % maximal timing accuracy for this scan session
 
 % only use those ppg onsets that have an entire trial before and after
 ppg_onsets = ppg_onsets((ppg_onsets-epoch_pre)>1); % get rid of early ones, and the first scans
@@ -78,15 +80,18 @@ for s = 1:length(slices)
         mean_factor = mean(d_norm(k,points_use)); % mean
         d_norm(k,:) = (d_norm(k,:) - (p(1)*[1:size(d_norm,2)] + p(2)))./mean_factor;
     end
-    d=reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);
+    d = reshape(d_norm,[size(d,1), size(d,2), size(d,3)]);
     clear d_norm
 
-    % get the timing for this slice
+    % create a set of NaNs at the upsampled time rate 
+    d_up = single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
+
+    % get the timing for this slice (times where we have data)
     t_sli = timing(sli,:);
 
-    % get the upsampled (NaN) of this slice
-    d_up=single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
-    d_up(:,:,ismember(round(t_vox*mux_f*srate),round(t_sli*mux_f*srate)))=d;
+    % fill the data into these times:
+    % get the indices in upsampled time at which data were collected
+    d_up(:,:,ismember(round(t_vox,3),round(t_sli,3))) = d;
 
     % temporary response matrix for 1 slice: voxel X voxel X time X PPGonset
     temp_response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(t),length(ppg_onsets)));

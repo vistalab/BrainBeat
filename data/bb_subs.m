@@ -122,22 +122,22 @@ switch subj
         subs.scanFA{3} = 48;
         
         % mux 4 mm scans, double echo, echo 1
-        subs.scan{4} = '6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scan{4} = '6_1_fMRI_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
         subs.scanName{4} = '17677_6_1_te0008';
         subs.scanFA{4} = 48;
         
         % mux 4 mm scans, double echo, echo 2
-        subs.scan{5} = '6_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scan{5} = '6_1_fMRI_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
         subs.scanName{5} = '17677_6_1_te0028';
         subs.scanFA{5} = 48;
 
         % mux 4 mm scans, double echo, echo 1
-        subs.scan{6} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scan{6} = '7_1_fMRI_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
         subs.scanName{6} = '17677_7_1_te0008';
         subs.scanFA{6} = 48;
         
         % mux 4 mm scans, double echo, echo 2
-        subs.scan{7} = '7_1_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
+        subs.scan{7} = '7_1_fMRI_mux8_me2_4mm'; % subject awake, eyes open, watching a movie
         subs.scanName{7} = '17677_7_1_te0028';
         subs.scanFA{7} = 48;
 
