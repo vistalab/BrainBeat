@@ -23,6 +23,8 @@ for kk = 1:length(s_nr)
     all_pcs(kk,2,:) = y2;
 end
 
+t_svd = linspace(-.5,1.5,128);
+
 % plot them:
 figure
 subplot(2,1,1),hold on
@@ -36,9 +38,6 @@ all_pcs = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
 % do the pca on the first two pca's
 [u,s,v] = svd(all_pcs);
 % s = diag(s);
-
-t_svd = linspace(-.5,1.5,128);
-
 
 subplot(2,1,2),hold on
 temp = u*s;
@@ -58,6 +57,54 @@ print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/canonical
 
 % save them:
 save(['./local/allsubs_pc12'],'pc1','pc2','pc3')
+
+%% Plot canonical PCs in figure:
+
+load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
+pc1 = pc1(1:75);
+pc2 = pc2(1:75);
+
+figure('Position',[0 0 600 300])
+subplot(2,2,1)
+plot(pc1,'k','LineWidth',2)
+axis tight
+axis off
+subplot(2,2,3)
+plot(pc2,'k','LineWidth',2)
+axis tight
+axis off
+
+% Make 2D colormap: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+gray_vect = .2*ones(200,3);
+cm2D = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
+
+subplot(1,2,2),hold on
+for kk = -1:.4:1
+    for ll = -1:.4:1
+        if kk<0
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1 + ll*pc2),...
+                'Color',cm2D(round(-kk*100),round((-ll+1)*99+1),:),...
+                'LineWidth',2)
+        elseif kk>0
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1 + ll*pc2),...
+                'Color',cm2D(round(kk*100),round((ll+1)*99+1),:),...
+                'LineWidth',2)
+        end
+    end
+end
+axis square
+axis tight
+axis off
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/model'])
+print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/model'])
 
 
 %% load canonical heartbeat responses and run through data
@@ -114,8 +161,11 @@ ppg_cycle   = 1./physioGet(physio,'PPGrate');
 t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
 % Get even heartbeat responses that were included in SVD:
-a = reshape(ppgTS.data,[numel(ppgTSeven.data(:,:,:,1)) length(t)]);
+a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
+test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+
 
 % Resample canonical pc1 and pc2 to original timing:
 t_hr = linspace(min(t_sel),max(t_sel),128);
@@ -134,13 +184,48 @@ disp('done')
 
 disp('get cod')
 r_weights = zeros(size(a,1),1);
+relRMS_weights = zeros(size(a,1),1);
+% error
+test_train_error = sqrt(sum((test_set - a).^2,2));
+% model
+model_v = beta_weights*[y1;y2];
+% model error
+test_model_error = sqrt(sum((test_set - model_v).^2,2));
+% relative RMS error:
+rel_rms_error = test_model_error./test_train_error;
+
 for kk = 1:size(a,1) % voxels
     if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-    model_v = beta_weights(kk,:)*[y1;y2];
-    r_weights(kk) = calccod(model_v',a(kk,:)',1,0,0)./100;
+    % model_v = beta_weights(kk,:)*[y1;y2];
+    r_weights(kk) = calccod(model_v(kk,:)',a(kk,:)',1,0,0)./100;
 end
 r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
 disp('done')
+
+%% how good are canonical principle components
+
+figure('Position',[0 0 200 150]),
+[n,x] = hist(rel_rms_error,30);
+bar(x,n,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0])
+xlabel('relative root mean square error')
+ylabel('number of voxels')
+box off
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
+print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
+
+
+%%
+voxel_nr = 28;
+figure('Position',[0 0 200 150]),hold on
+plot(t_sel,model_v(voxel_nr,:),'k','LineWidth',2)
+plot(t_sel,a(voxel_nr,:),'b:','LineWidth',2)
+plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
+print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
+
 
 %% Plot R/Betas back on brain
 niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));

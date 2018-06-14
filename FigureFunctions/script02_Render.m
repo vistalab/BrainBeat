@@ -9,7 +9,7 @@ close all
 
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 3;
+s_nr = 5;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 

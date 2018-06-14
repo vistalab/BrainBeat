@@ -302,7 +302,7 @@ bbViewLight(90,0)
 model_render_plot = model_render_sel - min(model_render_sel(:)); % set minimum to 0
 model_render_plot = round(99*(model_render_plot./max(model_render_plot(:))))+1;
 
-upFactor = 4;
+upFactor = 8;
 tUp = interp(t,upFactor);
 modelUp = zeros(size(model_render_plot,1),length(tUp));
 
@@ -377,14 +377,14 @@ videoName =  [dDir 'movies/Render/model_sub-' int2str(s_nr) '_scan-' int2str(sca
 % video 2:
 % cm = jet(100);
 % video 3:
-cm = hot(45);
-cm = [cm; cm(end,:)+zeros(55,3)];
+cm = hot(42);
+cm = [cm(1,:)+zeros(8,3); cm; cm(end,:)+zeros(50,3)];
 
-figure('Position',[0 0 800 500]);
+figure('Position',[0 0 500 500]);
 brainHandle1 = bbRenderGifti(g); hold on
 bbViewLight(270,0)
 for kk = 1:size(model_render_sel,1)
-    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',20)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',30)
 end
 ax = gca;
 
@@ -401,7 +401,7 @@ for tt = t_start:t_end % loop over time
     for kk = 1:size(model_render_sel,1)
         if intensity_plot(kk) < 0 && round(modelUp(kk,tt))<35
             plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),...
-                '.','MarkerSize',20,'Color',cm(round(modelUp(kk,tt)),:))
+                '.','MarkerSize',30,'Color',cm(round(modelUp(kk,tt)),:))
         end            
     end
 
@@ -434,16 +434,14 @@ videoName =  [dDir 'movies/Render/model_sub-' int2str(s_nr) '_scan-' int2str(sca
 % video 2:
 % cm = jet(100);
 % video 3:
-cm = summer(50);
-cm = [cm; cm(end,:)+zeros(size(cm))];
+cm = jet(100);
 cm = cm(end:-1:1,:); 
 
-
-figure('Position',[0 0 800 500]);
+figure('Position',[0 0 500 500]);
 brainHandle1 = bbRenderGifti(g); hold on
 bbViewLight(270,0)
 for kk = 1:size(model_render_sel,1)
-    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',20)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',30)
 end
 ax = gca;
 
@@ -460,7 +458,123 @@ for tt = t_start:t_end % loop over time
     for kk = 1:size(model_render_sel,1)
         if intensity_plot(kk)>0 && round(modelUp(kk,tt))>65
             plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),...
-                '.','MarkerSize',20,'Color',cm(floor(modelUp(kk,tt)),:))
+                '.','MarkerSize',30,'Color',cm(floor(modelUp(kk,tt)),:))
+        end            
+    end
+
+    
+    % Let the number of frames to write depend on the timing, such that
+    % peaks can be emphasized
+    nr_frames = 5;
+%     if t(kk)>-0.3 && t(kk)<0.3 
+%         nr_frames = 20;
+%     else
+%         nr_frames = 5;
+%     end
+    
+    % Write each frame to the file
+    for m = 1:nr_frames % write X frames: decides speed
+        writeVideo(vidObj,getframe(fid));
+    end
+    
+    cla
+    
+end
+
+close(vidObj);
+
+
+%% negative pulses Lateral
+videoName =  [dDir 'movies/Render/model_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_viewRH_lat_Neg_3'];
+
+% video 1:
+% cm = hot(100);
+% video 2:
+% cm = jet(100);
+% video 3:
+cm = hot(42);
+cm = [cm(1,:)+zeros(8,3); cm; cm(end,:)+zeros(50,3)];
+
+figure('Position',[0 0 500 500]);
+brainHandle1 = bbRenderGifti(g); hold on
+bbViewLight(90,0)
+for kk = 1:size(model_render_sel,1)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',30)
+end
+ax = gca;
+
+fid = figure('Position',[0 0 800 500]);
+vidObj = VideoWriter(videoName,'MPEG-4'); %
+open(vidObj); 
+for tt = t_start:t_end % loop over time
+    
+    brainHandle1 = bbRenderGifti(g); 
+    bbViewLight(90,0)
+    set(gca,'Xlim',ax.XLim,'Ylim',ax.YLim,'Zlim',ax.ZLim), hold on
+    title(['t = ' num2str(tUp(tt),3)])
+
+    for kk = 1:size(model_render_sel,1)
+        if intensity_plot(kk) < 0 && round(modelUp(kk,tt))<35
+            plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),...
+                '.','MarkerSize',30,'Color',cm(round(modelUp(kk,tt)),:))
+        end            
+    end
+
+    
+    % Let the number of frames to write depend on the timing, such that
+    % peaks can be emphasized
+    nr_frames = 5;
+%     if t(kk)>-0.3 && t(kk)<0.3 
+%         nr_frames = 20;
+%     else
+%         nr_frames = 5;
+%     end
+    
+    % Write each frame to the file
+    for m = 1:nr_frames % write X frames: decides speed
+        writeVideo(vidObj,getframe(fid));
+    end
+    
+    cla
+    
+end
+
+close(vidObj);
+
+
+%% positive pulses lateral
+videoName =  [dDir 'movies/Render/model_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_viewRH_lat_Pos_3'];
+
+% video 1:
+% cm = hot(100);
+% video 2:
+% cm = jet(100);
+% video 3:
+cm = jet(100);
+cm = cm(end:-1:1,:); 
+
+figure('Position',[0 0 500 500]);
+brainHandle1 = bbRenderGifti(g); hold on
+bbViewLight(90,0)
+for kk = 1:size(model_render_sel,1)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'k.','MarkerSize',30)
+end
+ax = gca;
+
+fid = figure('Position',[0 0 800 500]);
+vidObj = VideoWriter(videoName,'MPEG-4'); %
+open(vidObj); 
+for tt = t_start:t_end % loop over time
+    
+    brainHandle1 = bbRenderGifti(g); 
+    bbViewLight(90,0)
+    set(gca,'Xlim',ax.XLim,'Ylim',ax.YLim,'Zlim',ax.ZLim), hold on
+    title(['t = ' num2str(tUp(tt),3)])
+
+    for kk = 1:size(model_render_sel,1)
+        if intensity_plot(kk)>0 && round(modelUp(kk,tt))>65
+            plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),...
+                '.','MarkerSize',30,'Color',cm(floor(modelUp(kk,tt)),:))
         end            
     end
 
@@ -545,3 +659,57 @@ for tt = t_start:t_end % loop over time
 end
 
 close(vidObj);
+
+%% Plot some shapes and colorbars
+
+figure('Position',[0 0 100 200])
+% negative responses
+negResp = modelUp(intensity_plot<0,:);
+cm = hot(42);
+cm = [cm(1,:)+zeros(8,3); cm; cm(end,:)+zeros(50,3)];
+% plot(tUp,negResp(1,:))
+
+subplot(2,1,1),hold on
+nn = 277; % response number to plot
+plot(tUp,negResp(nn,:),'Color',[.5 .5 .5],'LineWidth',2)
+for kk = 1:length(tUp)
+    if negResp(nn,kk)<35
+        plot(tUp(kk),negResp(nn,kk),'.','Color',cm(round(negResp(nn,kk)),:),'MarkerSize',10)
+    end
+end
+% nn = 853; % response number to plot
+% plot(tUp,negResp(nn,:),'Color',[.5 .5 .5],'LineWidth',2)
+% for kk = 1:length(tUp)
+%     if negResp(nn,kk)<35
+%         plot(tUp(kk),negResp(nn,kk),'.','Color',cm(round(negResp(nn,kk)),:),'MarkerSize',10)
+%     end
+% end
+xlim([tUp(t_start) tUp(t_end)])
+
+% positive responses
+posResp = modelUp(intensity_plot>0,:);
+cm = jet(100);
+cm = cm(end:-1:1,:); 
+axis off
+
+subplot(2,1,2),hold on
+nn = 594; % response number to plot
+plot(tUp,posResp(nn,:),'Color',[.5 .5 .5],'LineWidth',2)
+for kk = 1:length(tUp)
+    if posResp(nn,kk)>65
+        plot(tUp(kk),posResp(nn,kk),'.','Color',cm(round(posResp(nn,kk)),:),'MarkerSize',10)
+    end
+end
+% nn = 340; % response number to plot
+% plot(tUp,posResp(nn,:),'Color',[.5 .5 .5],'LineWidth',2)
+% for kk = 1:length(tUp)
+%     if posResp(nn,kk)>65
+%         plot(tUp(kk),posResp(nn,kk),'.','Color',cm(round(posResp(nn,kk)),:),'MarkerSize',10)
+%     end
+% end
+xlim([tUp(t_start) tUp(t_end)])
+axis off
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-depsc',[dDir './movies/render/colormap'])
+print('-painters','-r300','-dpng',[dDir './movies/render/colormap'])
+
