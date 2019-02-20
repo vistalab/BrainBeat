@@ -12,12 +12,12 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
 %% coregistration functionals to T1 (course)
-% this can work well for FA=25, but not for FA=36/48, thus: allign FA=25,
+% this can work well for FA=25, but not for FA=36/48, thus: align FA=25,
 % and align 36/48 to FA=25 with code further below
  
-for s = 5
+for s = 6
     s_info = bb_subs(s);
-    subj=s_info.subj;
+    subj = s_info.subj;
 
     % Get the anatomicals:
     niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
@@ -27,25 +27,26 @@ for s = 5
 
     %%%%% coregister the functionals to the T1:
 
-    for scan_nr = 5
-        scan=s_info.scan{scan_nr};
-        scanName=s_info.scanName{scan_nr};
+    for scan_nr = 1
+        scan = s_info.scan{scan_nr};
+        scanName = s_info.scanName{scan_nr};
 
         fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
         ni = niftiRead(fmri);
-
-        ni1=ni;
+    
+        % select certain scans to align in ni1 (first, average)
+        ni1 = ni;
         %%%%% use the first nifti to allign, this one has the most structural info:
 %         ni1.data=ni1.data(:,:,:,1); % use this
-        %%%%% use the average functionals to allign
-        ni1.data=mean(ni1.data(:,:,:,5:end),4); 
+        %%%%% use the average functionals to align
+        ni1.data = mean(ni1.data(:,:,:,5:end),4); 
         % this worked best for subject 2, scan 2
+        ni1.dim = ni1.dim(1:3);
+        ni1.pixdim = ni1.pixdim(1:3);
+        
+        niAnatomy.pixdim = niAnatomy.pixdim(1:3); % only uses the first three dimensions
 
-        ni1.dim=ni1.dim(1:3);
-        ni1.pixdim=ni1.pixdim(1:3);
-        niAnatomy.pixdim=niAnatomy.pixdim(1:3); % only uses the first three dimensions
-
-        % allign functionals to the T1:
+        % align functionals to the T1:
         acpcXform = dtiRawAlignToT1(ni1,niAnatomy,[], [], false, 1); % last 1 adds a figure
         % this saves the reallignment matrix in the folder of the functionals, 
         
@@ -54,12 +55,11 @@ for s = 5
         % ... only use the first visualization step from Kendrick's code to check...
         acpcXform_new = acpcXform;
         save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
-
     end
     
 %     %%%%% coregister the venogram to the T1:
-%     niAnatomy.pixdim=niAnatomy.pixdim(1:3); % only uses the first three
-%     niVeno.pixdim=niVeno.pixdim(1:3); % only uses the first three
+%     niAnatomy.pixdim = niAnatomy.pixdim(1:3); % only uses the first three
+%     niVeno.pixdim = niVeno.pixdim(1:3); % only uses the first three
 %     % allign Veno to the T1:
 %     acpcXformVeno = dtiRawAlignToT1(niVeno,niAnatomy,[], [], [], 1); % last 1 adds a figure
 %     % this saves the reallignment matrix in the folder of the venogram, 
@@ -67,18 +67,17 @@ for s = 5
 end
 
 
-
 %% Check the coregistration
-s = 5;
+s = 6;
 s_info = bb_subs(s);
-subj=s_info.subj;
+subj = s_info.subj;
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
-scan_nr = 4; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
+scan_nr = 1; % selects the functional scan, note that we're using the second scan here, with FA = 25|20, the other FA do not coregister well to the T1
+scan = s_info.scan{scan_nr};
+scanName = s_info.scanName{scan_nr};
 
 fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
 ni = niftiRead(fmri);
@@ -86,7 +85,7 @@ load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 curPos = [1,18,35]; 
 sliceThisDim = 1; 
-imDims=[-90 -120 -120; 90 130 120];
+imDims = [-90 -120 -120; 90 130 120];
 
 %%%% Overlay 1: functionals and anatomy
 niFunc = ni;

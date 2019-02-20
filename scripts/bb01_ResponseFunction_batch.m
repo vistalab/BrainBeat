@@ -16,10 +16,11 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-for s = 5
+for s = 7
     s_info = bb_subs(s);
     subj = s_info.subj;
-    for scan_nr = [4:7]%:length(s_info.scan)
+    for scan_nr = [6:10]%:length(s_info.scan)
+        disp(['Calculating response2PPG sub-' int2str(s) ' scan-' int2str(scan_nr)])
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
@@ -62,7 +63,8 @@ for s = 5
         clear ni1
     end
     
-    for scan_nr = [4:7]%1:length(s_info.scan)
+    for scan_nr = [1:10]%1:length(s_info.scan)
+        disp(['Calculating PPG locked correlation sub-' int2str(s) ' scan-' int2str(scan_nr)])
         scan = s_info.scan{scan_nr};
         scanName = s_info.scanName{scan_nr};
 
