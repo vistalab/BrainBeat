@@ -65,23 +65,23 @@ end
 %% SVD on the odd responses:
 %%
 
-scan_nr = 5;
+scan_nr = 1;
 
 % load PPG responses
 data_in = 'PPG';
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
+scan = s_info.scan{scan_nr};
+scanName = s_info.scanName{scan_nr};
 
 % nifti:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
+ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 
 load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
+ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
 
 % load average of all odd heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
+ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
 % load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
@@ -113,28 +113,28 @@ elseif isequal(data_in,'RESP')
 end
 meanTS = mean(a,2);
 a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
-[u,s,v]=svd(a','econ');
-s=diag(s);
+[u,s,v] = svd(a','econ');
+s = diag(s);
 
 %%%% test for the sign of the 2nd component (also check for 1st???)
 % in the 2nd component, the first peak should be negative
-[~,pm_i]=findpeaks(double(u(:,2)),'minpeakdistance',10);
-[~,nm_i]=findpeaks(-double(u(:,2)),'minpeakdistance',10);
+[~,pm_i] = findpeaks(double(u(:,2)),'minpeakdistance',10);
+[~,nm_i] = findpeaks(-double(u(:,2)),'minpeakdistance',10);
 first_peak = min([pm_i; nm_i]);
 if u(first_peak,2)<0
     % do nothing
 elseif u(first_peak,2)>0
     % reverse sign pc and weights
-    u(:,2)=-u(:,2); v(:,2) = -v(:,2);
+    u(:,2) = -u(:,2); v(:,2) = -v(:,2);
 end
 
 % get to cumulative explained variance:
-var_explained=cumsum(s.^2) / sum(s.^2)
+var_explained = cumsum(s.^2) / sum(s.^2)
 
 
 %% Put SVD output in a structure
 out = [];
-for k=1:2
+for k = 1:2
     out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
 end
 
@@ -170,8 +170,8 @@ select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
 % select_voxels = find(ppgR.data>=Rthreshold);
 
 % Get indiced of selected voxels
-[ii,jj,kk]=ind2sub(size(ppgR.data),select_voxels);
-ijk_func=[ii jj kk];
+[ii,jj,kk] = ind2sub(size(ppgR.data),select_voxels);
+ijk_func = [ii jj kk];
 clear ii jj kk % housekeeping
 
 % Get xyz coordinates of voxels 
@@ -216,7 +216,7 @@ brainHandle = bbRenderGifti(g); hold on
 % brainHandle.FaceAlpha = .5; % Make the brain transparent
 
 for kk = 1:size(intensity_plot,1)
-    if intensity_plot(kk)<0
+    if intensity_plot(kk) < 0
         c_use = squeeze(cm2D(ceil(-intensity_plot(kk)*99+1),ceil(-color_plot(kk)*99.5)+100,:));
         plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
     end
@@ -240,7 +240,7 @@ figure
 brainHandle=bbRenderGifti(g); hold on
 
 for kk = 1:size(intensity_plot,1)
-    if intensity_plot(kk)>0
+    if intensity_plot(kk) > 0
         c_use = squeeze(cm2D(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
         plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
     end

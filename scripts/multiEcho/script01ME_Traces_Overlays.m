@@ -15,21 +15,34 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 5;
-scan_nr = 1;
+scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
-scan = subs.scan{scan_nr};
-scanName = subs.scanName{scan_nr};
-fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-if ~exist(fmri,'file')
-    clear ni
-    error('filename %s does not exist',fmri)
-end
-ni = niftiRead(fmri);
+% Identify the echo 1 (8ms) and echo 2 (28ms)
+scan1 = subs.scan{scan_nr(1)};
+scanName1 = subs.scanName{scan_nr(1)};
+scan2 = subs.scan{scan_nr(2)};
+scanName2 = subs.scanName{scan_nr(2)};
 
-% load coregistration matrix for the functionals:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+% Load first echo
+fmri1 = fullfile(dDir,subj,scan1,[scanName1 '.nii.gz']);
+if ~exist(fmri1,'file')
+    clear ni1
+    error('filename %s does not exist',fmri1)
+end
+ni1 = niftiRead(fmri1);
+
+% Load second echo
+fmri2 = fullfile(dDir,subj,scan2,[scanName2 '.nii.gz']);
+if ~exist(fmri2,'file')
+    clear ni2
+    error('filename %s does not exist',fmri2)
+end
+ni2 = niftiRead(fmri2);
+
+% Load coregistration matrix for the functionals:
+load(fullfile(dDir,subj,scan1,[scanName1 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
 % The pixdim field in the ni structure has four dimensions, three spatial
@@ -48,23 +61,12 @@ niAnatomy = niftiRead(anat);
 %% quick overlay between functionals and anatomy
 
 sliceThisDim = 3;
-if s_nr == 2
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [1,10,-20];
-%     curPos = [-29,-14,-50]; % 03
-%     curPos = [-3,30,-43]; % 03
-    curPos = [1,10,-20];
-    curPos = [1,1,-20];
-    curPos = [-11 34 -71]; % Carotid
-elseif s_nr == 3
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-%     curPos = [0,4,38];
-elseif s_nr == 4
-    imDims = [-90 -120 -100; 90 130 110];
+imDims = [-90 -120 -100; 90 130 110];
+
+if s_nr == 5
     curPos = [0,4,38];
 end
-niFunc = ni;
+niFunc = ni1;
 
 % niFunc.data = ni.data(:,:,:,1); % overlay the first functional - more structure visible
 % bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
@@ -72,7 +74,7 @@ niFunc = ni;
 % set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_Func1onAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
-niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
+niFunc.data = mean(ni1.data(:,:,:,5:end),4); % overlay the mean functional
 bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 title('Mean functional on anatomy')
 set(gcf,'PaperPositionMode','auto')
@@ -84,7 +86,7 @@ set(gcf,'PaperPositionMode','auto')
 figure('Position',[0 0 600 600])
 
 % get data
-physio      = physioCreate('nifti',ni);
+physio      = physioCreate('nifti',ni1);
 ppgData     = physioGet(physio,'ppg data');
 respData    = physioGet(physio,'resp data');
 
@@ -151,38 +153,21 @@ set(gcf,'PaperPositionMode','auto')
 in_data = 'PPG';
 
 sliceThisDim = 1;
-if s_nr == 1 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-1 26 -63]; 
-elseif s_nr == 2 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [-10 50 -21]; % left lateral ventricle - frontal site
-    curPos = [-1 72 -19]; % ExampleSite ACA
-elseif s_nr == 3 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-%     curPos = [-14 24 -16]; % LCarotid
-    curPos = [1 11 -16]; % Basilar
-elseif s_nr == 4 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-2,4,38]; %-5 or 02
-elseif s_nr == 5 %subject number
-    imDims = [-90 -120 -100; 90 130 120];
-    % curPos = [6,18,38];
-    curPos = [1 23 50];
+imDims = [-90 -120 -100; 90 130 110];
+if s_nr == 5 %subject number
+    curPos = [6,18,38];
 end
 
 % load time series and associated time
-ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
-ppgTS = niftiRead(ppgTSname); % ppg triggered time series
-load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
+ppgTS1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
+% load time t
+load(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponseT.mat']),'t');
 
 % load correlation between even and odd scans for colors of timeseries
 % ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
 % ppgR = niftiRead(ppgRname); % correlation with PPG
 % ppgR.data = ppgR.data.^2;
-ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' in_data '.nii.gz']);
-ppgR = niftiRead(ppgRname); % correlation with PPG
+ppgR1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_cod' in_data '.nii.gz'])); % correlation with PPG
 
 % %%%% Overlay 1: functionals and anatomy
 % niFunc = ni;
@@ -190,15 +175,15 @@ ppgR = niftiRead(ppgRname); % correlation with PPG
 % bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 
 %%%% Overlay 2: timeseries and anatomy
-ppgTSplot = ppgTS;
+ppgTSplot = ppgTS1;
 if isequal(in_data,'PPG')
-    ppgTSplot.data(:,:,:,t<-.1 | t>1)=[]; % plot these times from curve
+    ppgTSplot.data(:,:,:,t<-.1 | t>1) = []; % plot these times from curve
 elseif isequal(in_data,'RESP')
-    ppgTSplot.data(:,:,:,t<-.2 | t>4)=[]; % plot these times from curve
+    ppgTSplot.data(:,:,:,t<-.2 | t>4) = []; % plot these times from curve
 end
 
 % Scale factor for size and color:
-niColor = ppgR; % use R2 map to scale later: r2_scale=sqrt(imgSlice2.^2);
+niColor = ppgR1; % use R2 map to scale later: r2_scale=sqrt(imgSlice2.^2);
 
 % Scale time series amplitude by R, plots are generated with respect to the maximum.
 maxTS = max(abs(ppgTSplot.data),[],4); % get the max of each curve
@@ -238,68 +223,54 @@ in_data = 'PPG';
 
 bb_roi = bb_subs_rois(s_nr); % script that lists voxel indices
 
-for roi_ind = 6%1:length(bb_roi)
+for roi_ind = 6%
 
-if s_nr == 2 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-       
-    % Enter Cursor Position for Voxel
-%     curPos = [-1 21 -86]; 
-%     voxelLabel = '';
-
-    curPos = bb_roi(roi_ind).curPos;
-    voxelLabel = bb_roi(roi_ind).voxelLabel;
-
-%     curPos = [-11 34 -71]; 
-%     voxelLabel = 'LCarotid1';
-%     curPos = [-11 36 -61]; 
-%     voxelLabel = 'LCarotid2';
-%     curPos = [8 36 -60]; 
-%     voxelLabel = 'RCarotid1';
-elseif s_nr == 3 %subject number
+if s_nr == 5 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-    curPos = [-14 24 -16]; % LCarotid
-    voxelLabel = 'LCarotid1';
-%     curPos = [-1 11 -16]; % Basilar
-%     voxelLabel = 'Basilar1';
-%     curPos = bb_roi(roi_ind).curPos;
-%     voxelLabel = bb_roi(roi_ind).voxelLabel;
-elseif s_nr == 4 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
 %     curPos = [-14 24 -16]; % LCarotid
 %     voxelLabel = 'LCarotid1';
     curPos = bb_roi(roi_ind).curPos;
     voxelLabel = bb_roi(roi_ind).voxelLabel;
-elseif s_nr == 5 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-    curPos = bb_roi(roi_ind).curPos;
-    voxelLabel = bb_roi(roi_ind).voxelLabel;
 end
 
-% load time series and associated time
-ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
-ppgTS = niftiRead(ppgTSname); % ppg triggered time series
-load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
+% load time series for TE1 and associated time
+ppgTS1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
+% load time t
+load(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponseT.mat']),'t');
+% load std of time series and associated time
+ppgTSstd1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse_std.nii.gz'])); % ppg triggered time series
+% get the timeseries for the current voxel
+[voxelTs1] = bbGetVoxelTimeseries(ppgTS1,acpcXform,curPos);
+[voxelTsStd1] = bbGetVoxelTimeseries(ppgTSstd1,acpcXform,curPos);
 
-% load error of time series and associated time
-ppgTSnameError = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse_std.nii.gz']);
-ppgTSError = niftiRead(ppgTSnameError); % ppg triggered time series
-
-% get the timeseries
-[voxelTs] = bbGetVoxelTimeseries(ppgTS,acpcXform,curPos);
-[voxelTsStd] = bbGetVoxelTimeseries(ppgTSError,acpcXform,curPos);
+% load time series for TE2 and associated time
+ppgTS2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
+% load std of time series and associated time
+ppgTSstd2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_' in_data 'trigResponse_std.nii.gz'])); % ppg triggered time series
+% get the timeseries for the current voxel
+[voxelTs2] = bbGetVoxelTimeseries(ppgTS2,acpcXform,curPos);
+[voxelTsStd2] = bbGetVoxelTimeseries(ppgTSstd2,acpcXform,curPos);
 
 % plot the timeseries
 figure('Position',[0 0 150 150]),hold on
 plot(t,zeros(size(t)),'Color',[.5 .5 .5])
 plot([0 0],[-2 2],'Color',[.5 .5 .5])
-upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + 2 standard error
-lowErr = 100*squeeze(voxelTs) - 100*voxelTsStd;
-fill([t t(end:-1:1)],[upErr; lowErr(end:-1:1)],[.5 .5 .5],'EdgeColor',[.5 .5 .5])
-plot(t,100*squeeze(voxelTs),'k','LineWidth',2)
+
+% % plot TE1 std
+% upErr1 = 100*squeeze(voxelTs1) + 100*voxelTsStd1; % mean + std
+% lowErr1 = 100*squeeze(voxelTs1) - 100*voxelTsStd1;
+% fill([t t(end:-1:1)],[upErr1; lowErr1(end:-1:1)],[.5 .5 1],'EdgeColor',[.5 .5 1],'FaceAlpha',.5)
+% 
+% % plot TE2 std
+% upErr2 = 100*squeeze(voxelTs2) + 100*voxelTsStd2; % mean + std
+% lowErr2 = 100*squeeze(voxelTs2) - 100*voxelTsStd2;
+% fill([t t(end:-1:1)],[upErr2; lowErr2(end:-1:1)],[1 .5 .5],'EdgeColor',[1 .5 .5],'FaceAlpha',.5)
+
+% plot TE1
+plot(t,100*squeeze(voxelTs1),'b','LineWidth',2)
+% plot TE2
+plot(t,100*squeeze(voxelTs2),'r','LineWidth',2)
+
 axis tight
 ylabel('% signal modulation') % (signal - mean)./mean
 xlabel('time (s)')
@@ -369,10 +340,10 @@ end
 % %%%% Overlay spm segmentation and anatomy
 
 % SPM segmentation
-niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
+niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName1 '_spmSeg.nii.gz']));
 
 % All segmentation
-niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName1 '_combineSegm.nii.gz']));
 
 % bbOverlayFuncAnat(niSPM,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,3.5);
 % the plotted X and Y do not correspond to actual xyz/mm coordinates, but

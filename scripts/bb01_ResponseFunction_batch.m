@@ -28,7 +28,7 @@ for s = 7
         ni = niftiRead(fmri);
 
         % compute the PPG triggered response matrix for the whole brain and save as a nifti:
-        [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_sterr] ...
+        [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] ...
             = bbResponse2physio(ni);
 
         % safe time T:
@@ -43,7 +43,7 @@ for s = 7
 
         % save standard error of all heartbeats:
         ni1 = ni;
-        ni1.data = response_matrix_sterr;
+        ni1.data = response_matrix_std;
         ni1.fname = [scanName '_PPGtrigResponse_std.nii.gz'];
         niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
         clear ni1

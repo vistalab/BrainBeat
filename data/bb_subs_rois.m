@@ -32,4 +32,18 @@ switch subj
     bb_roi(1).curPos = [0 19 39];
     bb_roi(1).voxelLabel = 'LateralVentricle1';
 
+    case 5
+    % Some voxels to look at for multi echo:
+    bb_roi(1).curPos = [8 -78 45];
+    bb_roi(1).voxelLabel = 'SagitalSinus1';
+    bb_roi(2).curPos = [14 13 10];
+    bb_roi(2).voxelLabel = 'RCarotid1';
+    bb_roi(3).curPos = [4 33 55];
+    bb_roi(3).voxelLabel = 'AnteriorCerebralArtery';
+    bb_roi(4).curPos = [-1 0 92];%[-26 -7 93];
+    bb_roi(4).voxelLabel = 'CSF';
+    bb_roi(5).curPos = [24 -28 49];%[0 14 55];
+    bb_roi(5).voxelLabel = 'lLateralVentricle1';
+    bb_roi(6).curPos = [34 -31 97]; %Dura: [-15 -31 103]; % 4th ventricle:[3 -23 12]; nice CSF: [4 7 39]
+    bb_roi(6).voxelLabel = 'test';
 end

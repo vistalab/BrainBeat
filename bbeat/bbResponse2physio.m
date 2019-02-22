@@ -15,15 +15,15 @@ function [response_matrix,t,response_matrix_odd,response_matrix_even,response_ma
 % DHermes, Copyright Vistasoft Team 2014
 
 if ~exist('slices','var') % do whole brain
-    slices=[1:size(ni.data,3)];
+    slices = [1:size(ni.data,3)];
 elseif exist('slices','var') && isempty(slices)% do whole brain
-    slices=[1:size(ni.data,3)];
+    slices = [1:size(ni.data,3)];
 end
 
 % get the nifti stuff we need:
-timing=bbGet(ni,'timing');
-mux_f=bbGet(ni,'super slices');
-srate=1/bbGet(ni,'tr');
+timing = bbGet(ni,'timing');
+mux_f = bbGet(ni,'super slices');
+srate = 1/bbGet(ni,'tr');
 
 % get physio stuff we need:
 physio     = physioCreate('nifti',ni);
@@ -66,8 +66,8 @@ for s = 1:length(slices)
     d = squeeze(ni.data(:,:,sli,1:end));
 
     % demean and express in percent modulation 
-    d_norm=reshape(d,[size(d,1) * size(d,2), size(d,3)]);
-    points_use=4:size(d_norm,2); % do not use the first couple of scans
+    d_norm = reshape(d,[size(d,1) * size(d,2), size(d,3)]);
+    points_use = 4:size(d_norm,2); % do not use the first couple of scans
     for k=1:size(d_norm,1)
         % do not use first scans:
         x = points_use;
@@ -96,9 +96,9 @@ for s = 1:length(slices)
     % temporary response matrix for 1 slice: voxel X voxel X time X PPGonset
     temp_response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(t),length(ppg_onsets)));
     % run through all ppg onsets
-    for k=1:length(ppg_onsets)
-        [~,ppg_find]=min(abs(t_vox-ppg_onsets(k)));
-        temp_response_matrix(:,:,:,k)=d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
+    for k = 1:length(ppg_onsets)
+        [~,ppg_find] = min(abs(t_vox-ppg_onsets(k)));
+        temp_response_matrix(:,:,:,k) = d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
     
     clear d_up d
