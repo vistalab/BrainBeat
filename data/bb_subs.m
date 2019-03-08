@@ -31,7 +31,7 @@ switch subj
         subs.scanFA{3}=48;
     case 3
         subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
-        subs.subj = '20150106_1621';    % Date _ Time out of NIMS
+        subs.subj = '20150107_1621';    % Date _ Time out of NIMS
         subs.age = 24;
         subs.gender = 'f';
         subs.anat = '3_1_T1w_1mm_sag';   % Anatomical data

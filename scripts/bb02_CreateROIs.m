@@ -1,3 +1,8 @@
+
+%% add brainbeat path
+
+addpath(genpath(bbPath()))
+
 %% Get ROIs of CSF in ventricles, gray and white matter
 clear all
 close all
@@ -5,7 +10,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 6;
 s_info = bb_subs(s);
 subj = s_info.subj;
 

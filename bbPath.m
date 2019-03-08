@@ -1,4 +1,4 @@
-function rootPath=bbPath()
+function rootPath = bbPath()
 % return root of the BrainBeat directory
 %
 % rootPath = bbPath;
