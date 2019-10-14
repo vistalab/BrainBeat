@@ -44,6 +44,6 @@ switch subj
     bb_roi(4).voxelLabel = 'CSF';
     bb_roi(5).curPos = [24 -28 49];%[0 14 55];
     bb_roi(5).voxelLabel = 'lLateralVentricle1';
-    bb_roi(6).curPos = [34 -31 97]; %Dura: [-15 -31 103]; % 4th ventricle:[3 -23 12]; nice CSF: [4 7 39]
+    bb_roi(6).curPos = [2 13 53]; %Dura: [34 -31 97]; % 4th ventricle:[3 -23 12]; nice CSF: [4 7 39]
     bb_roi(6).voxelLabel = 'test';
 end

@@ -15,7 +15,7 @@ s_info = bb_subs(s_nr);
 subj=s_info.subj;
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii']));
+niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
 % % Get the MRVenogram:
 % niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
@@ -96,10 +96,10 @@ svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) siz
 %% %%%% CHANGE WITH CODE FROM bb02_CreateROIs
 
 % ROInames = {'R_lat_ventr','R_inferior_lat_ventr','R_choroid_plexus','3rd_ventr','4th_ventr','CSF'};
-% ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
-% ROIplotInd = [1 3 5 2 4 6 7 9 11];
-ROInames = {'R_choroid_plexus'};
-ROIplotInd = [1];
+ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
+ROIplotInd = [1 3 5 2 4 6 7 9 11];
+% ROInames = {'R_choroid_plexus'};
+% ROIplotInd = [1];
 figure('Position',[0 0 450 700])
 
 for rr = 1:length(ROInames)
@@ -151,12 +151,14 @@ for rr = 1:length(ROInames)
     
     % Gelect the following voxels to plot:
     % - good model prediction and positive PC1
-    select_voxels = roiCod>.3 & roiWeights(:,1)>0; 
+    %select_voxels = roiCod>.3 & roiWeights(:,1)>0; 
+    % - good model prediction and positive PC1
+    select_voxels = roiCod>.3; 
     
     subplot(length(ROInames)-3,2,ROIplotInd(rr)),hold on
     if ~isempty(find(select_voxels==1,1))
-        plot(t,roiTrace(select_voxels==1,:)')
-%         plot(t,mean(roiTrace(select_voxels==1,:),1))
+%         plot(t,roiTrace(select_voxels==1,:)')
+        plot(t,mean(roiTrace(select_voxels==1,:),1))
     end
 %     trace2plot = mean(roiTrace,1);
 %     trace2plot_std = 2*std(roiTrace,[],1)/sqrt(size(roiTrace,1));

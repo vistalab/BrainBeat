@@ -207,37 +207,107 @@ set(gcf,'PaperPositionMode','auto')
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 
-%% Plot colorbar for timeseries
-
-figure('Position',[0 0 100,200]),hold on
-cm = colormap(jet);
-for kk = 1:size(cm,1)
-    plot(1,kk,'.','Color',cm(kk,:),'MarkerSize',20)
-end
-axis off
-set(gcf,'PaperPositionMode','auto')
- 
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/TScolorbar'])
-% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/TScolorbar'])
-
-%% Get voxel timeseries
+%% Get ROI timeseries
 
 % Now say we have a voxel let's pull out the raw timeseries and show
 % the processing we did:
 
 in_data = 'PPG';
 
-bb_roi = bb_subs_rois(s_nr); % script that lists voxel indices
+roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
 
-for roi_ind = 6%
+for roi_ind = 1:5%
+    niROIname  = roi_list{roi_ind};
+    niROI      = niftiRead(fullfile(dDir,subj,subs.anat,['r' subs.anatName niROIname '.nii']));
+    
+    % get ROI indices:
+    [xx,yy,zz] = ind2sub(size(niROI.data),find(niROI.data>0.5));
 
-    if s_nr == 5 %subject number
-        imDims = [-90 -120 -100; 90 130 110];
-    %     curPos = [-14 24 -16]; % LCarotid
-    %     voxelLabel = 'LCarotid1';
-        curPos = bb_roi(roi_ind).curPos;
-        voxelLabel = bb_roi(roi_ind).voxelLabel;
+    % now ROI indices to ACPC (mm):
+    xyz_acpc = mrAnatXformCoords(niROI.qto_xyz, [xx,yy,zz]);
+    clear xx yy zz % housekeeping
+
+    % now ACPC coordinates to functional indices:
+    ijk_func = mrAnatXformCoords(inv(acpcXform), xyz_acpc);
+    ijk_func = round(ijk_func); % round to get indices
+    ijk_func = unique(ijk_func,'rows'); % only take unique voxels
+
+%     %%%% check for coordinates in functional space
+%     z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
+%     figure
+%     for kk = 1:length(z_slice)       
+%         subplot(3,4,kk)
+%         imagesc(ni1.data(:,:,z_slice(kk),1)),hold on
+%         xyz_plot = ijk_func(ijk_func(:,3)==z_slice(kk),:);
+%         plot(xyz_plot(:,2),xyz_plot(:,1),'r.')
+%         axis image 
+%     end
+    % get ROI curves
+    % imgVol = out(1).weights; % PC1 weight
+    % imgVol = out(2).weights; % PC2 weight
+%     imgVol = svdResults.model;
+    imgVol1 = ppgTS1.data;
+    imgVol2 = ppgTS2.data;
+    % Mask by reliability R
+%     imgVol1(ppgR1.data<.5) = NaN;
+%     imgVol2(ppgR1.data<.5) = NaN;
+    
+    roiTrace1 = NaN(size(ijk_func,1),size(imgVol1,4));
+    roiTrace2 = NaN(size(ijk_func,1),size(imgVol2,4));
+    svdVals = NaN(size(ijk_func,1),2);
+
+    for kk = 1:size(ijk_func,1)
+        roiTrace1(kk,:) = imgVol1(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3),:);
+        roiTrace2(kk,:) = imgVol2(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3),:);
+        % note that x and y are only switched around for plotting position, 
+        % not for getting the actual image values
+        % svdVals(kk,:) = [out(1).weights(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3)) out(2).weights(ijk_func(kk,1),ijk_func(kk,2),ijk_func(kk,3))];
     end
+    % Remove voxels with low R
+    roiTrace1(isnan(roiTrace1(:,1)),:) = [];
+    roiTrace2(isnan(roiTrace2(:,1)),:) = [];
+
+    figure('Position',[0 0 800 500])
+    %%%% Imagesc:
+    subplot(2,2,1)
+    imagesc(t,[1:size(roiTrace1,1)],roiTrace1,[-1 1])
+    subplot(2,2,3)
+    imagesc(t,[1:size(roiTrace2,1)],roiTrace2,[-1 1])
+    
+    %%%% Plot all traces:
+%     hold on
+%     plot(t,roiTrace')
+%     plot([0 0],[min(roiTrace(:)) max(roiTrace(:))],'k')
+
+    %%%% Mesh or surf
+%     xx = repmat([1:size(roiTrace,1)],length(t),1)';
+%     yy = repmat(t,size(roiTrace,1),1);
+%     mesh(xx,yy,roiTrace)
+%     view(100,30)
+
+%     xlim([t(1) 1.5])
+    
+    title(['Traces sub ' int2str(s_nr) '  scan ' int2str(scan_nr) ' roi: ' niROIname])
+    subplot(2,2,2)
+    plot(t,mean(roiTrace1,1),'k')
+    subplot(2,2,4)
+    plot(t,mean(roiTrace2,1),'k')
+
+%     title('SVD PC1 and PC2 weights')
+%     imagesc(svdVals,[-.02 .02])
+%     set(gca,'XTick',[1 2],'XTickLabel',{'PC1','PC2'})
+end
+
+set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',['./figures/ROI/' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr) '_ROIsTest'])
+
+% Get coordinates back in acpc:
+xyz_acpc_sparse = mrAnatXformCoords(acpcXform, ijk_func);
+
+
+
+%%
+    
 
     % load time series for TE1 and associated time
     ppgTS1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
@@ -285,88 +355,4 @@ for roi_ind = 6%
     % print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
 end
-
-%% plot Raw timeseries with cardiac signal
-
-curPos = [-10 50 -21]; % subj = 2, scan_nr = 3
-% curPos = [-14 24 -16];
-
-% get the timeseries 
-[voxelTs] = bbGetVoxelTimeseries(ni,acpcXform,curPos);
-
-% plot the timeseries
-figure('Position',[0 0 300 150]),hold on
-plot(t,zeros(size(t)),'Color',[.5 .5 .5])
-plot([0 0],[-2 2],'Color',[.5 .5 .5])
-total_t = [1:length(voxelTs)]./(1./ni.pixdim(4));
-plot(total_t,voxelTs,'k','LineWidth',1)
-ylabel('raw fMRI TS') % (signal - mean)./mean
-xlabel('time (s)')
-xlim([total_t(1) total_t(end)])
-set(gcf,'PaperPositionMode','auto')
-
-physio      = physioCreate('nifti',ni);
-tPPG        = physioGet(physio,'ppg sample times');
-ppgNorm     = zscore(physio.ppg.data);
-ppgNorm     = ppgNorm + mean(voxelTs);
-plot(tPPG,ppgNorm,'r')
-
-% xlim([24 29])
-% ylim([63 73])
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
-% print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/' subj '_' scan '_RawTrace_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3))])
-
-
-%% Overlay T1 with segmentation in functional space
-
-in_data = 'PPG';
-
-sliceThisDim = 1;
-if s_nr == 1 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-1 26 -63]; 
-elseif s_nr == 2 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [-10 50 -21]; % left lateral ventricle - frontal site
-    curPos = [-1 72 -19]; % ExampleSite ACA
-elseif s_nr == 3 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-%     curPos = [-14 24 -16]; % LCarotid
-    curPos = [1 11 -16]; % Basilar
-elseif s_nr == 4 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-2,4,38]; %-5 or 02
-elseif s_nr == 5 %subject number
-    imDims = [-90 -120 -100; 90 130 120];
-    curPos = [6,18,38];
-end
-
-
-% %%%% Overlay spm segmentation and anatomy
-
-% SPM segmentation
-niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName1 '_spmSeg.nii.gz']));
-
-% All segmentation
-niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName1 '_combineSegm.nii.gz']));
-
-% bbOverlayFuncAnat(niSPM,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,3.5);
-% the plotted X and Y do not correspond to actual xyz/mm coordinates, but
-% are in a different frame
-
-% SPM segmentation
-figure('Position',[0 0 300 300])
-% roiColormap = ([.2 .2 .2;1 1 1;0 1 1]);
-roiColormap = ([.5 .5 .5;1 1 1;0 .4 .8]);
-bbOverlayDotsAnat_PickColor(niSPM,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,roiColormap)
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/segmentation/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_SPMSegOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-
-figure('Position',[0 0 300 300])
-% all segmentation together
-roiColormap = ([.5 .5 .5;1 1 1;0 .4 .8;1 0 0;0 1 0]);
-bbOverlayDotsAnat_PickColor(niSeg,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,roiColormap)
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/segmentation/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_allSegOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
