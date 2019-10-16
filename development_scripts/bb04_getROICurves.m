@@ -3,7 +3,6 @@ close all
 
 % Dora Hermes, 2017 
 
-
 %% The T2* data are here.  
 clear all
 % close all
@@ -92,17 +91,38 @@ svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) siz
 %%
 %% Get ROI indices in the functional scan 
 %%
-%% %%%% TODO:
-%% %%%% CHANGE WITH CODE FROM bb02_CreateROIs
 
-% ROInames = {'R_lat_ventr','R_inferior_lat_ventr','R_choroid_plexus','3rd_ventr','4th_ventr','CSF'};
-ROInames = {'R_choroid_plexus','R_lat_ventr','R_inferior_lat_ventr','L_choroid_plexus','L_lat_ventr','L_inferior_lat_ventr','CSF','3rd_ventr','4th_ventr'};
-ROIplotInd = [1 3 5 2 4 6 7 9 11];
-% ROInames = {'R_choroid_plexus'};
-% ROIplotInd = [1];
-figure('Position',[0 0 450 700])
+% load freesurfer segmentation (these are resliced to functional space)
+niFs = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']));
+% FS_rois = [...
+%         3 % left gray matter
+%         42% right gray matter
+%         2 % left white matter
+%         41 % right white matter
+%         4 % left lateral ventricle
+%         5 % left inferior lateral ventricle
+%         14 % 3rd ventricle
+%         15 % 4th ventricle
+%         24 % CSF
+%         31 % left choroid plexus
+%         43 % right lateral ventricle
+%         44 % right inferior lateral ventricle
+%         63 % right choroid plexus
+%         72]; % 5th ventricle
 
-for rr = 1:length(ROInames)
+% get manually segmented ROIs - these are in anatomical space
+clear niROI
+roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
+for roi_ind = 1:length(roi_list)
+    niROIname               = roi_list{roi_ind};
+    niROI(roi_ind).data     = niftiRead(fullfile(dDir,subj,s_info.anat,['r' s_info.anatName niROIname '.nii']));
+end
+
+% create output structure with timeseries per ROI
+clear roiTS
+
+% get timeseries for all manually segmented ROIs
+for rr = 1:5
 
     niROIname = ROInames{rr};
     niROI = niftiRead(fullfile(dDir,subj,'freesurfer','nii',[niROIname '.nii.gz']));
