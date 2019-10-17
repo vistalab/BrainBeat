@@ -10,7 +10,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 6;
+s = 7;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -50,8 +50,8 @@ roisToSegmentNames = {...
 
 %% Make a nifti file from each ROI in aseg.auto.mgz - ROIs to segment
 
-for k=1:length(roisToSegment)
-    resample_type= 'weighted';
+for k = 1:length(roisToSegment)
+    resample_type = 'weighted';
     
     alignTo = fullfile(dDir,s_info.subj,s_info.anat,[s_info.anatName '.nii.gz']);
     segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aseg.auto.mgz');
@@ -64,10 +64,10 @@ for k=1:length(roisToSegment)
     ni = niftiRead(outfile);
 
     % map the replacement values
-    invals  = [roisToSegment(k)];
+    invals = [roisToSegment(k)];
 
-    ni.data(~ismember(ni.data,invals))=0;
-    ni.data(ismember(ni.data,invals))=1;
+    ni.data(~ismember(ni.data,invals)) = 0;
+    ni.data(ismember(ni.data,invals)) = 1;
 
     % write out the nifti
     writeFileNifti(ni)
@@ -82,7 +82,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 7;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -107,7 +107,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 7;
 
 for scan_nr = [1:3]
 
@@ -166,7 +166,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 7;
 
 for scan_nr = 1:3
     s_info = bb_subs(s);
@@ -226,7 +226,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 7;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -295,7 +295,7 @@ close all
 % dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 5;
+s = 7;
 s_info = bb_subs(s);
 subj = s_info.subj;
 

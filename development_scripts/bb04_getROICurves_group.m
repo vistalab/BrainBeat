@@ -8,10 +8,12 @@ clear all
 % close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 4;
-scan_nr = 3;
+% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
+
+s_nr = 7;
+scan_nr = 1;
 s_info = bb_subs(s_nr);
-subj=s_info.subj;
+subj = s_info.subj;
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
@@ -63,7 +65,7 @@ a = a(:,t>=-.5 & t<=2);
 t_sel = t(t>=-.5 & t<=2);
 a = a-repmat(mean(a,2),1,size(a,2)); % subtract the mean
 [u,s,v] = svd(a','econ');
-s=diag(s);
+s = diag(s);
 
 %%%% test for the sign of the 2nd component (also check for 1st???)
 % in the 2nd component, the first peak should be negative
@@ -172,9 +174,9 @@ for rr = 1:length(roi_list)
 end
 
 %%%% Add freesurfer ROI traces (e.g. CSF)
-fs_segm = {[3 42],[2 41],[31 63],[14],[15],[24]};
+fs_segm = {[3 42],[2 41],[31 63],[14],[15],[24],[4 43]};
 roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
-    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF'};
+    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
 % reshape timeseries for voxel selection
 tsVect1 = 100*reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
@@ -186,7 +188,7 @@ out_ind = 6:5+length(fs_segm);
 for rr = 1:length(out_ind)
     % get the voxels from the current ROI:
     thisRoi_voxels = find(ismember(niFs.data,fs_segm{rr}));
-    roiTS(out_ind(rr)).Cod = ppgR.data(thisRoi_voxels);
+    roiTS(out_ind(rr)).roiCod = ppgR.data(thisRoi_voxels);
     roiTS(out_ind(rr)).roiWeights(:,1) = out(1).weights(thisRoi_voxels);
     roiTS(out_ind(rr)).roiWeights(:,2) = out(2).weights(thisRoi_voxels);    
     roiTS(out_ind(rr)).roiTrace = tsVect1(thisRoi_voxels,:);
@@ -209,8 +211,146 @@ end
 tsSaveName = fullfile(dDir,subj,scan,[scanName '_ROItimeseries01.mat']);
 
 save(tsSaveName,'roiTS','t','roi_list')
+disp(['saved ' tsSaveName])
 
 %%
+%% load group data and plot group
+%%
+% clear all
+% close all
+
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
+% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
+
+sub_nrs = [2 3 4 5 6 7];
+scan_nrs = [3 3 3 1 1 1];
+
+avg_traces = zeros(length(sub_nrs),12,51,4);
+
+% load all subjects data ('roiTS','t','roi_list')
+for kk = 1:length(sub_nrs)
+    s_info = bb_subs(sub_nrs(kk));
+    subj = s_info.subj;
+    scan_nr = scan_nrs(kk);
+    
+    scan = s_info.scan{scan_nr};
+    scanName = s_info.scanName{scan_nr};
+    tsLoadName = fullfile(dDir,subj,scan,[scanName '_ROItimeseries01.mat']);
+
+    out(kk) = load(tsLoadName,'roiTS','t','roi_list');
+    
+    for rr = 1:12
+        avg_traces(kk,rr,:,1) = mean(out(kk).roiTS(rr).roiTrace,1);
+        avg_traces(kk,rr,:,2) = mean(out(kk).roiTS(rr).roiTrace(out(kk).roiTS(rr).roiCod>.3,:),1);
+        avg_traces(kk,rr,:,3) = mean(out(kk).roiTS(rr).pred,1);
+        avg_traces(kk,rr,:,4) = mean(out(kk).roiTS(rr).pred(out(kk).roiTS(rr).roiCod>.3,:),1);
+    end
+end
+
+%%
+
+plot_sig = 1; % 1: median TS, 2: median TS for R>.3, 3: median pred, 4: median pred r>.3
+
+figure('Position',[0 0 150 300])
+subplot(2,1,1),hold on
+% plot Carotid flow voids
+roi_ind = 1;
+% plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[1 .5 .5],'LineWidth',1)
+signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+up_bnd = signal+error;
+low_bnd = signal-error;
+fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 .8 .8],'EdgeColor',[1 .8 .8])
+plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'r','LineWidth',2)
+
+% plot Superior Saggital Sinus
+roi_ind = 3;
+% plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 .5 1],'LineWidth',1)
+signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+up_bnd = signal+error;
+low_bnd = signal-error;
+fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.5 .5 1],'EdgeColor',[.5 .5 1])
+plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'b','LineWidth',2)
+
+xlim([-.5 .5])
+
+subplot(2,1,2),hold on
+% % plot gray matter
+% roi_ind = 6;
+% % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 1 .5],'LineWidth',1)
+% signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
+% error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+% up_bnd = signal+error;
+% low_bnd = signal-error;
+% fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
+% plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.6 .6 .6],'LineWidth',2)
+% xlim([-.5 0.5])
+
+% plot lateral ventricels
+roi_ind = 12;
+% subject 2 does not have any voxels with reliable signal in this ROI...
+% plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.3 .5 .3],'LineWidth',1)
+signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+up_bnd = signal+error;
+low_bnd = signal-error;
+fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 1 .5],'EdgeColor',[1 1 .5])
+plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.8 .8 0],'LineWidth',2)
+
+% plot choroid plexus
+roi_ind = 8;
+% plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 1 .5],'LineWidth',1)
+signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+up_bnd = signal+error;
+low_bnd = signal-error;
+fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.8 1 .8],'EdgeColor',[.8 1 .8])
+plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'g','LineWidth',2)
+xlim([-.5 0.5])
+
+set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS'])
+% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS'])
+% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS_COD0_3'])
+% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS_COD0_3'])
+% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanPRED'])
+% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanPRED'])
+
+%%
+figure
+for kk = 1:length(sub_nrs)
+    for rr = 1:12
+        subplot(6,2,rr),hold on
+        plot(out(kk).t,mean(out(kk).roiTS(rr).roiTrace,1))
+        % only voxels with R>.3
+%         plot(out(kk).t,mean(out(kk).roiTS(rr).roiTrace(out(kk).roiTS(rr).roiCod>.3,:),1))
+    end
+end
+
+for rr = 1:12
+    subplot(6,2,rr)
+    ylabel(out(1).roi_list{rr})
+end
+
+%% plot pc1 weight
+figure
+for kk = 1:length(sub_nrs)
+    for rr = 1:11
+        subplot(6,2,rr),hold on
+        plot(kk,median(out(kk).roiTS(rr).roiWeights(out(kk).roiTS(rr).roiCod>.3,1),1),'.')
+%         plot(kk,out(kk).roiTS(rr).roiWeights(:,1),'.')
+%        boxplot(out(kk).roiTS(rr).roiWeights(:,1))
+    end
+end
+
+for rr = 1:11
+    subplot(6,2,rr)
+    plot([0 7],[0 0],'k')
+    ylabel(out(1).roi_list{rr})
+end
+
 
 % set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_roi-CSF_COD-0_3'])
