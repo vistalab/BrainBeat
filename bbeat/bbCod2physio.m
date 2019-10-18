@@ -38,8 +38,8 @@ for s=1:length(slices)
     
     r = calccod(odd_resp',even_resp',1,0,0)./100; 
     % make sure values go between 0 and 1, smaller than 0 is just worse...
-    r(r<0)=0;
-    r(r>1)=1;
+    r(r<0) = 0;
+    r(r>1) = 1;
     r = reshape(r,[size(ni_odd.data,1),size(ni_odd.data,2)]);
     
     out_r_map(:,:,s)=r;

@@ -7,13 +7,16 @@
 %
 % DH & BW 2018, vistalab
 
-%% Save canonical heartbeat responses
+dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
+%% Save canonical heartbeat responses (across all subjects)
 
 % subjects indices
-s_nr = [2 3 4];
+s_nr = [2 3 4 5 6 7];
 % scan nrs, here take the 25 or 20 degree flip angle
 % scan_nr  = [1 1 2];
-scan_nr  = [3 3 3];
+% scan nrs, take the 48 degree flip angles
+scan_nr  = [3 3 3 1 1 1];
 
 % load first two principle components for these subjects and scans
 all_pcs = zeros(length(s_nr),2,128);
@@ -30,7 +33,7 @@ figure
 subplot(2,1,1),hold on
 plot(t_svd,squeeze(all_pcs(:,1,:)),'k','LineWidth',2)
 plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',2)
-title('heartbeat components for 3 subjects')
+title('heartbeat components for 6 subjects')
 
 % reshape into matrix size subject/scan*2 X time
 all_pcs = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
@@ -51,9 +54,9 @@ pc2  = temp(:,2);
 pc3  = temp(:,3);
 title('canonical heartbeat components')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234'])
+% set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234567'])
+print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234567'])
 
 % save them:
 save(['./local/allsubs_pc12'],'pc1','pc2','pc3')
@@ -101,11 +104,50 @@ end
 axis square
 axis tight
 axis off
+title('canonical PCs across 6 subjects')
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/model'])
 print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/model'])
 
+
+%% Save canonical heartbeat responses (across N-1 subjects)
+
+% subjects indices
+s_nr = [2 3 4 5 6 7];
+% scan nrs, here take the 25 or 20 degree flip angle
+% scan_nr  = [1 1 2];
+% scan nrs, take the 48 degree flip angles
+scan_nr  = [3 3 3 1 1 1];
+
+% load first two principle components for these subjects and scans
+all_pcs = zeros(length(s_nr),2,128);
+for kk = 1:length(s_nr)
+    load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','t_hr')
+    all_pcs(kk,1,:) = y1;
+    all_pcs(kk,2,:) = y2;
+end
+
+t_svd = linspace(-.5,1.5,128);
+
+% run across the subjects and leave out subject kkk
+for kk = 1:length(s_nr)
+    % leave our subj kk
+    this_pcset = all_pcs(setdiff(1:length(s_nr),kk),:,:);
+    % reshape into matrix size subject/scan*2 X time
+    Nmin1_pcs = reshape(this_pcset,size(this_pcset,1)*size(this_pcset,2),size(this_pcset,3))';
+
+    % do the pca on the first two pca's
+    [u,s,v] = svd(Nmin1_pcs);
+    % s = diag(s);
+    temp = u*s;
+    pc1  = temp(:,1);
+    pc2  = temp(:,2);
+    pc3  = temp(:,3);
+    
+    save(['./local/canonicalPC_leavout' int2str(s_nr(kk))],'pc1','pc2','pc3','t_svd')
+
+end
 
 %% load canonical heartbeat responses and run through data
 clear all
@@ -115,26 +157,28 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 
 % Load PPG responses:
-s_nr = 5;
-scan_nr = 1;
+s_nr        = 7;
+scan_nr     = 1;
+s_info      = bb_subs(s_nr);
+subj        = s_info.subj;
+scan        = s_info.scan{scan_nr};
+scanName    = s_info.scanName{scan_nr};
+data_in     = 'PPG';
 
-s_info = bb_subs(s_nr);
-subj=s_info.subj;
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
-data_in = 'PPG';
+% Load canonical PCs from other subjects:
+load(['./local/canonicalPC_leavout' int2str(s_nr)],'pc1','pc2','pc3','t_svd')
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
 
 % Functionals:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
+ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 
 % Load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
+ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
 
 % Load average of all even heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
+ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
 %%%% Scale the time-series matrix by the reliability
 % Get odd/even corr/corr (made with bbCod/Correlate2physio):
@@ -160,19 +204,19 @@ physio      = physioCreate('nifti',ni);
 ppg_cycle   = 1./physioGet(physio,'PPGrate');
 t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
-% Get even heartbeat responses that were included in SVD:
+% get even heartbeat responses that were included in SVD:
 a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
 a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
 test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
-
-% Resample canonical pc1 and pc2 to original timing:
+% resample canonical pc1 and pc2 to original timing:
 t_hr = linspace(min(t_sel),max(t_sel),128);
 y1 = interp1(t_hr,pc1,t_sel);
 y2 = interp1(t_hr,pc2,t_sel);
 % y3 = interp1(t_hr,pc3,t_sel);
 
+% get beta values on PC1 and PC2 model for every voxel in even response using regression
 disp('get beta weights')
 beta_weights = zeros(size(a,1),2);
 for kk = 1:size(a,1) % voxels
@@ -182,10 +226,11 @@ for kk = 1:size(a,1) % voxels
 end
 disp('done')
 
+% test whether model can predict odd responses better than even responses
 disp('get cod')
 r_weights = zeros(size(a,1),1);
 relRMS_weights = zeros(size(a,1),1);
-% error
+% error even versus odd responses
 test_train_error = sqrt(sum((test_set - a).^2,2));
 % model
 model_v = beta_weights*[y1;y2];
@@ -204,30 +249,47 @@ disp('done')
 
 %% how good are canonical principle components
 
+% get rid of voxels with zero timeseries and zero model
+zero_voxels = sum(test_set,2)==0;
+
 figure('Position',[0 0 200 150]),
-[n,x] = hist(rel_rms_error,30);
+[n,x] = hist(rel_rms_error(~zero_voxels),30);
 bar(x,n,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0])
 xlabel('relative root mean square error')
 ylabel('number of voxels')
 box off
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
-print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
+% print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
+% print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
 
+% the percentage of voxels in which the model is better than the other half
+% of the data:
+modelBetterThanData = 100*length(find(rel_rms_error(~zero_voxels)<1))./length(rel_rms_error(~zero_voxels))
 
-%%
+% s_nr = 2, scan_nr = 3: 58.2660
+% s_nr = 3, scan_nr = 3: 82.4630
+% s_nr = 4, scan_nr = 3: 46.3723
+% s_nr = 5, scan_nr = 1: 77.0334
+% s_nr = 6, scan_nr = 1: 63.2219
+% s_nr = 7, scan_nr = 1: 67.5104
+
+%% plot 1 voxel to check model versus data
 voxel_nr = 28;
 figure('Position',[0 0 200 150]),hold on
 plot(t_sel,model_v(voxel_nr,:),'k','LineWidth',2)
 plot(t_sel,a(voxel_nr,:),'b:','LineWidth',2)
 plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
-print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
+% print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
 
-
+%%
+%% FIGURES & RENDERINGS
+%%
 %% Plot R/Betas back on brain
+%%
+%%
 niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
 
 % SPM segmentation

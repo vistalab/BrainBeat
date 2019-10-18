@@ -38,21 +38,21 @@ switch subj
         subs.anatName = '8603_3_1';
         subs.veno = '14_1_2D_MRV';   % Venogram data
         subs.venoName = '8603_14_1';
-        subs.scan{1} ='10_1_mux8_25s_4mmFA36';  % subject awake, watching movie 
-        subs.scanName{1}='8603_10_1';
-        subs.scanFA{1}=36;
-        subs.scan{2} ='11_1_mux8_25s_4mmFA20';  % subject awake, watching movie 
-        subs.scanName{2}='8603_11_1';
-        subs.scanFA{2}=20;
-        subs.scan{3} ='12_1_mux8_25s_4mmFA48';  % subject awake, watching movie 
-        subs.scanName{3}='8603_12_1';
-        subs.scanFA{3}=48;
-        subs.scan{4} ='16_1_mux8_25s_4mmFA20';  % subject asleep (subjective report)
-        subs.scanName{4}='8603_16_1'; 
-        subs.scanFA{4}=20;
+        subs.scan{1} = '10_1_mux8_25s_4mmFA36';  % subject awake, watching movie 
+        subs.scanName{1} = '8603_10_1';
+        subs.scanFA{1} = 36;
+        subs.scan{2} = '11_1_mux8_25s_4mmFA20';  % subject awake, watching movie 
+        subs.scanName{2} = '8603_11_1';
+        subs.scanFA{2} = 20;
+        subs.scan{3} = '12_1_mux8_25s_4mmFA48';  % subject awake, watching movie 
+        subs.scanName{3} = '8603_12_1';
+        subs.scanFA{3} = 48;
+        subs.scan{4} = '16_1_mux8_25s_4mmFA20';  % subject asleep (subjective report)
+        subs.scanName{4} = '8603_16_1'; 
+        subs.scanFA{4} = 20;
         subs.scan{5} ='23_1_mux8_25s_4mmFA20';  % subject awake (subjective report)
-        subs.scanName{5}='8603_23_1'; 
-        subs.scanFA{5}=20;
+        subs.scanName{5} = '8603_23_1'; 
+        subs.scanFA{5} = 20;
     case 4
         subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
         subs.subj = '20180319_1232';    % Date _ Time out of NIMS
@@ -63,26 +63,26 @@ switch subj
         subs.veno = '21_1_2D_MRV';   % Venogram data
         % mux 4 mm scans
         subs.venoName = '17178_21_1';
-        subs.scan{1} ='5_1_mux8_25s_4mmFA20';  % subject awake, eyes closed
-        subs.scanName{1}='17178_5_1';
-        subs.scanFA{1}=20;
+        subs.scan{1} = '5_1_mux8_25s_4mmFA20';  % subject awake, eyes closed
+        subs.scanName{1} = '17178_5_1';
+        subs.scanFA{1} = 20;
         subs.scan{2} ='4_1_mux8_25s_4mmFA34';  % subject awake, eyes closed
-        subs.scanName{2}='17178_4_1';
-        subs.scanFA{2}=34;
-        subs.scan{3} ='6_1_mux8_25s_4mmFA48';  % subject awake, eyes closed
-        subs.scanName{3}='17178_6_1';
-        subs.scanFA{3}=48;
+        subs.scanName{2} = '17178_4_1';
+        subs.scanFA{2} = 34;
+        subs.scan{3} = '6_1_mux8_25s_4mmFA48';  % subject awake, eyes closed
+        subs.scanName{3} = '17178_6_1';
+        subs.scanFA{3} = 48;
         
         % reverse order 
-        subs.scan{4} ='8_1_mux8_25s_4mmFA20';  % subject awake, eyes closed
-        subs.scanName{4}='17178_8_1';
-        subs.scanFA{4}=20;
-        subs.scan{5} ='7_1_mux8_25s_4mmFA34';  % subject awake, eyes closed
-        subs.scanName{5}='17178_7_1';
-        subs.scanFA{5}=34;
-        subs.scan{6} ='9_1_mux8_25s_4mmFA48';  % subject awake, eyes closed
-        subs.scanName{6}='17178_9_1';
-        subs.scanFA{6}=48;
+        subs.scan{4} = '8_1_mux8_25s_4mmFA20';  % subject awake, eyes closed
+        subs.scanName{4} = '17178_8_1';
+        subs.scanFA{4} = 20;
+        subs.scan{5} = '7_1_mux8_25s_4mmFA34';  % subject awake, eyes closed
+        subs.scanName{5} = '17178_7_1';
+        subs.scanFA{5} = 34;
+        subs.scan{6} = '9_1_mux8_25s_4mmFA48';  % subject awake, eyes closed
+        subs.scanName{6} = '17178_9_1';
+        subs.scanFA{6} = 48;
         
         % 3 mm voxel
         subs.scan{7} ='17_1_mux8_25s_3mmFA20';  % subject awake, eyes closed

@@ -13,9 +13,9 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 5;
+s_nr = 7;
 s_info = bb_subs(s_nr);
-subj=s_info.subj;
+subj = s_info.subj;
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
@@ -34,19 +34,19 @@ data_in = 'PPG';
 
 % load PPG responses
 scan_nr = 1;
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
+scan = s_info.scan{scan_nr};
+scanName = s_info.scanName{scan_nr};
 
 % nifti:
-ni=niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
+ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
 
 load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
 
 % load average of all odd heartbeats:
-ppgTS=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
+ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
 
 % load average of all even heartbeats:
-ppgTSeven=niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
+ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
 % Load coregistration matrix:
 load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
@@ -80,7 +80,7 @@ a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
 s = diag(s);
 
 % Get to cumulative explained variance:
-var_explained=cumsum(s.^2) / sum(s.^2);
+var_explained = cumsum(s.^2) / sum(s.^2);
 clear a a_test
 
 % Plot 2 components:
