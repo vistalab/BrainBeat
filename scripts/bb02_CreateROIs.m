@@ -74,7 +74,7 @@ for k = 1:length(roisToSegment)
 end
 
 
-%% Convert entire aseg data to nifti in t1 space:
+%% Convert entire Freesurfer aseg.auto.mgz data to nifti in t1 space:
 
 clear all
 close all
