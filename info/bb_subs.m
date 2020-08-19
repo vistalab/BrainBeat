@@ -12,7 +12,6 @@ switch subj
         subs.scan{2}='6_1_mux8fov4_r1_25s_4mm';
         subs.scanName{2}='7944_6_1';
     case 2
-        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';    % freesurfer data in anatomy folder
         subs.subj = '20141017_1242';    % Date _ Time out of NIMS
         subs.age = 63;
         subs.gender = 'm';
@@ -30,7 +29,6 @@ switch subj
         subs.scanName{3}='8202_7_1';
         subs.scanFA{3}=48;
     case 3
-        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
         subs.subj = '20150107_1621';    % Date _ Time out of NIMS
         subs.age = 24;
         subs.gender = 'f';
@@ -54,7 +52,6 @@ switch subj
         subs.scanName{5} = '8603_23_1'; 
         subs.scanFA{5} = 20;
     case 4
-        subs.freesurferDir = '/sni-storage/wandell/data/anatomy/';
         subs.subj = '20180319_1232';    % Date _ Time out of NIMS
         subs.age = 25;
         subs.gender = 'f';
@@ -107,7 +104,6 @@ switch subj
         subs.scanFA{12}=48;
     case 5
         % people at scan: Hua Wu and Dora Hermes
-        subs.freesurferDir = '';
         subs.age = 30;
         subs.gender = 'f';
         subs.subj = '20180529_17677';    % Date _ Time out of NIMS
@@ -154,7 +150,6 @@ switch subj
         % GE hyperband, did not run, don't know why 
                 
     case 6
-        subs.freesurferDir = '';
         subs.age = 30;
         subs.gender = 'm';
         subs.subj = '20180607_17734';    % Date _ Time out of NIMS
@@ -199,7 +194,6 @@ switch subj
         subs.scanFA{7} = 48;
         
     case 7
-        subs.freesurferDir = '';
         subs.age = 66;
         subs.gender = 'm';
         subs.subj = '20180619_17796';    % Date _ Time out of NIMS
