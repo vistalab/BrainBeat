@@ -1,2 +1,6 @@
 *.m~
 local/*
+
+data/*
+
+.DS_Store
