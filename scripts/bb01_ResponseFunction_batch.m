@@ -285,10 +285,10 @@ end
 %% Mean signals in different tissue types
 %%
 
-clear all
-close all
+% clear all
+% close all
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 2;
@@ -359,10 +359,10 @@ set(gcf,'PaperPositionMode','auto')
 
 %%
 %% Reliability in SPM segmentation
-clear all
+% clear all
 % close all
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Select a subject and scan nummer
 s_nr = 5;
@@ -458,6 +458,6 @@ for scan_nr = 1%[1:3]
     end
     
     set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
-    print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+%     print('-painters','-r300','-dpng',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
+%     print('-painters','-r300','-depsc',[dDir './figures/reliable/subj' int2str(s_nr) '_scan' int2str(scan_nr)])
 end
