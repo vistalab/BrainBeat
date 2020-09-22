@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 5;
-scan_nr = 1;
+s_nr = 3;
+scan_nr = 3;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;

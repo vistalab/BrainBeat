@@ -4,26 +4,20 @@ close all
 % Dora Hermes, 2017 
 
 %% The T2* data are here.  
-clear all
+% clear all
 % close all
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
+% group with FA of 48 includes second sub/scan: [7/2]
 
-s_nr = 7;
+s_nr = 7; 
 scan_nr = 1;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
 % Get the anatomicals:
 niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
-
-% % Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
-% % load Veno rotation matrix:
-% xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
-
-% now do an SVD on the odd responses:
 
 % load PPG responses
 scan = s_info.scan{scan_nr};
@@ -139,8 +133,8 @@ for rr = 1:length(roi_list)
     ijk_func = unique(ijk_func,'rows'); % only take unique voxels
 %     ijk_func(min(ijk_func,[],2)<0,:) = []; % empty voxels outside of functional
 
-%     %%%% check for coordinates in functional space
-%     z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
+    %%%% check for coordinates in functional space
+    z_slice = [5 10 15 18 20 23 25 26 27 30 33 36];
 %     figure
 %     for kk = 1:length(z_slice)       
 %         subplot(3,4,kk)
@@ -218,15 +212,19 @@ disp(['saved ' tsSaveName])
 %%
 % clear all
 % close all
+roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
 
 sub_nrs = [2 3 4 5 6 7];
 scan_nrs = [3 3 3 1 1 1];
 
-avg_traces = zeros(length(sub_nrs),12,51,4);
+avg_traces = zeros(length(sub_nrs),length(roi_list),51,4);
+
+clear out 
 
 % load all subjects data ('roiTS','t','roi_list')
 for kk = 1:length(sub_nrs)
@@ -250,15 +248,16 @@ end
 
 %%
 
-plot_sig = 1; % 1: median TS, 2: median TS for R>.3, 3: median pred, 4: median pred r>.3
+plot_sig = 2; % 1: mean TS, 2: mean TS for R>.3, 3: mean pred, 4: mean pred r>.3
 
 figure('Position',[0 0 150 300])
 subplot(2,1,1),hold on
+plot([-1 1],[0 0],'k')
 % plot Carotid flow voids
 roi_ind = 1;
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[1 .5 .5],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
-error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(length(sub_nrs)));
 up_bnd = signal+error;
 low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 .8 .8],'EdgeColor',[1 .8 .8])
@@ -268,7 +267,7 @@ plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'r','LineWidth',
 roi_ind = 3;
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 .5 1],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
-error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(length(sub_nrs)));
 up_bnd = signal+error;
 low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.5 .5 1],'EdgeColor',[.5 .5 1])
@@ -277,38 +276,41 @@ plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'b','LineWidth',
 xlim([-.5 .5])
 
 subplot(2,1,2),hold on
-% % plot gray matter
-% roi_ind = 6;
-% % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 1 .5],'LineWidth',1)
+plot([-1 1],[0 0],'k')
+% % plot CSF in orange, CSF from Freesurfer has a strange location
+% roi_ind = 11;
 % signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
-% error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+% error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(length(sub_nrs)));
 % up_bnd = signal+error;
 % low_bnd = signal-error;
-% fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.8 .8 .8],'EdgeColor',[.8 .8 .8])
-% plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.6 .6 .6],'LineWidth',2)
-% xlim([-.5 0.5])
+% fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 .5 0],'EdgeColor',[1 1 .5])
+% plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.8 .4 0],'LineWidth',2)
 
-% plot lateral ventricels
+% plot lateral ventricles in yellow
 roi_ind = 12;
 % subject 2 does not have any voxels with reliable signal in this ROI...
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.3 .5 .3],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
-error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(length(sub_nrs)));
 up_bnd = signal+error;
 low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 1 .5],'EdgeColor',[1 1 .5])
 plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.8 .8 0],'LineWidth',2)
 
-% plot choroid plexus
-roi_ind = 8;
+roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
+
+
+% plot choroid plexus in green
+roi_ind = 8; 
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 1 .5],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
-error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(6));
+error = squeeze(std(avg_traces(:,roi_ind,:,plot_sig),[],1)./sqrt(length(sub_nrs)));
 up_bnd = signal+error;
 low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[.8 1 .8],'EdgeColor',[.8 1 .8])
 plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'g','LineWidth',2)
-xlim([-.5 0.5])
+xlim([-.5 .5])
 
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS'])

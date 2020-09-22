@@ -273,7 +273,7 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) 
 niOverlay = ni;
 w_plot = 1;
 niOverlay.data = out(w_plot).weights;
-sliceThisDim = 1;
+sliceThisDim = 3;
 
 if s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
@@ -282,7 +282,8 @@ if s_nr == 2
     curPos = [1 -20 -21];
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [1,4,38];
+%     curPos = [1,4,38];
+    curPos = [9,20,-12];
 end
 
 maxPlot = .01;
@@ -303,20 +304,24 @@ elseif s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [-12 50 -21];
 %     curPos = [-10 -20 -21]; % for figure set
-%     curPos = [-11 34 -71]; % Carotid
+    curPos = [-11 35 -77]; % Carotid
 %     curPos = [-2 26 -63]; % Basilar
-    curPos = [-1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
+%     curPos = [-1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [0,4,38];
 %     curPos = [0,4,38]; % for figure set
     curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
+    curPos = [1 20 -23]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif s_nr == 4
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [-2 4 30];%[x x 38]
 elseif s_nr == 5
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [1 18 53];
+elseif s_nr == 7
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [19 40 -29];
 end
 
 % Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the

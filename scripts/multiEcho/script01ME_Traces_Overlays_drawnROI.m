@@ -14,7 +14,9 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 5;
+% s_nr = 5;
+% scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
+s_nr = 7;
 scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
 
 subs = bb_subs(s_nr);
@@ -47,11 +49,6 @@ acpcXform = acpcXform_new; clear acpcXform_new
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
-
-% Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii']));
-% % load coregistration matrix (for the venogram):
-% xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
 
 %% Anatomicals
 
@@ -354,5 +351,4 @@ xyz_acpc_sparse = mrAnatXformCoords(acpcXform, ijk_func);
     % print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
     % print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
 
-end
 

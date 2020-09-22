@@ -101,15 +101,15 @@ eval(str)
 
 %% Write aseg.auto in the space of a functional scan
 
-clear all
-close all
+% clear all
+% close all
 
 % dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 7;
 
-for scan_nr = [1:3]
+for scan_nr = 4%[1:3]
 
     s_info = bb_subs(s);
     subj = s_info.subj;
