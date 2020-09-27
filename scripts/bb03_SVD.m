@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 7;
+s_nr = 6;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
@@ -296,7 +296,7 @@ ylabel(['PC ' int2str(w_plot) ' max=' num2str(maxPlot,3)])
 maxPlot = .002;
 % maxPlot = .001;
 
-sliceThisDim = 1;
+sliceThisDim = 3;
 if s_nr == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [0 26 17]; 
@@ -319,6 +319,9 @@ elseif s_nr == 4
 elseif s_nr == 5
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [1 18 53];
+elseif s_nr == 6
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [7 19 3];
 elseif s_nr == 7
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [19 40 -29];

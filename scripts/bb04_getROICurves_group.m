@@ -11,7 +11,7 @@ close all
 % group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
 % group with FA of 48 includes second sub/scan: [7/2]
 
-s_nr = 7; 
+s_nr = 6; 
 scan_nr = 1;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;

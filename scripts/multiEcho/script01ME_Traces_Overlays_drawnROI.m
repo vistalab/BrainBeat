@@ -16,8 +16,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % Select a subject and scan nummer
 % s_nr = 5;
 % scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
-s_nr = 7;
-scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
+s_nr = 6;
+scan_nr = [6 7]; % provide a pair of scans with echo 1 and 2
+% s_nr = 7;
+% scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2, [4 5] or [6 7]
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -49,6 +51,9 @@ acpcXform = acpcXform_new; clear acpcXform_new
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
+
+niFs = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_r_aseg_auto.nii.gz']));
+
 
 %% Anatomicals
 
@@ -145,15 +150,9 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/physio/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_physioTrace'])
 
 
-%% Overlay timeseries
+%% Load timeseries
 
 in_data = 'PPG';
-
-sliceThisDim = 1;
-imDims = [-90 -120 -100; 90 130 110];
-if s_nr == 5 %subject number
-    curPos = [6,18,38];
-end
 
 % load time series 1 and associated time
 ppgTS1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
@@ -172,38 +171,6 @@ load(fullfile(dDir,subj,scan2,[scanName2 '_' in_data 'trigResponseT.mat']),'t');
 ppgR1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_cod' in_data '.nii.gz'])); % correlation with PPG
 ppgR2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_cod' in_data '.nii.gz'])); % correlation with PPG
 
-% %%%% Overlay 1: functionals and anatomy
-% niFunc = ni;
-% niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-
-%%%% Overlay 2: timeseries and anatomy
-ppgTSplot = ppgTS1;
-if isequal(in_data,'PPG')
-    ppgTSplot.data(:,:,:,t<-.1 | t>1) = []; % plot these times from curve
-elseif isequal(in_data,'RESP')
-    ppgTSplot.data(:,:,:,t<-.2 | t>4) = []; % plot these times from curve
-end
-
-% Scale factor for size and color:
-niColor = ppgR1; % use R2 map to scale later: r2_scale=sqrt(imgSlice2.^2);
-
-% Scale time series amplitude by R, plots are generated with respect to the maximum.
-maxTS = max(abs(ppgTSplot.data),[],4); % get the max of each curve
-ppgTSplot.data = bsxfun(@rdivide,ppgTSplot.data,maxTS); % devide by the max of each curve (sets all curves to 1 max)
-ppgTSplot.data = bsxfun(@times,ppgTSplot.data,niColor.data); % multiply by r^2 to set less reliable curves to zero
-
-bbOverlayTimeseriesAnat(ppgTSplot,niColor,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-% the plotted X and Y do not correspond to actual xyz/mm coordinates, but
-% are in a different frame
-title('Colors and size scaled by the COD(R)')
-
-clear niColor ppgTSplot
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-
-% bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
-
 %% Get ROI timeseries
 
 % Now say we have a voxel let's pull out the raw timeseries and show
@@ -213,7 +180,7 @@ in_data = 'PPG';
 
 roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
 
-for roi_ind = 1:5%
+for roi_ind = 3%:5%
     niROIname  = roi_list{roi_ind};
     niROI      = niftiRead(fullfile(dDir,subj,subs.anat,['r' subs.anatName niROIname '.nii']));
     
@@ -264,10 +231,11 @@ for roi_ind = 1:5%
     roiTrace1(isnan(roiTrace1(:,1)),:) = [];
     roiTrace2(isnan(roiTrace2(:,1)),:) = [];
 
-    figure('Position',[0 0 800 500])
+    figure('Position',[0 0 400 300])
     %%%% Imagesc:
     subplot(2,2,1)
     imagesc(t,[1:size(roiTrace1,1)],roiTrace1,[-1 1])
+    title(['ROI ' roi_list{roi_ind}])
     subplot(2,2,3)
     imagesc(t,[1:size(roiTrace2,1)],roiTrace2,[-1 1])
     
@@ -285,10 +253,9 @@ for roi_ind = 1:5%
 %     xlim([t(1) 1.5])
     
     title(['Traces sub ' int2str(s_nr) '  scan ' int2str(scan_nr) ' roi: ' niROIname])
-    subplot(2,2,2)
-    plot(t,mean(roiTrace1,1),'k')
-    subplot(2,2,4)
-    plot(t,mean(roiTrace2,1),'k')
+    subplot(2,2,[2 4]),hold on
+    plot(t,mean(roiTrace1,1),'k','LineWidth',2)
+    plot(t,mean(roiTrace2,1),'b','LineWidth',2)
 
 %     title('SVD PC1 and PC2 weights')
 %     imagesc(svdVals,[-.02 .02])
@@ -303,52 +270,32 @@ xyz_acpc_sparse = mrAnatXformCoords(acpcXform, ijk_func);
 
 
 
-%%
-    
 
-    % load time series for TE1 and associated time
-    ppgTS1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
-    % load time t
-    load(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponseT.mat']),'t');
-    % load std of time series and associated time
-    ppgTSstd1 = niftiRead(fullfile(dDir,subj,scan1,[scanName1 '_' in_data 'trigResponse_std.nii.gz'])); % ppg triggered time series
-    % get the timeseries for the current voxel
-    [voxelTs1] = bbGetVoxelTimeseries(ppgTS1,acpcXform,curPos);
-    [voxelTsStd1] = bbGetVoxelTimeseries(ppgTSstd1,acpcXform,curPos);
+%% freesurfer ROIs
 
-    % load time series for TE2 and associated time
-    ppgTS2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_' in_data 'trigResponse.nii.gz'])); % ppg triggered time series
-    % load std of time series and associated time
-    ppgTSstd2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_' in_data 'trigResponse_std.nii.gz'])); % ppg triggered time series
-    % get the timeseries for the current voxel
-    [voxelTs2] = bbGetVoxelTimeseries(ppgTS2,acpcXform,curPos);
-    [voxelTsStd2] = bbGetVoxelTimeseries(ppgTSstd2,acpcXform,curPos);
 
-    % plot the timeseries
-    figure('Position',[0 0 150 150]),hold on
-    plot(t,zeros(size(t)),'Color',[.5 .5 .5])
-    plot([0 0],[-2 2],'Color',[.5 .5 .5])
+%%%% Add freesurfer ROI traces (e.g. CSF)
+fs_segm = {[3 42],[2 41],[31 63],[14],[15],[24],[4 43]};
+fs_list = {'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
-    % % plot TE1 std
-    % upErr1 = 100*squeeze(voxelTs1) + 100*voxelTsStd1; % mean + std
-    % lowErr1 = 100*squeeze(voxelTs1) - 100*voxelTsStd1;
-    % fill([t t(end:-1:1)],[upErr1; lowErr1(end:-1:1)],[.5 .5 1],'EdgeColor',[.5 .5 1],'FaceAlpha',.5)
-    % 
-    % % plot TE2 std
-    % upErr2 = 100*squeeze(voxelTs2) + 100*voxelTsStd2; % mean + std
-    % lowErr2 = 100*squeeze(voxelTs2) - 100*voxelTsStd2;
-    % fill([t t(end:-1:1)],[upErr2; lowErr2(end:-1:1)],[1 .5 .5],'EdgeColor',[1 .5 .5],'FaceAlpha',.5)
+% reshape timeseries for voxel selection
+tsVect1 = 100*reshape(ppgTS1.data,[numel(ppgTS1.data(:,:,:,1)) length(t)]);
+tsVect2 = 100*reshape(ppgTS2.data,[numel(ppgTS2.data(:,:,:,1)) length(t)]);
 
-    % plot TE1
-    plot(t,100*squeeze(voxelTs1),'b','LineWidth',2)
-    % plot TE2
-    plot(t,100*squeeze(voxelTs2),'r','LineWidth',2)
+% which indices are added in the output: roiTS
+clear roiTS
+out_ind = 1:length(fs_segm);
+for rr = 1:length(out_ind)
+    % get the voxels from the current ROI:
+    thisRoi_voxels = find(ismember(niFs.data,fs_segm{rr}));
+    roiTS(out_ind(rr)).roiTrace1 = tsVect1(thisRoi_voxels,:);
+    roiTS(out_ind(rr)).roiTrace2 = tsVect2(thisRoi_voxels,:);
+end
+clear tsVect1 tsVect2
 
-    axis tight
-    ylabel('% signal modulation') % (signal - mean)./mean
-    xlabel('time (s)')
-    set(gcf,'PaperPositionMode','auto')
-    % print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
-    % print('-painters','-r300','-depsc',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+rr_plot = 1 ;% 3 or 7
 
+figure,hold on
+plot(t,mean(roiTS(out_ind(rr_plot)).roiTrace1,1),'k','LineWidth',2)
+plot(t,mean(roiTS(out_ind(rr_plot)).roiTrace2,1),'b','LineWidth',2)
 
