@@ -14,8 +14,8 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-s_nr = 3;
-scan_nr = 3;
+s_nr = 6;
+scan_nr = 1;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -44,39 +44,6 @@ acpcXform = acpcXform_new; clear acpcXform_new
 
 anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
 niAnatomy = niftiRead(anat);
-
-%% quick overlay between functionals and anatomy
-
-sliceThisDim = 3;
-if s_nr == 2
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [1,10,-20];
-%     curPos = [-29,-14,-50]; % 03
-%     curPos = [-3,30,-43]; % 03
-    curPos = [1,10,-20];
-    curPos = [1,1,-20];
-    curPos = [-11 34 -71]; % Carotid
-elseif s_nr == 3
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-%     curPos = [0,4,38];
-elseif s_nr == 4
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-end
-niFunc = ni;
-
-% niFunc.data = ni.data(:,:,:,1); % overlay the first functional - more structure visible
-% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-% title('First functional on anatomy')
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_Func1onAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
-
-niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-title('Mean functional on anatomy')
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_MeanFuncOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 
 %% Plot physiology data
@@ -153,23 +120,26 @@ in_data = 'PPG';
 sliceThisDim = 1;
 if s_nr == 1 % subject number
     imDims = [-90 -120 -120; 90 130 90];
-    curPos = [-1 26 -63]; 
-elseif s_nr == 2 % subject number
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [-10 50 -21]; % left lateral ventricle - frontal site
+    % curPos = [-10 50 -21]; % left lateral ventricle - frontal site
     curPos = [-1 72 -19]; % ExampleSite ACA
+elseif s_nr == 2 %subject number
+    imDims = [-90 -120 -100; 90 130 110];
+    %     curPos = [1,4,38];
+    %     curPos = [-14 24 -16]; % LCarotid
+    % curPos = [1 11 -16]; % Basilar
+    curPos = [-1 11 -16]; % ExampleSite
 elseif s_nr == 3 %subject number
     imDims = [-90 -120 -100; 90 130 110];
-%     curPos = [1,4,38];
-%     curPos = [-14 24 -16]; % LCarotid
-    curPos = [1 11 -16]; % Basilar
+    curPos = [-1,4,38]; %-5 or 02
 elseif s_nr == 4 %subject number
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-2,4,38]; %-5 or 02
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [5 23 50];
 elseif s_nr == 5 %subject number
     imDims = [-90 -120 -100; 90 130 120];
-    % curPos = [6,18,38];
-    curPos = [1 23 50];
+    curPos = [-2 23 50];
+elseif s_nr == 6 %subject number
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [5 23 50];
 end
 
 % load time series and associated time
@@ -178,9 +148,6 @@ ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
 
 % load correlation between even and odd scans for colors of timeseries
-% ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' in_data '.nii.gz']);
-% ppgR = niftiRead(ppgRname); % correlation with PPG
-% ppgR.data = ppgR.data.^2;
 ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' in_data '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
@@ -192,7 +159,8 @@ ppgR = niftiRead(ppgRname); % correlation with PPG
 %%%% Overlay 2: timeseries and anatomy
 ppgTSplot = ppgTS;
 if isequal(in_data,'PPG')
-    ppgTSplot.data(:,:,:,t<-.1 | t>1)=[]; % plot these times from curve
+    ppgTSplot.data(:,:,:,t<-.5 | t>.5) = []; % plot these times from curve
+%     ppgTSplot.data(:,:,:,t<-.1 | t>1)=[]; % plot these times from curve
 elseif isequal(in_data,'RESP')
     ppgTSplot.data(:,:,:,t<-.2 | t>4)=[]; % plot these times from curve
 end
@@ -212,7 +180,7 @@ title('Colors and size scaled by the COD(R)')
 
 clear niColor ppgTSplot
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/voxelTimeSeries/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','voxelTimeSeries',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 
 % bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
 

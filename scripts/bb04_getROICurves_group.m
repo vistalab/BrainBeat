@@ -8,11 +8,11 @@ close all
 % close all
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
-% group with FA of 48 includes second sub/scan: [7/2]
+% group with FA of 48 includes sub/scan: [1/3, 2/3, 3/3, 4/1, 5/1, 6/1]
+% group with FA of 48 includes second sub/scan: [6/2]
 
-s_nr = 6; 
-scan_nr = 1;
+s_nr = 4; 
+scan_nr = 3;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
@@ -108,7 +108,8 @@ niFs = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_aseg_auto.nii.gz']));
 
 % get manually segmented ROIs - these are in anatomical space
 clear niROI
-roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
+% roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
+roi_list = {'CFlowvoids','ACA','SSS','LeftTransverse','RightTransverse'};
 for rr = 1:length(roi_list)
     niROIname       = roi_list{rr};
     niROI(rr).ni    = niftiRead(fullfile(dDir,subj,s_info.anat,['r' s_info.anatName niROIname '.nii']));
@@ -169,7 +170,9 @@ end
 
 %%%% Add freesurfer ROI traces (e.g. CSF)
 fs_segm = {[3 42],[2 41],[31 63],[14],[15],[24],[4 43]};
-roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+% roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+%     'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
+roi_list = {'CFlowvoids','ACA','SSS','LeftTransverse','RightTransverse',...
     'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
 % reshape timeseries for voxel selection
@@ -212,14 +215,16 @@ disp(['saved ' tsSaveName])
 %%
 % clear all
 % close all
-roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+% roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
+%     'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
+roi_list = {'CFlowvoids','ACA','SSS','LeftTransverse','RightTransverse',...
     'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
+% group with FA of 48 includes sub/scan: [1/3, 2/3, 3/3, 4/1, 5/1, 6/1]
 
-sub_nrs = [2 3 4 5 6 7];
+sub_nrs = [1:6];
 scan_nrs = [3 3 3 1 1 1];
 
 avg_traces = zeros(length(sub_nrs),length(roi_list),51,4);
@@ -248,12 +253,15 @@ end
 
 %%
 
-plot_sig = 2; % 1: mean TS, 2: mean TS for R>.3, 3: mean pred, 4: mean pred r>.3
+roi_list = {'CFlowvoids','ACA','SSS','LeftTransverse','RightTransverse',...
+    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
+
+plot_sig = 4; % 1: mean TS, 2: mean TS for R>.3, 3: mean pred, 4: mean pred r>.3
 
 figure('Position',[0 0 150 300])
 subplot(2,1,1),hold on
 plot([-1 1],[0 0],'k')
-% plot Carotid flow voids
+% plot Carotid flow voids (1)
 roi_ind = 1;
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[1 .5 .5],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
@@ -263,7 +271,7 @@ low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 .8 .8],'EdgeColor',[1 .8 .8])
 plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'r','LineWidth',2)
 
-% plot Superior Saggital Sinus
+% plot Superior Saggital Sinus (3)
 roi_ind = 3;
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 .5 1],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
@@ -286,7 +294,7 @@ plot([-1 1],[0 0],'k')
 % fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 .5 0],'EdgeColor',[1 1 .5])
 % plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.8 .4 0],'LineWidth',2)
 
-% plot lateral ventricles in yellow
+% plot lateral ventricles in yellow (12)
 roi_ind = 12;
 % subject 2 does not have any voxels with reliable signal in this ROI...
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.3 .5 .3],'LineWidth',1)
@@ -297,11 +305,8 @@ low_bnd = signal-error;
 fill([out(1).t out(1).t(end:-1:1)],[up_bnd; low_bnd(end:-1:1)],[1 1 .5],'EdgeColor',[1 1 .5])
 plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'Color',[.8 .8 0],'LineWidth',2)
 
-roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse',...
-    'Gray','White','ChoroidPlexus','3rdVentr','4thVentr','CSF','LateralVentr'};
 
-
-% plot choroid plexus in green
+% plot choroid plexus in green (8)
 roi_ind = 8; 
 % plot(out(1).t,squeeze(avg_traces(:,roi_ind,:,plot_sig)),'Color',[.5 1 .5],'LineWidth',1)
 signal = squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1));
@@ -313,12 +318,13 @@ plot(out(1).t,squeeze(mean(avg_traces(:,roi_ind,:,plot_sig),1)),'g','LineWidth',
 xlim([-.5 .5])
 
 set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','ROI',['TimeSerie_6subAvg-FA48_meanTS_COD0_3']))
+% print('-painters','-r300','-depsc',fullfile(dDir,'figures','ROI',['TimeSerie_6subAvg-FA48_meanTS_COD0_3']))
 % print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS'])
 % print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS'])
-% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS_COD0_3'])
-% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanTS_COD0_3'])
-% print('-painters','-r300','-dpng',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanPRED'])
-% print('-painters','-r300','-depsc',[dDir './figures/ROI/TimeSerie_6subAvg-FA48_meanPRED'])
+
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','ROI',['TimeSerie_6subAvg-FA48_meanPRED_COD0_3']))
+print('-painters','-r300','-depsc',fullfile(dDir,'figures','ROI',['TimeSerie_6subAvg-FA48_meanPRED_COD0_3']))
 
 %%
 figure

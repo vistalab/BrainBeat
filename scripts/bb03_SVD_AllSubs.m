@@ -12,7 +12,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% Save canonical heartbeat responses (across all subjects)
 
 % subjects indices
-s_nr = [2 3 4 5 6 7];
+s_nr = [1 2 3 4 5 6];
 % scan nrs, here take the 25 or 20 degree flip angle
 % scan_nr  = [1 1 2];
 % scan nrs, take the 48 degree flip angles

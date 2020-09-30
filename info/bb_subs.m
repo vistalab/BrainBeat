@@ -1,7 +1,7 @@
 function subs = bb_subs(subj)
 
 switch subj
-    case 1
+    case 0
         subs.subj='20140911_1411';
         subs.age = 24;
         subs.gender = 'f';
@@ -11,7 +11,7 @@ switch subj
         subs.scanName{1}='7944_3_1';
         subs.scan{2}='6_1_mux8fov4_r1_25s_4mm';
         subs.scanName{2}='7944_6_1';
-    case 2
+    case 1
         subs.subj = '20141017_1242';    % Date _ Time out of NIMS
         subs.age = 63;
         subs.gender = 'm';
@@ -28,7 +28,7 @@ switch subj
         subs.scan{3} ='7_1_mux8fov4_r1_25s_4mmFA48';  
         subs.scanName{3}='8202_7_1';
         subs.scanFA{3}=48;
-    case 3
+    case 2
         subs.subj = '20150107_1621';    % Date _ Time out of NIMS
         subs.age = 24;
         subs.gender = 'f';
@@ -51,7 +51,7 @@ switch subj
         subs.scan{5} ='23_1_mux8_25s_4mmFA20';  % subject awake (subjective report)
         subs.scanName{5} = '8603_23_1'; 
         subs.scanFA{5} = 20;
-    case 4
+    case 3
         subs.subj = '20180319_1232';    % Date _ Time out of NIMS
         subs.age = 25;
         subs.gender = 'f';
@@ -102,7 +102,7 @@ switch subj
         subs.scan{12} ='11_1_HB8_025s_4mm_FA48';  % subject awake, eyes closed
         subs.scanName{12}='17178_11_1';
         subs.scanFA{12}=48;
-    case 5
+    case 4
         % people at scan: Hua Wu and Dora Hermes
         subs.age = 30;
         subs.gender = 'f';
@@ -149,7 +149,7 @@ switch subj
 
         % GE hyperband, did not run, don't know why 
                 
-    case 6
+    case 5
         subs.age = 30;
         subs.gender = 'm';
         subs.subj = '20180607_17734';    % Date _ Time out of NIMS
@@ -193,7 +193,7 @@ switch subj
         subs.scanName{7} = '17734_9_1_te0028';
         subs.scanFA{7} = 48;
         
-    case 7
+    case 6
         subs.age = 66;
         subs.gender = 'm';
         subs.subj = '20180619_17796';    % Date _ Time out of NIMS

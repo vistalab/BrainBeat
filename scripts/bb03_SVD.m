@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 6;
+s_nr = 7;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
@@ -29,6 +29,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 %%
 %% SVD on the odd responses:
 %%
+% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
 
 data_in = 'PPG';
 
@@ -296,7 +297,7 @@ ylabel(['PC ' int2str(w_plot) ' max=' num2str(maxPlot,3)])
 maxPlot = .002;
 % maxPlot = .001;
 
-sliceThisDim = 3;
+sliceThisDim = 1;
 if s_nr == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [0 26 17]; 
@@ -304,40 +305,44 @@ elseif s_nr == 2
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [-12 50 -21];
 %     curPos = [-10 -20 -21]; % for figure set
-    curPos = [-11 35 -77]; % Carotid
+%     curPos = [-11 35 -77]; % Carotid
 %     curPos = [-2 26 -63]; % Basilar
 %     curPos = [-1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
+    curPos = [-2 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery
 elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [0,4,38];
 %     curPos = [0,4,38]; % for figure set
-    curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
-    curPos = [1 20 -23]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
+    curPos = [-4 20 -23]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif s_nr == 4
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-2 4 30];%[x x 38]
+%     curPos = [-2 4 30];%[x x 38]
+    curPos = [-9 4 30];%% x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif s_nr == 5
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [1 18 53];
+%     curPos = [1 18 53];
+    curPos = [5 4 30];%% x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif s_nr == 6
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [7 19 3];
+%     curPos = [7 19 3];
+    curPos = [2 4 30];%% x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif s_nr == 7
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [19 40 -29];
+%     curPos = [19 40 -29];
+    curPos = [1 4 30];%% x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 end
 
-% Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the
-% color intensity, the color indicates the PC2 phase: timing
-niColor = ni;
-niIntensity = ni;
-niColor.data = out(2).weights;
-niIntensity.data = out(1).weights;
-niIntensity.data(niIntensity.data<0) = 0; % only plot positive
-bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
-title(['PC1>0, slice ' int2str(curPos(sliceThisDim))])
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1pos_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% % Make two figures, for PC1>0, one PC1<0. The size of PC1 indicates the
+% % color intensity, the color indicates the PC2 phase: timing
+% niColor = ni;
+% niIntensity = ni;
+% niColor.data = out(2).weights;
+% niIntensity.data = out(1).weights;
+% niIntensity.data(niIntensity.data<0) = 0; % only plot positive
+% bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+% title(['PC1>0, slice ' int2str(curPos(sliceThisDim))])
+% set(gcf,'PaperPositionMode','auto')
+% % print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1pos_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
 
 niColor = ni;
 niIntensity = ni;
@@ -346,7 +351,7 @@ niIntensity.data = -out(1).weights;
 niIntensity.data(niIntensity.data<0) = 0; 
 bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
 title(['PC1<0, slice ' int2str(curPos(sliceThisDim))])
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_PC1neg_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','pc1Amp_pc2Time',['ACA1_subj' subj '_scan' int2str(scan_nr) '_PC1neg_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 
 % niColor = ni;
 % niIntensity = ni;

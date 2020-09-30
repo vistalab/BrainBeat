@@ -14,10 +14,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
-% s_nr = 5;
+s_nr = 5;
+scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
+% s_nr = 6;
 % scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2
-s_nr = 6;
-scan_nr = [6 7]; % provide a pair of scans with echo 1 and 2
 % s_nr = 7;
 % scan_nr = [4 5]; % provide a pair of scans with echo 1 and 2, [4 5] or [6 7]
 
@@ -178,9 +178,9 @@ ppgR2 = niftiRead(fullfile(dDir,subj,scan2,[scanName2 '_cod' in_data '.nii.gz'])
 
 in_data = 'PPG';
 
-roi_list = {'CFlowvoids','AnteriorSSS','SSS','LeftTransverse','RightTransverse'};
+roi_list = {'CFlowvoids','ACA','SSS','LeftTransverse','RightTransverse'};
 
-for roi_ind = 3%:5%
+for roi_ind = 1%:5%
     niROIname  = roi_list{roi_ind};
     niROI      = niftiRead(fullfile(dDir,subj,subs.anat,['r' subs.anatName niROIname '.nii']));
     
