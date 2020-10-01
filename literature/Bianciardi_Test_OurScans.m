@@ -46,22 +46,22 @@ for FA_ind = 1:length(FA_all)
 
         q = exp(-TR/T1(tt))*cos(FA);
 
-        % regime 1 v==0:
-        kk = find(V==0);
-        MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
-        Mxy(tt,FA_ind) = G * sin(FA) * MzV0 *...
-            exp(-TE/T2s);
-        
+%         % regime 1 v==0:
+%         kk = find(V==0);
+%         MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
+%         Mxy(tt,FA_ind) = G * sin(FA) * MzV0 *...
+%             exp(-TE/T2s);
+%         
 %         % regime 2 v<vc:
 %         kk = find(V>.4,1);% find(V>0 & V<Vc) 
 %         MzV0 = (M0 * (1-exp(-TR/T1(tt))))/(1-q);
 %         Mxy(tt,FA_ind) = G * sin(FA) * (MzV0 + (M0-MzV0)*(1-q.^(Vc/V(kk)))/((Vc/V(kk))*(1-q)) ) *...
 %             exp(-TE/T2s);
 
-%         % regime 3 v>vc:
-%         kk = find(V>=Vc,1);
-%         Mxy(tt,FA_ind) = G * sin(FA) * M0 *...
-%             exp(-TE/T2s);
+        % regime 3 v>vc:
+        kk = find(V>=Vc,1);
+        Mxy(tt,FA_ind) = G * sin(FA) * M0 *...
+            exp(-TE/T2s);
 
         
     end

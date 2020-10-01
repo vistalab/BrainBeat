@@ -289,17 +289,17 @@ end
 
 %% Integrate all segmentations into 1 file for each scan: 
 
-clear all
-close all
+% clear all
+% close all
 
 % dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 7;
+s = 6;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-for scan_nr = 1:3
+for scan_nr = 2%:3
     % read the functional data
     scan = s_info.scan{scan_nr};
     scanName = s_info.scanName{scan_nr};
@@ -318,9 +318,9 @@ for scan_nr = 1:3
     % these are the freesurfer labels we need:
     FS_roisToSegment = {...
         [3 % left gray matter
-        42],...% right gray matter
+        42],...% right gray matter 
         [2 % left white matter
-        41],... % right white matter
+        41],... % right white matter 
         [4 % left lateral ventricle
         5 % left inferior lateral ventricle
         14 % 3rd ventricle

@@ -16,7 +16,7 @@ s_nr = [1 2 3 4 5 6];
 % scan nrs, here take the 25 or 20 degree flip angle
 % scan_nr  = [1 1 2];
 % scan nrs, take the 48 degree flip angles
-scan_nr  = [3 3 3 1 1 1];
+scan_nr  = [3 3 3 1 1 2];
 
 % load first two principle components for these subjects and scans
 all_pcs = zeros(length(s_nr),2,128);
@@ -29,7 +29,7 @@ end
 t_svd = linspace(-.5,1.5,128);
 
 % plot them:
-figure
+figure('Position',[0 0 200 200])
 subplot(2,1,1),hold on
 plot(t_svd,squeeze(all_pcs(:,1,:)),'k','LineWidth',2)
 plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',2)
@@ -54,9 +54,9 @@ pc2  = temp(:,2);
 pc3  = temp(:,3);
 title('canonical heartbeat components')
 
-% set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234567'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/canonicalPC_S234567'])
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','canonicalPC_S1-6'))
+print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','canonicalPC_S1-6'))
 
 % save them:
 save(['./local/allsubs_pc12'],'pc1','pc2','pc3')
@@ -107,18 +107,18 @@ axis off
 title('canonical PCs across 6 subjects')
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/model'])
-print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/model'])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','model'))
+print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','model'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
 
 % subjects indices
-s_nr = [2 3 4 5 6 7];
+s_nr = [1:6];
 % scan nrs, here take the 25 or 20 degree flip angle
 % scan_nr  = [1 1 2];
 % scan nrs, take the 48 degree flip angles
-scan_nr  = [3 3 3 1 1 1];
+scan_nr  = [3 3 3 1 1 2];
 
 % load first two principle components for these subjects and scans
 all_pcs = zeros(length(s_nr),2,128);
@@ -150,15 +150,15 @@ for kk = 1:length(s_nr)
 end
 
 %% load canonical heartbeat responses and run through data
-clear all
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% clear all
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Load canonical heartbeat responses:
 load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 
 % Load PPG responses:
-s_nr        = 7;
-scan_nr     = 1;
+s_nr        = 5;
+scan_nr     = 3;
 s_info      = bb_subs(s_nr);
 subj        = s_info.subj;
 scan        = s_info.scan{scan_nr};
@@ -183,7 +183,6 @@ ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigRespons
 %%%% Scale the time-series matrix by the reliability
 % Get odd/even corr/corr (made with bbCod/Correlate2physio):
 ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
-% ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
 % Set maximum of ppgTS to 1 for each voxel
 ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
@@ -214,14 +213,14 @@ test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 t_hr = linspace(min(t_sel),max(t_sel),128);
 y1 = interp1(t_hr,pc1,t_sel);
 y2 = interp1(t_hr,pc2,t_sel);
-% y3 = interp1(t_hr,pc3,t_sel);
+y3 = interp1(t_hr,pc3,t_sel);
 
 % get beta values on PC1 and PC2 model for every voxel in even response using regression
 disp('get beta weights')
-beta_weights = zeros(size(a,1),2);
+beta_weights = zeros(size(a,1),3);
 for kk = 1:size(a,1) % voxels
     if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-    [B] = regress(a(kk,:)',[y1;y2]');
+    [B] = regress(a(kk,:)',[y1;y2;y3]');
     beta_weights(kk,:) = B;
 end
 disp('done')
@@ -233,7 +232,8 @@ relRMS_weights = zeros(size(a,1),1);
 % error even versus odd responses
 test_train_error = sqrt(sum((test_set - a).^2,2));
 % model
-model_v = beta_weights*[y1;y2];
+model_v = beta_weights(:,1:2)*[y1;y2]; % use 2 pcs
+% model_v = beta_weights*[y1;y2;y3];
 % model error
 test_model_error = sqrt(sum((test_set - model_v).^2,2));
 % relative RMS error:
@@ -241,7 +241,6 @@ rel_rms_error = test_model_error./test_train_error;
 
 for kk = 1:size(a,1) % voxels
     if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-    % model_v = beta_weights(kk,:)*[y1;y2];
     r_weights(kk) = calccod(model_v(kk,:)',a(kk,:)',1,0,0)./100;
 end
 r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
@@ -266,15 +265,17 @@ set(gcf,'PaperPositionMode','auto')
 % of the data:
 modelBetterThanData = 100*length(find(rel_rms_error(~zero_voxels)<1))./length(rel_rms_error(~zero_voxels))
 
-% s_nr = 2, scan_nr = 3: 58.2660
-% s_nr = 3, scan_nr = 3: 82.4630
-% s_nr = 4, scan_nr = 3: 46.3723
-% s_nr = 5, scan_nr = 1: 77.0334
-% s_nr = 6, scan_nr = 1: 63.2219
-% s_nr = 7, scan_nr = 1: 67.5104
+% s_nr = 1, scan_nr = 3: 58.9601
+% s_nr = 2, scan_nr = 3: 82.3609
+% s_nr = 3, scan_nr = 3: 46.0046
+% s_nr = 4, scan_nr = 1: 76.5213
+% s_nr = 5, scan_nr = 1: 63.5825
+% s_nr = 6, scan_nr = 2: 69.1344
+
+averageModelVSData = mean([58.9601 82.3609 46.0046 76.5213 63.5825 69.1344]);
 
 %% plot 1 voxel to check model versus data
-voxel_nr = 28;
+voxel_nr = find(ppgR.data(:)>.8,1);
 figure('Position',[0 0 200 150]),hold on
 plot(t_sel,model_v(voxel_nr,:),'k','LineWidth',2)
 plot(t_sel,a(voxel_nr,:),'b:','LineWidth',2)
@@ -291,6 +292,7 @@ plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
 %%
 %%
 niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+% roiNames = {'GM','WM','Ventricles','CSF','Veno'};
 
 % SPM segmentation
 niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
@@ -301,8 +303,11 @@ select_voxels = brain_vect>0 & r_weights>.7;
  
 figure
 subplot(2,1,1),hold on
+plot([0 0],[-2 2],'k')
+plot([-2 2],[0 0],'k')
 plot(beta_weights(select_voxels,1),beta_weights(select_voxels,2),'ko')
 % plot3(beta_weights(select_voxels,1),beta_weights(select_voxels,2),beta_weights(select_voxels,3),'ko')
+title('all voxels beta weights PC1 PC2, R>.7')
 
 % subplot(2,2,3),hold on
 % set_1 = select_voxels & beta_weights(:,1)>=0; % CSF
@@ -314,11 +319,19 @@ plot(beta_weights(select_voxels,1),beta_weights(select_voxels,2),'ko')
 % axis equal
 r_th = .5;
 subplot(2,2,3),hold on
+plot([0 0],[-2 2],'k')
+plot([-2 2],[0 0],'k')
 plot(beta_weights(niSeg.data(:)==5 & r_weights>r_th,1),beta_weights(niSeg.data(:)==5 & r_weights>r_th,2),'b.')
-subplot(2,2,4),hold on
-plot(beta_weights(niSeg.data(:)==3 & r_weights>r_th,1),beta_weights(niSeg.data(:)==3 & r_weights>r_th,2),'g.')
-% plot(beta_weights(niSPM.data(:)==2 & r_weights>r_th,1),beta_weights(niSPM.data(:)==2 & r_weights>r_th,2),'ro')
+title('Veno voxels R>.5')
+axis square
 
+subplot(2,2,4),hold on
+plot([0 0],[-2 2],'k')
+plot([-2 2],[0 0],'k')
+plot(beta_weights(niSeg.data(:)==3 & r_weights>r_th,1),beta_weights(niSeg.data(:)==3 & r_weights>r_th,2),'g.')
+title('Ventricle voxels R>.5')
+% plot(beta_weights(niSPM.data(:)==2 & r_weights>r_th,1),beta_weights(niSPM.data(:)==2 & r_weights>r_th,2),'ro')
+axis square
 
 sliceThisDim = 2;
 if s_nr == 1
@@ -342,6 +355,9 @@ elseif s_nr == 4
 elseif s_nr == 5
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [6,18,38];
+elseif s_nr == 6
+    imDims = [-90 -120 -100; 90 130 120];
+    curPos = [6,18,38];
 end
 
 ni_r = ni;
@@ -355,7 +371,7 @@ ni_r = ppgR;
 ni_r.data(ni_r.data<0.2) = 0;
 % bbOverlayDotsAnat(ni_r,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
 
-niColor = [1 0 0;0 0 1; 0 1 0];
+niColor = [1 0 0;0 0 1; 0 1 0;1 1 0;0 1 1];
 R_th = 0.3;
 niIntensity = ni;
 niIntensity.data = zeros(size(ppgR.data));
@@ -365,15 +381,17 @@ niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)>0 & r_weights>=R_th) = 
 niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)<0 & r_weights>=R_th) = 2;
 
 
-%%
+%% plot beta weights in one color
+
 figure
-sliceThisDim = 1;
+sliceThisDim = 3;
 % curPos = [-20 -14 36];%[-1/-9 18 28] % zero
-curPos = [6,18,38];
+curPos = [10,18,5];
 bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
 
 
-%%
+%% plot beta1 (pc1) and beta2 (pc2) using pancy color circle
+
 ni1 = ni;
 ni1.data = ni1.data(:,:,:,1);
 ni1.data(:) = beta_weights(:,1);
@@ -383,13 +401,14 @@ ni2.data = ni2.data(:,:,:,1);
 ni2.data(:) = beta_weights(:,2);
 bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 
-%% plot beta weights for different tissue types
+%% plot pc1 beta weights for different tissue types
+% the segmentation is not so good, mixes lot of tissue
 
-% Segmentation file:
+% segmentation file:
 segName = fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']);
 niSeg = niftiRead(segName);
 
-r_th = .5;
+r_th = .3;
 clear pc1w pc1w
 
 for kk = 1:5
@@ -398,11 +417,13 @@ for kk = 1:5
 end
 
 roiNames = {'GM','WM','Ventricles','CSF','Veno'};
-figure('Position',[0 0 400 150])
+figure('Position',[0 0 600 200])
 for kk = 1:5
     subplot(1,5,kk),hold on
-    histogram(pc1w(kk).beta,[-2.5:.4:2.5],'FaceColor',[.7 .7 .7])
+    histogram(pc1w(kk).beta,[-2.5:.3:2.5],'FaceColor',[.7 .7 .7])
+    plot([0 0],[0 max(histcounts(pc1w(kk).beta,[-2.5:.3:2.5]))+3],'r:','LineWidth',2)
     xlim([-2.5 2.5])
+    xlabel('pc1')
     title(roiNames{kk})
 end
 subplot(1,5,1)
@@ -412,28 +433,11 @@ ylabel(['number of voxels R>' num2str(r_th,3)])
 % print('-painters','-r300','-dpng',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
 % print('-painters','-r300','-depsc',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
 
-%%
-figure
-for kk = 1:5
-    subplot(1,5,kk),hold on
-    hist(pc1w(kk).beta,[-2.5:.4:2.5])
-    xlim([-2.5 2.5])
-    title(roiNames{kk})
-    
-%     subplot(2,5,5+kk),hold on
-%     hist(pc2w(kk).beta,[-2.5:.2:2.5])
-% %     xlim([-2.5 2.5])
-%     title(roiNames{kk})
-end
-
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
-% print('-painters','-r300','-depsc',[dDir './figures/reliable/MeanSig_subj' int2str(s_nr)])
 
 %%
 %% Get functional voxels to plot with rendering
 
-Rthreshold = .5;
+Rthreshold = .3;
 
 % SPM segmentation
 niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
@@ -456,6 +460,7 @@ xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
 pc12_render = [ni1.data(select_voxels) ni2.data(select_voxels)];
 
 % Select hemisphere
+% xyz_select = xyz_anat(:,1)<10;
 xyz_select = xyz_anat(:,1)>-10;
 xx_plot = xyz_anat(xyz_select,1);
 yy_plot = xyz_anat(xyz_select,2);
@@ -484,7 +489,7 @@ color_plot = pc12_render_sel(:,2)./maxPlot;
 color_plot(color_plot>1) = 1;
 color_plot(color_plot<-1) = -1;
 
-%% Plot negative PC1 (veins/arteries) on render
+%% Plot PC1 (veins/arteries) and PC2 (CSF) on wm render
 hemi_load = 'r';
 gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_white_render.gii']);
 % gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_render.gii']);
@@ -504,15 +509,14 @@ end
 
 title(['R>' num2str(Rthreshold,3)])
 
-% Just plot all points in red:
-% plot3(xx_plot,yy_plot,zz_plot,'r.','MarkerSize',10)
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_lat'])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_lat']))
+
 
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_med'])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_med']))
 
 
 % Plot positive PC1 (CSF)
@@ -528,12 +532,11 @@ end
 
 title(['R>' num2str(Rthreshold,3)])
 
-% Just plot all points in red:
-% plot3(xx_plot,yy_plot,zz_plot,'r.','MarkerSize',10)
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_lat'])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_lat']))
 
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_med'])
+print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_med']))
+

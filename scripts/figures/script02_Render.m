@@ -7,9 +7,9 @@ close all
 
 %% Base data directory
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s_nr = 5;
+s_nr = 6;
 s_info = bb_subs(s_nr);
 subj=s_info.subj;
 

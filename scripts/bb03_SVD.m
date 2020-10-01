@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 7;
+s_nr = 2;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
@@ -29,12 +29,12 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 %%
 %% SVD on the odd responses:
 %%
-% group with FA of 48 includes sub/scan: [2/3, 3/3, 4/3, 5/1, 6/1, 7/1]
+% group with FA of 48 includes sub/scan: [1/3, 2/3, 3/3, 4/1, 5/1, 6/1]
 
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 1;
+scan_nr = 3;
 scan = s_info.scan{scan_nr};
 scanName = s_info.scanName{scan_nr};
 
@@ -80,6 +80,17 @@ a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
 [u,s,v] = svd(a','econ');
 s = diag(s);
 
+% % % figure to show Matrix A
+% figure('Position',[0 0 200 500]),hold on
+% imagesc(t_sel,[1:size(a,1)],a,[-.3 .3])
+% xlim([t_sel(1) t_sel(end)])
+% ylim([1 size(a,1)])
+% J = customcolormap([0 0.5 1],[0 0.8 1;.2 .2 .2;.9 0 0]);   %
+% colormap(J)
+% colorbar('southoutside');
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','MatrixA'))
+
 % Get to cumulative explained variance:
 var_explained = cumsum(s.^2) / sum(s.^2);
 clear a a_test
@@ -90,7 +101,7 @@ Fs = 1./mean(diff(t));
 f = Fs * (0:(L/2))/L;
 
 nr_pc_plot = 2;
-pc_colors = {'r','b','g','y'};
+pc_colors = {[0 0 0],[1 .5 0],'g','y'};
 % figure('Position',[0 0 300 400])
 figure('Position',[0 0 130 250])
 
@@ -121,8 +132,8 @@ set(gca,'XTick',[0 1])
 subplot(2,1,2),hold on
 legend({'pc1','pc2'})%,'pc3','pc4'})
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft'])
-% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft'])
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
+% print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
 
 %% Resample the eigenvectors and test whether they span a subspace
 %% Save for later use
