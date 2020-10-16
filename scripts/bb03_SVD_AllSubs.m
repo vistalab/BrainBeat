@@ -157,7 +157,7 @@ end
 load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 
 % Load PPG responses:
-s_nr        = 5;
+s_nr        = 2;
 scan_nr     = 3;
 s_info      = bb_subs(s_nr);
 subj        = s_info.subj;
@@ -217,10 +217,11 @@ y3 = interp1(t_hr,pc3,t_sel);
 
 % get beta values on PC1 and PC2 model for every voxel in even response using regression
 disp('get beta weights')
-beta_weights = zeros(size(a,1),3);
+beta_weights = zeros(size(a,1),2);
 for kk = 1:size(a,1) % voxels
     if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-    [B] = regress(a(kk,:)',[y1;y2;y3]');
+%     [B] = regress(a(kk,:)',[y1;y2;y3]');
+    [B] = regress(a(kk,:)',[y1;y2]');
     beta_weights(kk,:) = B;
 end
 disp('done')
@@ -461,7 +462,12 @@ pc12_render = [ni1.data(select_voxels) ni2.data(select_voxels)];
 
 % Select hemisphere
 % xyz_select = xyz_anat(:,1)<10;
-xyz_select = xyz_anat(:,1)>-10;
+if s_nr==3
+    x_plot = -15;
+else
+    x_plot = -10;
+end
+xyz_select = xyz_anat(:,1)>x_plot;
 xx_plot = xyz_anat(xyz_select,1);
 yy_plot = xyz_anat(xyz_select,2);
 zz_plot = xyz_anat(xyz_select,3);

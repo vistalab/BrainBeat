@@ -22,6 +22,7 @@ function val = bbGet(ni,param,varargin)
 % param list:              - arguments:
 %
 %   'tr'             - Repetition time
+%   'te'             - Echo time
 %   'slice duration' - duration of one slice within a tr
 %   'n slices        - number of slices within one tr
 %   'mux'            - the number of simultaneous slices (mux factor)
@@ -76,6 +77,9 @@ switch(param)
         % The fourth dimension of pixdim is a timing value, the TR
         % The first three are spatial dimensions
         val = ni.pixdim(4);
+    case{'te'}
+        te_str = extractBetween(ni.descrip,'te=',';ti');
+        val = str2double(te_str{1});
     case('sliceduration')
         % Read time for a single slice in seconds
         % Consider adding varargin of time unit (e.g., 'sec','ms', so

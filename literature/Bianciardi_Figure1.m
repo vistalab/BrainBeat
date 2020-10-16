@@ -9,7 +9,7 @@ TE = 0;
 TR = 0.033;
 
 V = 0:0.01:11; % cm/s
-Vc = 3.6; % ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
+Vc = 3.6; % cm/s ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
 
 % 7T tissue parameters [blood WM GM CSF] from Bianciardi
 T1 = [2.5 1.2 2.1 4.4]; % seconds longitudinal recovery rate

@@ -9,25 +9,23 @@
 % MRI acquisition settings:
 FA_deg = [5 20 36 48 90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
-TE = 0.0116;
-% [WM GM CSF arterial_blood veinous_blood]
-% T2s_all = [0.021 0.015 2 .049 0.015]; % T2s from Weiskopf 2013 Frontiers in Neuroscience, with Viesmann
-T2s_all = [0.021 0.015 .300 .049 0.015]; % T2s from Weiskopf 2013 Frontiers in Neuroscience, with Viesmann
-TR = 0.250;
+TE = 0.030;
+T2s_all = [0.021 0.015 2]; % T2s from Weiskopf 2013 Frontiers in Neuroscience
+TR = 0.800;
 
 V = 0:0.01:11; % cm/s
-Vc = 0.4/TR; % cm/s ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
+Vc = 0.25/TR; % ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
 
 % Tissue parameters [WM GM CSF blood] from Bianciardi at 7T
 % T1 = [1.2 2.1 4.4 1.7]; % seconds longitudinal recovery rate
 
-% % Tissue parameters [WM GM CSF blood] from Bianciardi at 3T
-T1 = [0.8 1.3 4.4 1.7]; % seconds longitudinal recovery rate
+% % Tissue parameters [WM GM CSF] from Bianciardi at 3T
+T1 = [0.8 1.3 4.4]; % seconds longitudinal recovery rate
 % T1=[0.9  1.67  4]; % old: previous used longitudinal recovery rate 
 
-PD = [0.7 0.85 1 1]; % this is not used in Bianciardi, from Mezer et al, blood is a guess
+PD = [0.7 0.85 1]; % this is not used in Bianciardi
 
-%% plot for V==0, V<Vc, V>=Vc
+%% plot for V==0
 
 FA_deg = [1:90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
@@ -41,7 +39,7 @@ Mxy3 = NaN(3,length(FA_all));
 
 for FA_ind = 1:length(FA_all)
     FA = FA_all(FA_ind);
-    for tt = 1:4 % [1:WM 2:GM 3:CSF 4:blood]
+    for tt = 1:3 % [1:WM 2:GM 3:CSF]
 
         T2s = T2s_all(tt);
 
@@ -74,10 +72,9 @@ end
 figure('Position',[0 300 800 250])
 subplot(1,3,1), plot(Mxy1')
 ylim([0 1])
-legend({'WM','GM','CSF','blood'})
+legend({'WM','GM','CSF'})
 xlabel('flip angle'),ylabel('Mxy')
 title('v==0')
-
 
 subplot(1,3,2), plot(Mxy2')
 ylim([0 1])
@@ -96,13 +93,13 @@ FA_deg = [5 20 36 48 90]; % flip angle in degrees to plot
 FA_all = (FA_deg*2*pi)/360; % flip angle in radians
 
 figure('Position',[0 300 800 400])
-tt_colors = {[0 .3 1],[.5 .5 .5],'c','r'};
+tt_colors = {[0 .3 1],[.5 .5 .5],'c'};
 % tt_colors = {'r','b','g'};
 for FA_ind = 1:length(FA_all)
     FA = FA_all(FA_ind);
     subplot(2,length(FA_all),FA_ind),hold on
     title(['FA = ' int2str(FA_deg(FA_ind))])
-    for tt = 1:4 % [1:WM 2:GM 3:CSF 4:blood]
+    for tt = 1:3 % [1:WM 2:GM 3:CSF]
 
         T2s = T2s_all(tt);
 
@@ -148,4 +145,4 @@ for FA_ind = 1:length(FA_all)
 end
 
 subplot(2,length(FA_all),1)
-legend({'WM','GM','CSF','blood'})
+legend({'WM','GM','CSF'})
