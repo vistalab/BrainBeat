@@ -391,7 +391,7 @@ curPos = [10,18,5];
 bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
 
 
-%% plot beta1 (pc1) and beta2 (pc2) using pancy color circle
+%% plot beta1 (pc1) and beta2 (pc2) using fancy color circle
 
 ni1 = ni;
 ni1.data = ni1.data(:,:,:,1);
@@ -463,7 +463,7 @@ pc12_render = [ni1.data(select_voxels) ni2.data(select_voxels)];
 % Select hemisphere
 % xyz_select = xyz_anat(:,1)<10;
 if s_nr==3
-    x_plot = -15;
+    x_plot = -15; % midline off in this subject, should have acpc oriented...
 else
     x_plot = -10;
 end
