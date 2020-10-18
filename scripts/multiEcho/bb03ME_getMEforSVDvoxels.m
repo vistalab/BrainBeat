@@ -155,10 +155,10 @@ scn_me = 1;%:length(scan_nrs)
 scan1 = s_info.scan{scan_nrs{scn_me}(1)};
 scanName1 = s_info.scanName{scan_nrs{scn_me}(1)};
 
-% Load coregistration matrix:
+% load coregistration matrix:
 me_acpcxform = load(fullfile(dDir,subj,scan1,[scanName1 'AcpcXform_new.mat']));
 
-% safe time T:
+% load time T:
 t_me = load(fullfile(dDir,subj,scan1,[scanName1 '_PPGtrigResponseT']),'t');
 
 % load average of all heartbeats:
