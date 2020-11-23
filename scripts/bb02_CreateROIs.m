@@ -143,7 +143,7 @@ for scan_nr = [4 6]%[1:3]
                 xyz_acpc = mrAnatXformCoords(acpcXform, [ii,jj,kk]);
                 % acpc index to anat ijk
                 ijk_anat = mrAnatXformCoords(ni.qto_ijk,xyz_acpc);
-                % just take neirest neighbour value
+                % just take nearest neighbour value
                 ijk_anat = round(ijk_anat);
 
                 % check if the voxel index does not exceed anatomical

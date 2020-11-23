@@ -32,9 +32,13 @@ function [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(ni,niAnatomy,acpcXfo
 
 if isempty(varargin)
     maxOverlay = max(double(ni.data(:))); % scale to maximum of data
+    makeFig = 1;
 else
     if ~isempty(varargin{1})
         maxOverlay = varargin{1}; % scale to maximum of data       
+    end
+    if length(varargin)>1
+        makeFig = varargin{2}; % scale to maximum of data       
     end
 end
 
@@ -48,6 +52,8 @@ mmPerVox = ni.pixdim(1:3);
 imgVol = double(ni.data); 
 imgVol = imgVol/maxOverlay; % scale to max
 imgVol(imgVol>1) = 1; % set everything larger than max to max
+imgVol(imgVol<-1) = -1; % set everything smaller than -max to -max
+imgVol = (imgVol+1)/2;
 [imgSlice1,x1,y1,z1] = dtiGetSlice(img2std,imgVol,sliceThisDim,sliceNum,imDims,interpType,mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1 = x1(1,:)';
@@ -102,11 +108,13 @@ elseif sliceThisDim == 3
     % x and y stay the same
 end
 
-
-figure('Position',[0 0 500 500])
+if makeFig==1
+    figure('Position',[0 0 500 500])
+end
 
 subplot(1,5,[1:4])
-cm = colormap(jet);
+% cm = colormap(jet);
+load loc_colormap
 image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
 hold on
 axis image

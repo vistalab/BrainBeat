@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 2;
+s_nr = 1;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 

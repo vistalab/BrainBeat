@@ -171,20 +171,20 @@ data_in     = 'PPG';
 load(['./local/canonicalPC_leavout' int2str(s_nr)],'pc1','pc2','pc3','t_svd')
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,['sub-' int2str(s)],'anat',['sub-' int2str(s) '_T1w.nii.gz']));
 
 % Functionals:
-ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
+ni = niftiRead(fullfile(dDir,['sub-' int2str(s)],'func',[scanName '.nii.gz']));
 
 % Load average of all odd heartbeats:
-ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
+ppgTS = niftiRead(fullfile(dDir,['sub-' int2str(s)],'func',[scanName '_' data_in 'trigResponse_odd.nii.gz']));
 
 % Load average of all even heartbeats:
-ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
+ppgTSeven = niftiRead(fullfile(dDir,['sub-' int2str(s)],'func',[scanName '_' data_in 'trigResponse_even.nii.gz']));
 
 %%%% Scale the time-series matrix by the reliability
 % Get odd/even corr/corr (made with bbCod/Correlate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
+ppgRname = fullfile(dDir,['sub-' int2str(s)],'func',[scanName '_cod' data_in '.nii.gz']);
 ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
 % Set maximum of ppgTS to 1 for each voxel
 ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
@@ -194,10 +194,10 @@ ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
 % Load timing of heartbeat triggered responses:
-load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
+load(fullfile(dDir,['sub-' int2str(s)],'func',[scanName '_' data_in 'trigResponseT']),'t')
 
 % Load coregistration matrix:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+load(fullfile(dDir,['sub-' int2str(s)],'func',[scanName 'AcpcXform_new.mat']))
 acpcXform = acpcXform_new; clear acpcXform_new
 
 % Times that were included in SVD:
@@ -260,18 +260,18 @@ ni2.data = ni2.data(:,:,:,1);
 ni2.data(:) = beta_weights(:,2);
 
 % name for pc1
-pc1_newName = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc1.nii.gz']);
+pc1_newName = fullfile(dDir,['sub-' int2str(s)],'func',[scanName '_' data_in '_pc1.nii.gz']);
 
 % reslice in anatomy space
 %%%% NOT WORKING: I think because the anatomical is not ACPC...
-% xform = inv(acpcXform); % inv(acpcXform)
-% bbDat = sort(floor(mrAnatXformCoords(niAnatomy.sto_xyz, [1 1 1; size(niAnatomy.data(:,:,:))])));
+xform = inv(acpcXform); % inv(acpcXform)
+bbDat = sort(round(mrAnatXformCoords(niAnatomy.sto_xyz, [1 1 1; size(niAnatomy.data(:,:,:))])));
 % bbDat = bbDat(:,[2 3 1]); % check order with [1 2 3]*niAnatomy.qto_xyz(1:3,1:3)
-% [newImg, xform, deformField] = mrAnatResliceSpm(ni1.data,xform,bbDat,niAnatomy.pixdim(1:3),[7 7 7 0 0 0],1);
-% pc1_anat = niAnatomy;
-% pc1_anat.data = newImg;
-% pc1_anat.fname = pc1_newName;
-% niftiWrite(pc1_anat,pc1_newName) % save
+[newImg, xform, deformField] = mrAnatResliceSpm(ni1.data,xform,bbDat,niAnatomy.pixdim(1:3),[7 7 7 0 0 0],1);
+pc1_anat = niAnatomy;
+pc1_anat.data = newImg;
+pc1_anat.fname = pc1_newName;
+niftiWrite(pc1_anat,pc1_newName) % save
 
                           
 %% how good are canonical principle components

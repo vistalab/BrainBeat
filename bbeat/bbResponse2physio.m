@@ -21,12 +21,12 @@ elseif exist('slices','var') && isempty(slices)% do whole brain
 end
 
 % get the nifti stuff we need:
-timing = bbGet(ni,'timing');
+timing = bbGet(ni,'timing'); % timing per slice
 mux_f = bbGet(ni,'super slices');
 srate = 1/bbGet(ni,'tr');
 
 % get physio stuff we need:
-physio     = physioCreate('nifti',ni);
+physio = physioCreate('nifti',ni);
 if isempty(varargin) % do PPG
     ppg_onsets = physioGet(physio,'ppg peaks');
 elseif ~isempty(varargin) && isequal(varargin{2},'ppg') % do PPG
@@ -43,12 +43,12 @@ else
     epoch_pre = varargin{1}(1);%sec pre-onset
     epoch_post = varargin{1}(2);%sec post-onset
 end
-step_size = 1/srate/mux_f;% in s
+step_size = 1/srate/mux_f; % in s
 srate_epochs = 1/step_size;
-t = [-epoch_pre:step_size:epoch_post];%s timing for 1 epoch
+t = [-epoch_pre:step_size:epoch_post]; % s timing for 1 epoch
 
-% adding 1 time point in case there 
-t_vox = min(timing(:)):step_size:(max(timing(:)+step_size)); % maximal timing accuracy for this scan session
+% maximal timing accuracy for this scan session
+t_vox = min(timing(:)):step_size:(max(timing(:)+step_size)); 
 
 % only use those ppg onsets that have an entire trial before and after
 ppg_onsets = ppg_onsets((ppg_onsets-epoch_pre)>1); % get rid of early ones, and the first scans
@@ -60,15 +60,15 @@ response_matrix_std = single(zeros(size(ni.data,1),size(ni.data,2),length(slices
 response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 
-for s = 1:length(slices)
-    disp(['slice ' int2str(s) ' of ' int2str(length(slices))])
-    sli = slices(s);
+for ss = 1:length(slices)
+    disp(['slice ' int2str(ss) ' of ' int2str(length(slices))])
+    sli = slices(ss);
     d = squeeze(ni.data(:,:,sli,1:end));
 
     % demean and express in percent modulation 
     d_norm = reshape(d,[size(d,1) * size(d,2), size(d,3)]);
     points_use = 4:size(d_norm,2); % do not use the first couple of scans
-    for kk = 1:size(d_norm,1)
+    for kk = 1:size(d_norm,1) % run through voxels in this slice
         % do not use first scans:
         x = points_use;
         y = d_norm(kk,points_use);
@@ -104,10 +104,10 @@ for s = 1:length(slices)
     clear d_up d
     
     % output:
-    response_matrix(:,:,s,:) = nanmean(temp_response_matrix,4);
-    response_matrix_std(:,:,s,:) = nanstd(temp_response_matrix,[],4);
-    response_matrix_odd(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
-    response_matrix_even(:,:,s,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
+    response_matrix(:,:,ss,:) = nanmean(temp_response_matrix,4);
+    response_matrix_std(:,:,ss,:) = nanstd(temp_response_matrix,[],4);
+    response_matrix_odd(:,:,ss,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
+    response_matrix_even(:,:,ss,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
     
     clear temp_response_matrix
 end

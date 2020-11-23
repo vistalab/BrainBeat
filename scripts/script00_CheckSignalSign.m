@@ -11,6 +11,82 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
+
+
+%% Basic check from here!!!
+%% Gen basic fMRI change from segmentation 
+
+% Functionals
+% Select a subject and scan nummer
+s_nr = 1;
+scan_nr = 3;
+
+subs = bb_subs(s_nr);
+subj = subs.subj;
+scan = subs.scan{scan_nr};
+scanName = subs.scanName{scan_nr};
+fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+if ~exist(fmri,'file')
+    clear ni
+    error('filename %s does not exist',fmri)
+end
+ni = niftiRead(fmri);
+
+% get physio stuff we need:
+physio     = physioCreate('nifti',ni);
+ppg_onsets = physioGet(physio,'ppg peaks');
+srate = 1/bbGet(ni,'tr');
+
+ppgResp = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
+ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
+
+niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+roiNames = {'GM','WM','Ventricles','CSF','Veno'};
+% Freesurfer for GM, WM, Ventricels, CSF from SPM and Venogram
+
+% Voxel vector with segmentation labels 1:5 for [SM WM Ventricles CSF Veno]
+segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
+
+% put the data in a matrix Voxel X Time
+respMat = reshape(ppgResp.data,[size(ppgResp.data,1) * size(ppgResp.data,2) * size(ppgResp.data,3)],size(ppgResp.data,4));
+
+avResp = zeros(size(ppgResp.data,4),length(roiNames));
+for kk = 1:length(roiNames)
+    avResp(:,kk) = mean(respMat(segmVect==kk,:),1);
+end
+
+% put the data in a matrix Voxel X Time
+sigMat = reshape(ni.data,[size(ni.data,1) * size(ni.data,2) * size(ni.data,3)],size(ni.data,4));
+
+avSig = zeros(size(ni.data,4),length(roiNames));
+for kk = 1:length(roiNames)
+    avSig(:,kk) = mean(sigMat(segmVect==kk,:),1);
+end
+avSig(1:5,:) = NaN; % first scans to NaN
+
+
+%%
+
+tt = [1:size(avSig,1)]/srate;
+
+figure
+for kk = 1:5
+    subplot(5,5,kk*5-4:kk*5-1),hold on
+    plot(tt,avSig(:,kk))
+    plot([ppg_onsets ppg_onsets],[nanmean(avSig(:,kk))-1 nanmean(avSig(:,kk))+1],'k')
+%     xlim([160 190])
+end
+
+for kk = 1:5
+    subplot(5,5,kk*5),hold on
+    plot(ppgT.t,avResp(:,kk)*100)
+    plot([0 0],[-1 1],'k')
+    title(roiNames{kk})
+end
+
+%%
+%% Other checks:
+%%
 %% The T2* data are here.  
 
 % Select a subject and scan nummer
@@ -45,26 +121,27 @@ acpcXform = acpcXform_new; clear acpcXform_new
 anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
 niAnatomy = niftiRead(anat);
 
-%% Quick overlay between functionals and anatomy
+%% Overlay functionals and anatomy to check coregistration
 
 sliceThisDim = 3;
-if s_nr == 2
+if s_nr == 1
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [1,10,-20];
 %     curPos = [-29,-14,-50]; % 03
 %     curPos = [-3,30,-43]; % 03
     curPos = [1,10,-20];
     curPos = [1,1,-20];
-    curPos = [-11 34 -71]; % Carotid
-elseif s_nr == 3
+%     curPos = [-11 34 -71]; % Carotid
+elseif s_nr == 2
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 %     curPos = [0,4,38];
-elseif s_nr == 4
+elseif s_nr == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 end
 niFunc = ni;
+physio = physioCreate('nifti',ni);
 
 % niFunc.data = ni.data(:,:,:,1); % overlay the first functional - more structure visible
 % bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
@@ -85,10 +162,73 @@ ppgTSname = fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']);
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
 load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']),'t');
 
+%%
+all_xyz = {[27 51 20],[27 50 20],[28 51 20],[28 50 20]};
+
+figure
+subplot(2,1,1)
+imagesc(niFunc.data(:,:,20)),hold on
+
+for kk = 1:length(all_xyz)
+    xyz = all_xyz{kk};
+    subplot(2,1,1)
+    plot(xyz(2),xyz(1),'k.')
+    axis image
+
+    subplot(2,1,2),hold on
+    srate = 1/bbGet(ni,'tr');
+    ttt = (1:size(ni.data,4))/srate;
+    thisSignal = squeeze(ni.data(xyz(1),xyz(2),xyz(3),:));
+    plot(ttt,thisSignal)
+end
+
+
+ppg_onsets = physioGet(physio,'ppg peaks');
+plot(ppg_onsets,mean(thisSignal),'r.')
+
+% get scans nrs closest to PPG peak, get diff
+ppg_scannr_onsets = round(ppg_onsets*srate);
+sig_slope = diff(ni.data,[],4);
+%%
+
+figure
+subplot(1,3,1)
+slice_nr = 17;
+slice_mean_df = mean(sig_slope(:,:,slice_nr,ppg_scannr_onsets),4);
+imagesc(slice_mean_df,[-3 3])
+subplot(1,3,2)
+slice_nr = 29;
+slice_mean_df = squeeze(mean(sig_slope(slice_nr,:,:,ppg_scannr_onsets),4));
+imagesc(slice_mean_df',[-3 3]),axis xy
+
+%% on anatomical
+
+
+sliceThisDim = 3;
+imDims = [-90 -120 -120; 90 130 90];
+curPos = [1,1,-20];
+niDF = niFunc;
+niDF.data = mean(sig_slope,4);
+niDF.data = -min(niDF.data(:))+niDF.data;
+bbOverlayFuncAnat(niDF,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+title('Mean change direction at PPG peak on anatomy')
+set(gcf,'PaperPositionMode','auto')
+
+
+sliceThisDim = 1;
+imDims = [-90 -120 -120; 90 130 90];
+curPos = [1,1,-20];
+niDF = niFunc;
+niDF.data = mean(sig_slope,4);
+niDF.data = -min(niDF.data(:))+niDF.data;
+bbOverlayFuncAnat(niDF,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.35)
+title('Mean change direction at PPG peak on anatomy')
+set(gcf,'PaperPositionMode','auto')
+
 %% 
 
 exampl_coords = [27 51 20];%[27 51 20] = superior saggital sinus, S1, scan3
-exampl_coords = [27 45 26];%[27 51 20] = superior saggital sinus, S2, scan3
+% exampl_coords = [27 45 26];%[27 51 20] = superior saggital sinus, S2, scan3
 plot_nrs = [13:2:20]; % heartbeat nrs to plot
 
 figure('Position',[0 0 250 400])
@@ -287,3 +427,49 @@ plot(curPos(1),curPos(2),'w*','MarkerSize',10)
 
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces_Location'])
+
+
+%%
+
+% add to this movie by setting small R voxels to zero
+
+% niPlot = niftiRead('/Users/m206305/Documents/data/BrainBeat/data/20141017_1242/7_1_mux8fov4_r1_25s_4mmFA48/8202_7_1_PPGtrigResponse.nii.gz');
+% load /Users/m206305/Documents/data/BrainBeat/data/20141017_1242/7_1_mux8fov4_r1_25s_4mmFA48/8202_7_1_PPGtrigResponseT.mat
+
+
+videoname = ['./local/CardiacPulseMovie01'];
+
+vidObj = VideoWriter(videoname,'MPEG-4'); %
+
+open(vidObj); 
+
+
+sliceThisDim = 3;
+imDims = [-90 -120 -120; 90 130 90];
+curPos = [1,1,-20];
+fid = figure('Position',[0 0 500 500])
+for kk = 1:length(t)
+    niDF = niPlot;
+    niDF.data = niPlot.data(:,:,:,kk);
+    bbOverlayFuncAnat(niDF,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.02,0);
+    title(['t = ' num2str(t(kk))])
+    set(gcf,'PaperPositionMode','auto')
+    
+    % Write each frame to the file.
+    for m=1:3 % write X frames
+        writeVideo(vidObj,getframe(fid));
+    end
+    
+end
+
+close(vidObj);
+
+%%
+
+x = physioGet(physio,'ppgppgcurve');
+ppg_t = physioGet(physio,'ppgppgtcurve');
+
+figure,plot(ppg_t,x)
+plot()
+
+
