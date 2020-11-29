@@ -11,15 +11,13 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
-
-
 %% Basic check from here!!!
 %% Gen basic fMRI change from segmentation 
 
 % Functionals
 % Select a subject and scan nummer
-s_nr = 1;
-scan_nr = 3;
+s_nr = 4; %[1 2 3 4 5 6]
+scan_nr = 1; % [3 3 3 1 1 1]
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -67,21 +65,49 @@ avSig(1:5,:) = NaN; % first scans to NaN
 
 %%
 
+areas_plot = [1 3 5];
+
 tt = [1:size(avSig,1)]/srate;
 
-figure
-for kk = 1:5
-    subplot(5,5,kk*5-4:kk*5-1),hold on
-    plot(tt,avSig(:,kk))
-    plot([ppg_onsets ppg_onsets],[nanmean(avSig(:,kk))-1 nanmean(avSig(:,kk))+1],'k')
+figure('Position',[0 0 500 300])
+for kk = 1:length(areas_plot)
+    thisArea = areas_plot(kk);
+    
+    sig_plot = avSig(:,thisArea)';
+    % detrend
+    x = 6:length(sig_plot);
+    p = polyfit(x,sig_plot(x),1);    
+
+    % percent modulation
+    mean_factor = mean(sig_plot(x)); % mean
+    sig_plot = 100*(sig_plot - (p(1)*[1:length(sig_plot)] + p(2)))./mean_factor;
+    
+    subplot(length(areas_plot),4,kk*4-3:kk*4-1),hold on
+    plot(tt,sig_plot,'.','Color',[0 .6 .8],'MarkerSize',10)
+    plot(tt,sig_plot,'Color',[0 .6 .8],'LineWidth',1)
+%     plot([ppg_onsets ppg_onsets],[nanmean(avSig(:,thisArea))-1 nanmean(avSig(:,thisArea))+1],'k')
+    plot([ppg_onsets ppg_onsets],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
 %     xlim([160 190])
+    xlim([85 105])
 end
 
+for kk = 1:length(areas_plot)
+    thisArea = areas_plot(kk);
+    subplot(length(areas_plot),4,kk*4),hold on
+    plot(ppgT.t,avResp(:,thisArea)*100,'Color',[0 .6 .8],'LineWidth',2)
+    plot([0 0],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
+    xlim([min(ppgT.t) max(ppgT.t)])
+    title(roiNames{thisArea})
+end
+
+%%
+
+figure,
 for kk = 1:5
-    subplot(5,5,kk*5),hold on
-    plot(ppgT.t,avResp(:,kk)*100)
-    plot([0 0],[-1 1],'k')
-    title(roiNames{kk})
+    subplot(1,5,kk)
+    imagesc(ppgT.t,[1:length(find(segmVect==kk))],100*respMat(segmVect==kk,:),[-1 1])
+    hold on
+    plot([0 0],[1 length(find(segmVect==kk))],'k','LineWidth',2)
 end
 
 %%
