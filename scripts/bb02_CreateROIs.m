@@ -352,3 +352,63 @@ for scan_nr = 2%:3
     
     niftiWrite(newLabels,fullfile(dDir,subj,scan,newLabels.fname));
 end
+
+%%
+%% Write DKT atlas in the space of a functional scan
+
+% clear all
+% close all
+
+% dDir = '/biac4/wandell/data/BrainBeat/data';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
+s = 6;
+
+for scan_nr = [1]%[1:3]
+
+    s_info = bb_subs(s);
+    subj = s_info.subj;
+
+    segm_file = fullfile(dDir,s_info.subj,'freesurfer','mri','aparc.DKTatlas+aseg.nii.gz');
+
+    % read in the nifti
+    ni = niftiRead(segm_file);
+
+    % read the functional data
+    scan = s_info.scan{scan_nr};
+    scanName = s_info.scanName{scan_nr};
+    fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
+    niFunc = niftiRead(fmri);
+
+    % Load coregistration matrix:
+    load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+    acpcXform = acpcXform_new; clear acpcXform_new
+
+    % Create output file
+    niFuncSeg = niFunc;
+    niFuncSeg.data = niFuncSeg.data(:,:,:,1);
+    niFuncSeg.data = zeros(size(niFuncSeg.data));
+    niFuncSeg.fname = [scanName '_r_DKTatlas_aseg.nii.gz'];
+
+    % for each func index, find a struct voxel
+    for ii = 1:size(niFunc.data,1)
+        for jj = 1:size(niFunc.data,2)
+            for kk = 1:size(niFunc.data,3)
+                % func voxel indices to acpc
+                xyz_acpc = mrAnatXformCoords(acpcXform, [ii,jj,kk]);
+                % acpc index to anat ijk
+                ijk_anat = mrAnatXformCoords(ni.qto_ijk,xyz_acpc);
+                % just take nearest neighbour value
+                ijk_anat = round(ijk_anat);
+
+                % check if the voxel index does not exceed anatomical
+                if sum(ijk_anat<size(ni.data))==3 && sum(ijk_anat<1)==0
+                    % get the image value and put it back in the functional
+                    niFuncSeg.data(ii,jj,kk) = ni.data(ijk_anat(1),ijk_anat(2),ijk_anat(3));
+                end
+            end
+        end
+    end
+
+    niftiWrite(niFuncSeg,fullfile(dDir,subj,scan,niFuncSeg.fname))
+end

@@ -11,14 +11,12 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
-%% Basic check from here!!!
-%% Generate basic fMRI change from segmentation 
+%% Generate basic fMRI change from Freesurfer segmentations 
 
 % Functionals
 % Select a subject and scan nummer
-s_nr = 2; %[1 2 3 4 5 6]
+s_nr = 1; %[1 2 3 4 5 6]
 scan_nr = 3; % [3 3 3 1 1 1]
-
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -41,19 +39,19 @@ srate       = 1/bbGet(ni,'tr');
 ppgResp = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
 ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
 
-niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
-roiNames = {'GM','WM','Ventricles','CSF','Veno'};
-% Freesurfer for GM, WM, Ventricels, CSF from SPM and Venogram
-
-% Voxel vector with segmentation labels 1:5 for [SM WM Ventricles CSF Veno]
+niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
+% matrix to vector
 segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
+
+roiNames = {'lingual','insula','central','cingulate'};
+roiCodes = {[1013 2013],[1035 2035],[1022 1024 2022 2024],[1026 2026]};
 
 % put the data in a matrix Voxel X Time
 respMat = reshape(ppgResp.data,[size(ppgResp.data,1) * size(ppgResp.data,2) * size(ppgResp.data,3)],size(ppgResp.data,4));
 
 avResp = zeros(size(ppgResp.data,4),length(roiNames));
 for kk = 1:length(roiNames)
-    avResp(:,kk) = mean(respMat(segmVect==kk,:),1);
+    avResp(:,kk) = mean(respMat(ismember(segmVect,roiCodes{kk}),:),1);
 end
 
 % put the data in a matrix Voxel X Time
@@ -61,14 +59,14 @@ sigMat = reshape(ni.data,[size(ni.data,1) * size(ni.data,2) * size(ni.data,3)],s
 
 avSig = zeros(size(ni.data,4),length(roiNames));
 for kk = 1:length(roiNames)
-    avSig(:,kk) = mean(sigMat(segmVect==kk,:),1);
+    avSig(:,kk) = nanmean(sigMat(ismember(segmVect,roiCodes{kk}),:),1);
 end
 avSig(1:5,:) = NaN; % first scans to NaN
 
 
 %%
 
-areas_plot = [1 3 5];
+areas_plot = [1:4];
 
 tt = [1:size(avSig,1)]/srate;
 
@@ -98,7 +96,7 @@ for kk = 1:length(areas_plot)
     thisArea = areas_plot(kk);
     subplot(length(areas_plot)+1,4,kk*4),hold on
     plot(ppgT.t,avResp(:,thisArea)*100,'Color',[0 .6 .8],'LineWidth',2)
-    plot([0 0],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
+%     plot([0 0],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
     xlim([min(ppgT.t) max(ppgT.t)])
     title(roiNames{thisArea})
 end
@@ -116,9 +114,9 @@ plot([0 0],[min(ppgCurve) max(ppgCurve)],'k')
 xlim([min(ppgCurveT) max(ppgCurveT)])
 title('ppg')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
 
 
 %%
@@ -137,10 +135,15 @@ end
 all_subs = [1 2 3 4 5 6];
 all_scans = [3 3 3 1 1 1];
 
+% roiNames = {'lingual','insula','anteriorcingulate','central','middlefrontal','itg','fusiform'};
+% roiCodes = {[1013 2013],[1035 2035],[1026 2026],[1022 1024 2022 2024],[1027 2027],[1011 2011],[1007 2007]};
+roiNames = {'3rd Ventr','4th Ventr','lateral ventr','inferior lat ventr'};
+roiCodes = {[14],[15],[4 43],[5 44]};
+
 t_hr = linspace(-.5,1.5,128);
-avResp_hr = NaN(length(t_hr),5,length(all_subs));
+avResp_hr = NaN(length(t_hr),length(roiNames),length(all_subs));
 ppgCurve_hr = NaN(length(t_hr),length(all_subs));
-roiNames = {'GM','WM','Ventricles','CSF','Veno'};
+
     
 for ss = 1:length(all_subs)
     % Functionals
@@ -168,10 +171,8 @@ for ss = 1:length(all_subs)
     ppgResp = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
     ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
 
-    niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
-    % Freesurfer for GM, WM, Ventricels, CSF from SPM and Venogram
-
-    % Voxel vector with segmentation labels 1:5 for [SM WM Ventricles CSF Veno]
+    niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
+    % matrix to vector
     segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
 
     % put the data in a matrix Voxel X Time
@@ -179,7 +180,7 @@ for ss = 1:length(all_subs)
 
     avResp = zeros(size(ppgResp.data,4),length(roiNames));
     for kk = 1:length(roiNames)
-        avResp(:,kk) = mean(respMat(segmVect==kk,:),1);
+        avResp(:,kk) = mean(respMat(ismember(segmVect,roiCodes{kk}),:),1);
     end
 
     % put the data in a matrix Voxel X Time
@@ -187,7 +188,7 @@ for ss = 1:length(all_subs)
 
     avSig = zeros(size(ni.data,4),length(roiNames));
     for kk = 1:length(roiNames)
-        avSig(:,kk) = mean(sigMat(segmVect==kk,:),1);
+        avSig(:,kk) = mean(sigMat(ismember(segmVect,roiCodes{kk}),:),1);
     end
     avSig(1:5,:) = NaN; % first scans to NaN
 
@@ -207,8 +208,8 @@ end
 
 
 %%
-areas_plot = [1 3 5];
-figure('Position',[0 0 120 400])
+areas_plot = [1:4];
+figure('Position',[0 0 120 700])
 for kk = 1:length(areas_plot)
     thisArea = areas_plot(kk);
     subplot(length(areas_plot)+1,1,kk),hold on
@@ -224,10 +225,11 @@ plot(t_hr,ppgCurve_hr./nanstd(ppgCurve_hr,[],1),'Color',[0 .6 .8])
 plot(t_hr,mean(ppgCurve_hr./nanstd(ppgCurve_hr,[],1),2),'Color',[0 .6 .8],'LineWidth',2)
 plot([0 0],[-2 4],'k')
 xlim([min(t_hr) max(t_hr)])
+title('PPG')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/allsubjects_FA48_tracessegm'])
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/allsubjects_FA48_tracessegm'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/allsubjects_FA48_tracesDKT1'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/allsubjects_FA48_tracesDKT1'])
 
 
 %%
