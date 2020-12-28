@@ -160,15 +160,15 @@ end
 
 %% Write venogram in the space of a functional scan
 
-clear all
-close all
-
+% clear all
+% close all
+% 
 % dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 7;
+s = 6;
 
-for scan_nr = 1:3
+for scan_nr = [4 6]
     s_info = bb_subs(s);
     subj = s_info.subj;
 
@@ -220,17 +220,17 @@ end
 
 % run SPM segment on anatomical
 
-clear all
-close all
+% clear all
+% close all
 
 % dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-s = 7;
+s = 6;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-for scan_nr = [1:3]
+for scan_nr = [4 6]
     % read gray, white and csf segmentations (respectively c1, c2, c3)
     segm_file1 = niftiRead(fullfile(dDir,s_info.subj,s_info.anat,['c1f' s_info.anatName '.nii']));
     segm_file2 = niftiRead(fullfile(dDir,s_info.subj,s_info.anat,['c2f' s_info.anatName '.nii']));
@@ -299,7 +299,7 @@ s = 6;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
-for scan_nr = 2%:3
+for scan_nr = [4 6]%:3
     % read the functional data
     scan = s_info.scan{scan_nr};
     scanName = s_info.scanName{scan_nr};

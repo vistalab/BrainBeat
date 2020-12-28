@@ -135,10 +135,10 @@ end
 all_subs = [1 2 3 4 5 6];
 all_scans = [3 3 3 1 1 1];
 
-% roiNames = {'lingual','insula','anteriorcingulate','central','middlefrontal','itg','fusiform'};
-% roiCodes = {[1013 2013],[1035 2035],[1026 2026],[1022 1024 2022 2024],[1027 2027],[1011 2011],[1007 2007]};
-roiNames = {'3rd Ventr','4th Ventr','lateral ventr','inferior lat ventr'};
-roiCodes = {[14],[15],[4 43],[5 44]};
+roiNames = {'lingual','insula','anteriorcingulate','central','middlefrontal','itg','fusiform'};
+roiCodes = {[1013 2013],[1035 2035],[1026 2026],[1022 1024 2022 2024],[1027 2027],[1011 2011],[1007 2007]};
+% roiNames = {'3rd Ventr','4th Ventr','lateral ventr','inferior lat ventr'};
+% roiCodes = {[14],[15],[4 43],[5 44]};
 
 t_hr = linspace(-.5,1.5,128);
 avResp_hr = NaN(length(t_hr),length(roiNames),length(all_subs));
