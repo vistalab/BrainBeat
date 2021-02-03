@@ -16,9 +16,12 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Functionals
 % Select a subject and scan nummer
-s_nr = 2; %[1 2 3 4 5 6]
+s_nr = 1; %[1 2 3 4 5 6]
 scan_nr = 3; % [3 3 3 1 1 1]
 
+dkt_table = readtable(fullfile(dDir,'dkt_areas.tsv'),'FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dktNames = dkt_table.label;
+dktCodes = dkt_table.label_nr;
 
 subs = bb_subs(s_nr);
 subj = subs.subj;
@@ -43,32 +46,45 @@ ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
 
 niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
 roiNames = {'GM','WM','Ventricles','CSF','Veno'};
-% Freesurfer for GM, WM, Ventricels, CSF from SPM and Venogram
+% Freesurfer for GM, WM, Ventricles, CSF from SPM and Venogram
 
-% Voxel vector with segmentation labels 1:5 for [SM WM Ventricles CSF Veno]
+% Voxel vector with segmentation labels 1:5 for [GM WM Ventricles CSF Veno]
 segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
 
-% put the data in a matrix Voxel X Time
+% load DKT atlas
+niDKT = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
+% matrix to vector
+segmVectDKT = reshape(niDKT.data,[size(niDKT.data,1) * size(niDKT.data,2) * size(niDKT.data,3)],1);
+
+%%%% put the PPG triggered data in a matrix Voxel X Time
 respMat = reshape(ppgResp.data,[size(ppgResp.data,1) * size(ppgResp.data,2) * size(ppgResp.data,3)],size(ppgResp.data,4));
 
-avResp = zeros(size(ppgResp.data,4),length(roiNames));
+% initialize average PPG triggered response across ROIs
+avResp = zeros(size(ppgResp.data,4),length(roiNames)+1);
 for kk = 1:length(roiNames)
     avResp(:,kk) = mean(respMat(segmVect==kk,:),1);
 end
 
-% put the data in a matrix Voxel X Time
+this_areas = 1; % cingulate
+avResp(:,kk+1) = mean(respMat(ismember(segmVectDKT,dktCodes(this_areas)),:),1);
+
+
+%%%% put the fMRI data in a matrix Voxel X Time
 sigMat = reshape(ni.data,[size(ni.data,1) * size(ni.data,2) * size(ni.data,3)],size(ni.data,4));
 
-avSig = zeros(size(ni.data,4),length(roiNames));
+% initialize average total time signal
+avSig = zeros(size(ni.data,4),length(roiNames)+1);
 for kk = 1:length(roiNames)
     avSig(:,kk) = mean(sigMat(segmVect==kk,:),1);
 end
+avSig(:,kk+1) = mean(sigMat(ismember(segmVectDKT,dktCodes(this_areas)),:),1);
 avSig(1:5,:) = NaN; % first scans to NaN
 
+roiNames(length(roiNames)+1) = dktNames(this_areas);
 
 %%
 
-areas_plot = [1 3 5];
+areas_plot = [6 3 5];
 
 tt = [1:size(avSig,1)]/srate;
 
@@ -85,18 +101,17 @@ for kk = 1:length(areas_plot)
     mean_factor = mean(sig_plot(x)); % mean
     sig_plot = 100*(sig_plot - (p(1)*[1:length(sig_plot)] + p(2)))./mean_factor;
     
-    subplot(length(areas_plot)+1,4,kk*4-3:kk*4-1),hold on
+    subplot(length(areas_plot)+1,2,kk*2-1),hold on
     plot(tt,sig_plot,'.','Color',[0 .6 .8],'MarkerSize',10)
     plot(tt,sig_plot,'Color',[0 .6 .8],'LineWidth',1)
-%     plot([ppg_onsets ppg_onsets],[nanmean(avSig(:,thisArea))-1 nanmean(avSig(:,thisArea))+1],'k')
+%     plot([ppg_onsets ppg_onsets],[nanmean(avSig(:,thisArea))*100 nanmean(avSig(:,thisArea))*100],'k')
     plot([ppg_onsets ppg_onsets],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
-%     xlim([160 190])
-    xlim([85 105])
+%     xlim([85 95]) 
 end
 
 for kk = 1:length(areas_plot)
     thisArea = areas_plot(kk);
-    subplot(length(areas_plot)+1,4,kk*4),hold on
+    subplot(length(areas_plot)+1,2,kk*2),hold on
     plot(ppgT.t,avResp(:,thisArea)*100,'Color',[0 .6 .8],'LineWidth',2)
     plot([0 0],[min(avResp(:,thisArea)*100) max(avResp(:,thisArea)*100)],'k')
     xlim([min(ppgT.t) max(ppgT.t)])
@@ -104,21 +119,20 @@ for kk = 1:length(areas_plot)
 end
 
 % ppg for completeness
-kk = length(areas_plot)+1;
-subplot(length(areas_plot)+1,4,kk*4-3:kk*4-1),hold on
+subplot(length(areas_plot)+1,2,length(areas_plot)*2+1),hold on
 plot([ppg_onsets ppg_onsets],[-50 100],'k')
 plot([1:length(physio.ppg.data)]/physio.ppg.srate,physio.ppg.data)
-xlim([85 105])
+xlim([85 95])
 
-subplot(length(areas_plot)+1,4,4*(length(areas_plot)+1)),hold on
+subplot(length(areas_plot)+1,2,length(areas_plot)*2+2),hold on
 plot(ppgCurveT,ppgCurve,'Color',[0 .6 .8],'LineWidth',2)
 plot([0 0],[min(ppgCurve) max(ppgCurve)],'k')
 xlim([min(ppgCurveT) max(ppgCurveT)])
 title('ppg')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/s' int2str(s_nr) '_scan' int2str(scan_nr) '_tracessegm'])
 
 
 %%

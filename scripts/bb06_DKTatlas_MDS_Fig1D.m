@@ -97,6 +97,58 @@ for ss = 1:length(all_subs)
     
 end
 
+%%
+%% plot some responses for Figure 1
+
+n_subs = size(avResp_hr,3);
+
+figure('Position',[0 0 150 280])
+
+subplot(4,1,1),hold on
+this_area = 1; % caudal anterior cingulate 1 
+% title(roiNames{this_area});
+up_ci = mean(avResp_hr(:,this_area,:),3) + 2*std(avResp_hr(:,this_area,:),[],3)/sqrt(n_subs);
+low_ci = mean(avResp_hr(:,this_area,:),3) - 2*std(avResp_hr(:,this_area,:),[],3)/sqrt(n_subs);
+fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5],'LineWidth',1)
+xlim([t_hr(1) t_hr(end)])
+
+subplot(4,1,2),hold on
+% title('Lateral ventricles')
+thisSignal = (squeeze(avResp_hr(:,74,:))+squeeze(avResp_hr(:,89,:)))/2;
+up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
+low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
+fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+% average left and lateral ventricles 74 89
+plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+xlim([t_hr(1) t_hr(end)])
+
+subplot(4,1,3),hold on
+% title('Veins')
+up_ci = mean(avRespVeno_hr(:,1,:),3) + 2*std(avRespVeno_hr(:,1,:),[],3)/sqrt(n_subs);
+low_ci = mean(avRespVeno_hr(:,1,:),3) - 2*std(avRespVeno_hr(:,1,:),[],3)/sqrt(n_subs);
+fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,squeeze(avRespVeno_hr(:,1,:)),'Color',[.5 .5 .5],'LineWidth',1)
+xlim([t_hr(1) t_hr(end)])
+
+subplot(4,1,4),hold on
+% title('PPG')
+thisSignal = ppgCurve_hr;
+thisSignal(isnan(thisSignal)) = 0;
+thisSignal = zscore(squeeze(thisSignal));
+up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
+low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
+fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot([0 0],[-1 3],'Color',[.7 .7 .7])
+plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+xlim([t_hr(1) t_hr(end)])
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig1D_allSubs_tracessegm01'])
+print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig1D_allSubs_tracessegm01'])
+
+
+
 %% get distance matric for MDS, try individual subjects
 % X = nanmean(avResp_hr(t_hr<0.5,:,:),3)';
 
@@ -257,16 +309,20 @@ these_areas = find(ismember(roiUsed,{'leftlateralventricle','rightlateralventric
 plot(Y(these_areas,1),Y(these_areas,2),'g*','MarkerSize',20)
 
 % add posterior Cerebral colors:
-these_areas = find(ismember(roiUsed,'rightparahippocampal'));
+these_areas = find(ismember(roiUsed,{'rightparahippocampal','leftparahippocampal'}));
 plot(Y(these_areas,1),Y(these_areas,2),'b*','MarkerSize',20)
 
 % add anterior Cerebral colors:
-these_areas = find(ismember(roiUsed,'leftcaudalanteriorcingulate'));
+these_areas = find(ismember(roiUsed,{'leftcaudalanteriorcingulate','rightcaudalanteriorcingulate'}));
 plot(Y(these_areas,1),Y(these_areas,2),'m*','MarkerSize',20)
 
 % add middle Cerebral colors:
-these_areas = find(ismember(roiUsed,'rightinsula'));
+these_areas = find(ismember(roiUsed,{'rightinsula','leftinsula'}));
 plot(Y(these_areas,1),Y(these_areas,2),'c*','MarkerSize',20)
+
+% add far away from main branches:
+these_areas = find(ismember(roiUsed,{'rightinferiortemporal','leftinferiortemporal'}));
+plot(Y(these_areas,1),Y(these_areas,2),'y*','MarkerSize',20)
 
 % % add CSF:
 % these_areas = find(ismember(roiUsed,'CSF'));
@@ -285,7 +341,7 @@ figure('Position',[0 0 400 1000])
 imagesc(t_D,[1:length(roiUsed)],X,[-0.005 0.005])
 set(gca,'YTick',[1:length(roiUsed)],'YTickLabel',roiUsed,'FontSize',9,'FontName','Arial')
 
-%% plot some responses
+%% plot some responses close and further from main branch of arteries
 
 figure('Position',[0 0 300 800])
 
@@ -300,7 +356,7 @@ plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'k','LineWidth',1)
 % plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5])
 
 this_area = 38; % right ITG
-plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5])
+plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 1])
 xlim([t_hr(1) t_hr(end)])
 
 subplot(5,1,2),hold on
@@ -315,7 +371,7 @@ plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'k','LineWidth',1)
 % plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5])
 
 this_area = 39; % isthmus cingulate 8 39
-plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5])
+plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 1])
 
 subplot(5,1,3),hold on
 plot(t_hr,zeros(size(t_hr)),'Color',[.7 .7 .7])
@@ -326,7 +382,7 @@ this_area = 62; % right insula
 plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'k','LineWidth',1)
 
 this_area = 44; % middle temporal
-plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5])
+plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 1])
 
 % this_area = 56; % right rostral middle frontal
 % plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'g')
@@ -340,19 +396,23 @@ plot(t_hr,squeeze(avRespVeno_hr(:,1,:)),'k','LineWidth',1)
 
 
 subplot(5,1,5),hold on
+title('Lateral ventricles')
 plot(t_hr,zeros(size(t_hr)),'Color',[.7 .7 .7])
 plot([0 0],[-0.2 0.2],'Color',[.7 .7 .7])
-
-title('Lateral ventricles')
-
 % average left and lateral ventricles 74 89
 plot(t_hr,(squeeze(avResp_hr(:,74,:))+squeeze(avResp_hr(:,89,:)))/2,'k','LineWidth',1)
+% Caudate:
+% plot(t_hr,squeeze(avResp_hr(:,79,:)),'Color',[1 .5 .5])
+% plot(t_hr,squeeze(avResp_hr(:,94,:)),'Color',[.5 1 .5])
+% Putamen:
+% plot(t_hr,squeeze(avResp_hr(:,80,:)),'Color',[1 .5 .5])
+% plot(t_hr,squeeze(avResp_hr(:,95,:)),'Color',[.5 1 .5])
 
 % % right lateral ventricle
 % this_area = 89;
 % plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'r')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/allSubs_tracessegm01'])
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/allSubs_tracessegm01'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/allSubs_tracessegm01'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/allSubs_tracessegm01'])
 
