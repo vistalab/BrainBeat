@@ -11,13 +11,13 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
-%% Now plot the average responses across subjects
+%% Get the average responses across subjects
 
 all_subs = [1 2 3 4 5 6];
 all_scans = [3 3 3 1 1 1];
 
-dkt_table = readtable(fullfile(dDir,'dkt_areas.tsv'),'FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
-dkt_table_surface = readtable(fullfile(dDir,'dkt_areas_surface.tsv'),'FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 roiNames = dkt_table.label;
 roiCodes = dkt_table.label_nr;
 
@@ -149,14 +149,15 @@ plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 % set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig1D_allSubs_tracessegm01'])
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig1D_allSubs_tracessegm01'])
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
 
 %% check render
 
 % Select a subject number and hemisphere
 ss = 1;
 hemi = 'l'; % 'l' or 'r'
+dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 
 s_nr = all_subs(ss); %[1 2 3 4 5 6]
 subs = bb_subs(s_nr);
@@ -190,13 +191,17 @@ ieeg_viewLight(90,0)
 %%
 % create colors for rendering and plots:
 nr_vals = 4;
-cm1 = [[0.7:0.3/(nr_vals-1):1]' [0.7:-0.2/(nr_vals-1):0.5]' [0.7:-0.2/(nr_vals-1):0.5]'];
-figure,imagesc(1:100)
-colormap(cm1)
+% cm1 = [[0.8:0.2/(nr_vals-1):1]' [0.7:-0.5/(nr_vals-1):0.2]' [0.7:-0.5/(nr_vals-1):0.2]'];
+cm1 = [[0.7:0.1/(nr_vals-1):.8]' [0.6:-0.6/(nr_vals-1):0]' [0.6:-0.6/(nr_vals-1):0]'];
+
 nr_vals = 4;
-cm2 = [[0.7:-0.2/(nr_vals-1):0.5]' [0.7:0.3/(nr_vals-1):1]' [0.7:-0.2/(nr_vals-1):0.5]'];
-nr_vals = 5;
-cm3 = [[0.7:-0.2/(nr_vals-1):0.5]' [0.7:-0.2/(nr_vals-1):0.5]' [0.7:0.3/(nr_vals-1):1]'];
+cm2 = [[0.6:-0.6/(nr_vals-1):0]' [0.7:0.1/(nr_vals-1):.8]' [0.6:-0.6/(nr_vals-1):0]'];
+
+nr_vals = 4;
+cm3 = [[0.6:-0.6/(nr_vals-1):0]' [0.6:-0.6/(nr_vals-1):0]' [0.7:0.1/(nr_vals-1):.8]'];
+
+figure,imagesc(1:100)
+colormap(cm3)
 
 %% plot responses in these colors
 
@@ -204,7 +209,7 @@ cm3 = [[0.7:-0.2/(nr_vals-1):0.5]' [0.7:-0.2/(nr_vals-1):0.5]' [0.7:0.3/(nr_vals
 % there are 31 surface areas with dkt_table.DKT_nr corresponding to dkt_table_surface.DKT_nr
 % so we use the colors from dkt_table_surface.DKT_nr
 
-figure
+figure('Position',[0 0 200 400])
 subplot(3,1,1),hold on
 ind_art = 1001:1004; % main branch of anterior cerebral artery
 for kk = 1:length(ind_art)
@@ -232,7 +237,7 @@ end
 ylim([-0.3 0.3])
 
 subplot(3,1,3),hold on
-ind_art = 3001:3005; % main branch of posterior cerebral artery
+ind_art = 3001:3004; % main branch of posterior cerebral artery
 for kk = 1:length(ind_art)
     % find areas with first ind_art
     dkt_surface_index = find(dkt_table_surface.ind_arterial == ind_art(kk));

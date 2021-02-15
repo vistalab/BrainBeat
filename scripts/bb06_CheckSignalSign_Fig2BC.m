@@ -82,7 +82,7 @@ avSig(1:5,:) = NaN; % first scans to NaN
 
 roiNames(length(roiNames)+1) = dktNames(this_areas);
 
-%% Figure 2B and 2C
+%%
 
 areas_plot = [6 3 5];
 
