@@ -196,14 +196,24 @@ ieeg_viewLight(90,0)
 
 %%
 % create colors for rendering and plots:
-nr_vals = 4;
-cm1 = [[.7 .7 .7]; 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]'];
-
-nr_vals = 4;
-cm2 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]'];
-
-nr_vals = 4;
-cm3 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1)];
+% nr_vals = 4;
+% cm1 = [[.7 .7 .7]; 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]'];
+% nr_vals = 4;
+% cm2 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]'];
+% nr_vals = 4;
+% cm3 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1)];
+cm1 = [[dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1001,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1001,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1001,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1002,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1002,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1002,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1003,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1003,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1003,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1004,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1004,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1004,1))]];
+cm2 = [[dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==2001,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==2001,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==2001,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==2002,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==2002,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==2002,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==2003,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==2003,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==2003,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==2004,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==2004,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==2004,1))]];
+cm3 = [[dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==3001,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==3001,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==3001,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==3002,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==3002,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==3002,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==3003,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==3003,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==3003,1))];...
+    [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==3004,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==3004,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==3004,1))]];
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)
@@ -218,7 +228,6 @@ colormap(cm2)
 axis off
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm2'])
-
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)

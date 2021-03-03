@@ -33,12 +33,26 @@ function [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(ni,niAnatomy,acpcXfo
 if isempty(varargin)
     maxOverlay = max(double(ni.data(:))); % scale to maximum of data
     makeFig = 1;
+    minOverlay = [];
 else
     if ~isempty(varargin{1})
-        maxOverlay = varargin{1}; % scale to maximum of data       
+        maxOverlay = varargin{1}; % scale to maximum of data
+    else
+        maxOverlay = max(double(ni.data(:))); % scale to maximum of data
     end
     if length(varargin)>1
-        makeFig = varargin{2}; % scale to maximum of data       
+        if ~isempty(varargin{2})
+            makeFig = varargin{2}; % make a figure
+        else
+            makeFig = 1;
+        end
+    end
+    if length(varargin)>2
+        if ~isempty(varargin{3})
+            minOverlay = varargin{3}; % scale only show values above 
+        else
+            minOverlay = [];
+        end
     end
 end
 
@@ -53,7 +67,7 @@ imgVol = double(ni.data);
 imgVol = imgVol/maxOverlay; % scale to max
 imgVol(imgVol>1) = 1; % set everything larger than max to max
 imgVol(imgVol<-1) = -1; % set everything smaller than -max to -max
-imgVol = (imgVol+1)/2;
+imgVol = (imgVol+1)/2; % everything is scaled 0:1 now, with zero values at 0.5
 [imgSlice1,x1,y1,z1] = dtiGetSlice(img2std,imgVol,sliceThisDim,sliceNum,imDims,interpType,mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
     x1 = x1(1,:)';
@@ -112,6 +126,11 @@ if makeFig==1
     figure('Position',[0 0 500 500])
 end
 
+if ~isempty(minOverlay) % remove vals < minOverlay if value
+    minTh = [0.5-((minOverlay/maxOverlay)/2) 0.5+((minOverlay/maxOverlay)/2)];
+    imgSlice1(imgSlice1>minTh(1) & imgSlice1<minTh(2)) = NaN;
+end
+
 subplot(1,5,[1:4])
 % cm = colormap(jet);
 load loc_colormap
@@ -122,9 +141,16 @@ axis image
 imgSlice1_color = cat(3,zeros(size(imgSlice1)),zeros(size(imgSlice1)),zeros(size(imgSlice1)));
 for k_x = 1:length(x1)
     for k_y = 1:length(y1)
-        imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice1(k_y,k_x))*63),:);
+        if ~isnan(imgSlice1(k_y,k_x)) && (imgSlice1(k_y,k_x)) ~= 0
+            imgSlice1_color(k_y,k_x,:) = cm(1+floor(abs(imgSlice1(k_y,k_x))*63),:);
+        elseif ~isnan(imgSlice1(k_y,k_x)) && (imgSlice1(k_y,k_x)) == 0
+            imgSlice1_color(k_y,k_x,:) = [NaN NaN NaN];
+        else
+            imgSlice1_color(k_y,k_x,:) = [NaN NaN NaN];
+        end
     end
 end
+
 h = image(x1,y1,imgSlice1_color); % overlay colormap on image
 set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
 
