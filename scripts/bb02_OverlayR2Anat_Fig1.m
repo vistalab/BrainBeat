@@ -47,19 +47,97 @@ acpcXform = acpcXform_new; clear acpcXform_new
 ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' in_data '.nii.gz']);
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
-%%
-curPos = [-5,1,-30]; 
-sliceThisDim = 3; 
-% imDims=[-90 -120 -60; 90 130 90];
+%% Subject 1 Sagittal slices T1 + COD
+curPos = [-10,1,-20]; 
+sliceThisDim = 1; 
 imDims=[-90 -120 -120; 90 130 90];
-
 overlayPlot = ppgR;
+cod_th = 0.6;
+for kk = -60:10:60
+    curPos(1) = kk;
+    bbOverlayFuncAnat(overlayPlot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,1,1,cod_th);
+    title(['slice ' int2str(kk) ', R^2>' num2str(cod_th,3)])
+    set(gcf,'PaperPositionMode','auto')    
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(kk)])
+end
 
-bbOverlayFuncAnat(overlayPlot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,1,1,.2);
+%% Subject 1 Axial slices T1 + COD
+curPos = [-10,1,-20]; 
+sliceThisDim = 3; 
+imDims=[-90 -120 -120; 90 130 90];
+overlayPlot = ppgR;
+cod_th = 0.6;
+for kk = -80:10:20
+    curPos(3) = kk;
+    bbOverlayFuncAnat(overlayPlot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,1,1,cod_th);
+    title(['slice ' int2str(kk) ', R^2>' num2str(cod_th,3)])
+    set(gcf,'PaperPositionMode','auto')    
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(kk)])
+end
 
+%% Subject 1 Signals from voxels in ROIs
+
+% plot the slice with ROIs
+curPos = [-1,1,-20]; 
+sliceThisDim = 1; 
+imDims=[-90 -120 -120; 90 130 90];
+overlayPlot = ppgR;
+cod_th = 0.6;
+bbOverlayFuncAnat(overlayPlot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,1,1,cod_th);
+
+bb_roi = bb_subs_rois(s_nr); % script that lists voxel indices for subject 1
+
+% Loop through ROI indices/labels
+for roi_ind = 1:8
+    curPos = bb_roi(roi_ind).curPos;
+    voxelLabel = bb_roi(roi_ind).voxelLabel;
+    plot(curPos(2),curPos(3),'w.')
+%     text(curPos(2),curPos(3),voxelLabel,'Color',[1 1 1])
+end
+print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(kk) '_ROIs'])
+% print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(kk) '_ROItext'])
+%%
+% load time series and associated time
+ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
+ppgTS = niftiRead(ppgTSname); % ppg triggered time series
+load(fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponseT.mat']),'t');
+
+% load error of time series and associated time
+ppgTSnameError = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse_std.nii.gz']);
+ppgTSError = niftiRead(ppgTSnameError); % ppg triggered time series
+
+bb_roi = bb_subs_rois(s_nr); % script that lists voxel indices
+
+for roi_ind = 1:8
+    % Call ROI indices/labels
+    curPos = bb_roi(roi_ind).curPos;
+    voxelLabel = bb_roi(roi_ind).voxelLabel;
+    % get the timeseries
+    [voxelTs] = bbGetVoxelTimeseries(ppgTS,acpcXform,curPos);
+    [voxelTsStd] = bbGetVoxelTimeseries(ppgTSError,acpcXform,curPos);
+
+    % plot the timeseries
+    figure('Position',[0 0 150 150]),hold on
+    plot(t,zeros(size(t)),'Color',[.5 .5 .5])
+    plot([0 0],[-2 2],'Color',[.5 .5 .5])
+    upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + 2 standard error
+    lowErr = 100*squeeze(voxelTs) - 100*voxelTsStd;
+    fill([t t(end:-1:1)],[upErr; lowErr(end:-1:1)],[.5 .5 .5],'EdgeColor',[.5 .5 .5])
+    plot(t,100*squeeze(voxelTs),'k','LineWidth',2)
+    axis tight
+    ylabel('% signal modulation') % (signal - mean)./mean
+    xlabel('time (s)')
+    set(gcf,'PaperPositionMode','auto')
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+    print('-painters','-r300','-depsc',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_TraceOnAnat_PosMM' int2str(curPos(1)) '_' int2str(curPos(2)) '_' int2str(curPos(3)) '_' voxelLabel])
+end
 
 %%
-%%%% Overlay 2: timeseries and anatomy
+%%
+%% %% Overlay 2: timeseries and anatomy
+%%
+%%
+
 % load time series and associated time
 ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
 ppgTS = niftiRead(ppgTSname); % ppg triggered time series
@@ -91,62 +169,4 @@ niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
 
 bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
-
-
-%%
-%%
-%% The rest seems to be unnecessary?
-%%
-%%
-%%
-
-
-%%
-%% Allign functional to a good functional with SPM
-%%
-% clear all
-% close all
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-
-s_nr = 4;
-scan_nr = 9;
-ref_scan_nr = 3;
-
-s_info = bb_subs(s_nr);
-subj=s_info.subj;
-
-% Get the new ref scan:
-%     niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.scan{ref_scan_nr}, [s_info.scanName{ref_scan_nr} '.nii.gz']));
-niAnatomy.data = niAnatomy.data(:,:,:,1);
-
-%%%%% coregister the functionals to the ref funx:
-
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
-
-fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
-ni = niftiRead(fmri);
-
-%%%%% use the first nifti to align, this one has the most structural info:
-ni1=ni;
-ni1.data=ni1.data(:,:,:,1);
-ni1.dim=ni1.dim(1:3);
-ni1.pixdim=ni1.pixdim(1:3);
-niAnatomy.pixdim=niAnatomy.pixdim(1:3); % only uses the first three dimensions
-
-% align functionals to the T1:
-acpcXform = dtiRawAlignToT1(ni1,niAnatomy,[], [], false, 1); % last 1 adds a figure
-% this saves the realignment matrix in the folder of the functionals, 
-
-% load ref scan acpc x-form
-ref_acpc = load(fullfile(dDir,subj,s_info.scan{ref_scan_nr},...
-    [s_info.scanName{ref_scan_nr} 'AcpcXform_new.mat']));
-
-% now fix the acpcXform such that it goes to T1 space
-acpcXform_new = ref_acpc.acpcXform_new * niAnatomy.qto_ijk * acpcXform; % funx -> ref xyz -> ref ijk -> ref acpc
-save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
-
-
 

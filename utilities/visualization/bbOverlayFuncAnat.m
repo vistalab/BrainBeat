@@ -106,6 +106,9 @@ if sliceThisDim == 1
     x_t = x;
     x = y;
     y = x_t;
+
+    y = y(end:-1:1);
+    y1 = y1(end:-1:1);
     
     % and for the images
     imgSlice1 = imrotate(imgSlice1,90);
@@ -134,7 +137,8 @@ end
 subplot(1,5,[1:4])
 % cm = colormap(jet);
 load loc_colormap
-image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
+brightness_increase = 3; % factor for increasing brightness of background T1 image
+image(x,y,brightness_increase*cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
 hold on
 axis image
 % tranform imgSlice1 (functionals) to colormap values that I want to use
@@ -153,6 +157,8 @@ end
 
 h = image(x1,y1,imgSlice1_color); % overlay colormap on image
 set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
+
+axis xy
 
 subplot(1,5,5),hold on
 cm_vals = 0:maxOverlay/(size(cm,1)-1):maxOverlay;
