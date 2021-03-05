@@ -6,7 +6,6 @@ close all
 
 %% Base data directory on a Mac mounting biac4 (wandell's machine)
 % dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-% dDir = '/biac4/wandell/data/BrainBeat/data';
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
