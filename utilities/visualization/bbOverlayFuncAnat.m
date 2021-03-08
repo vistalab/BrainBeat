@@ -156,7 +156,7 @@ for k_x = 1:length(x1)
 end
 
 h = image(x1,y1,imgSlice1_color); % overlay colormap on image
-set(h,'AlphaData',.2*ones(size(imgSlice1))) % make transparent
+set(h,'AlphaData',.4*ones(size(imgSlice1))) % make transparent
 
 axis xy
 
