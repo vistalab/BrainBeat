@@ -220,21 +220,21 @@ imagesc(1:100)
 colormap(cm1)
 axis off
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm1'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm1'])
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)
 colormap(cm2)
 axis off
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm2'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm2'])
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)
 colormap(cm3)
 axis off
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm3'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm3'])
 
 
 %% plot responses in these colors
@@ -285,5 +285,98 @@ ylim([-0.3 0.3])
 xlabel('heartbeat cycle')
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+
+%% get amplitude across subjects and test for significance
+
+% t_int = t_hr>-0.2 & t_hr<0; % for mean
+t_int = t_hr>-0.5 & t_hr<0.5; % for min
+
+figure('Position',[0 0 200 400])
+subplot(3,1,1),hold on
+ind_art = 1001:1004; % main branch of anterior cerebral artery
+art1_amp = zeros(length(ind_art),6,length(t_hr)); % 6 subjects
+these_colors1 = zeros(length(ind_art),3);
+for kk = 1:length(ind_art) 
+    % find areas with first ind_art
+    dkt_surface_index = find(dkt_table_surface.ind_arterial == ind_art(kk));
+    these_dkt = dkt_table_surface.DKT_nr(dkt_surface_index);
+    these_colors1(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
+    % find matching volume index from dkt_table
+    these_responses = ismember(dkt_table.DKT_nr,these_dkt);
+    art1_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+end
+
+for kk = 1:length(ind_art) 
+%     % take mean across a section
+%     bar(kk,mean(mean(art1_amp(kk,:,t_int),3)),'FaceColor',these_colors1(kk,:))
+%     plot(kk,mean(art1_amp(kk,:,t_int),3),'k.')
+    
+    % take min across a section
+    bar(kk,min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
+    plot(kk,min(art1_amp(kk,:,t_int),[],3),'k.')
+end
+% plot(mean(art1_amp(:,:,t_int),3),'k')
+plot(min(art1_amp(:,:,t_int),[],3),'k')
+set(gca,'XTick',[1:4])
+
+subplot(3,1,2),hold on
+ind_art = 2001:2004; % main branch of middle cerebral artery
+art2_amp = zeros(length(ind_art),6,length(t_hr)); % 6 subjects
+these_colors2 = zeros(length(ind_art),3);
+for kk = 1:length(ind_art)
+    % find areas with first ind_art
+    dkt_surface_index = find(dkt_table_surface.ind_arterial == ind_art(kk));
+    these_dkt = dkt_table_surface.DKT_nr(dkt_surface_index);
+    these_colors2(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
+    % find matching volume index from dkt_table
+    these_responses = ismember(dkt_table.DKT_nr,these_dkt);
+    art2_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+end
+
+for kk = 1:length(ind_art) 
+%     % take mean across a section
+%     bar(kk,mean(mean(art2_amp(kk,:,t_int),3)),'FaceColor',these_colors2(kk,:))
+%     plot(kk,mean(art2_amp(kk,:,t_int),3),'k.')
+    
+    % take min across a section
+    bar(kk,min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
+    plot(kk,min(art2_amp(kk,:,t_int),[],3),'k.')
+end
+% plot(mean(art2_amp(:,:,t_int),3),'k')
+plot(min(art2_amp(:,:,t_int),[],3),'k')
+set(gca,'XTick',[1:4])
+
+subplot(3,1,3),hold on
+ind_art = 3001:3004; % main branch of posterior cerebral artery
+art3_amp = zeros(length(ind_art),6,length(t_hr)); % 6 subjects
+these_colors3 = zeros(length(ind_art),3);
+for kk = 1:length(ind_art)
+    % find areas with first ind_art
+    dkt_surface_index = find(dkt_table_surface.ind_arterial == ind_art(kk));
+    these_dkt = dkt_table_surface.DKT_nr(dkt_surface_index);
+    these_colors3(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
+    % find matching volume index from dkt_table
+    these_responses = ismember(dkt_table.DKT_nr,these_dkt);
+    art3_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+end
+
+for kk = 1:length(ind_art) 
+%     % take mean across a section
+%     bar(kk,mean(mean(art3_amp(kk,:,t_int),3)),'FaceColor',these_colors3(kk,:))
+%     plot(kk,mean(art3_amp(kk,:,t_int),3),'k.')
+    
+    % take min across a section
+    bar(kk,min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
+    plot(kk,min(art3_amp(kk,:,t_int),[],3),'k.')
+
+end
+% plot(mean(art3_amp(:,:,t_int),3),'k')
+plot(min(art3_amp(:,:,t_int),[],3),'k')
+set(gca,'XTick',[1:4])
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs_bar'])
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs_bar'])
+

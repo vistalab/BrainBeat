@@ -58,7 +58,7 @@ job.woptions = flags;
 % normalize the image with electrodess
 spm_run_norm(job);
 
-%%
+%% load all subjects and render MNI
 
 Rthreshold = 0.9;
 
@@ -102,6 +102,42 @@ for aa = 1:length(subj_inds)
     plot3(x,y,z,'b.')
 end
 
+%% test with rendering
+
+load(fullfile(dDir,'MNI_cortex_left.mat'))
+
+g.vertices = cortex.vert;
+g.faces = cortex.tri;
+g.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+g = gifti(g);
+
+p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni; all_mni(4).xyz_mni; all_mni(5).xyz_mni; all_mni(6).xyz_mni];
+
+this_p = p;
+this_p(p(:,1)>30,:) = [];
+figure
+ieeg_RenderGifti(g)
+ieeg_elAdd(this_p,[.5 0 1],5)
+
+% for aa = 1:length(subj_inds)
+%     select_these_point = all_mni(aa).xyz_mniloc_view(:,1)<10; % left
+%     x = all_mni(aa).xyz_mni(select_these_point,1);
+%     y = all_mni(aa).xyz_mni(select_these_point,2);
+%     z = all_mni(aa).xyz_mni(select_these_point,3);
+%     scatter3(x,y,z,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.1)
+% end
+
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_left_render_V1_codth0_9'])
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_left_render_V2_codth0_9'])
+
+    
+%%
+%%
+%%
+
 %% test
 % addpath to MyCrust270110
 % p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni; all_mni(4).xyz_mni; all_mni(5).xyz_mni; all_mni(6).xyz_mni];
@@ -135,26 +171,4 @@ axis vis3d
 view(3)
 
 
-%% test with rendering
-
-g.vertices = cortex.vert;
-g.faces = cortex.tri;
-g.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-g = gifti(g);
-
-p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni; all_mni(4).xyz_mni; all_mni(5).xyz_mni; all_mni(6).xyz_mni];
-
-this_p = p;
-this_p(p(:,1)>20,:) = [];
-figure
-ieeg_RenderGifti(g)
-% ieeg_elAdd(this_p,'b',5)
-
-for aa = 1:length(subj_inds)
-    select_these_point = all_mni(aa).xyz_mni(:,1)<10; % left
-    x = all_mni(aa).xyz_mni(select_these_point,1);
-    y = all_mni(aa).xyz_mni(select_these_point,2);
-    z = all_mni(aa).xyz_mni(select_these_point,3);
-    scatter3(x,y,z,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.1)
-end
 

@@ -52,6 +52,14 @@ sliceThisDim = 1;
 imDims=[-90 -120 -120; 90 130 90];
 overlayPlot = ppgR;
 cod_th = 0.6;
+
+% for overlay with MRV, could consider something like this:
+% temp = niAnatomy;
+% temp.data(mrv.data<700) = 0;
+% temp.data(mrv.data>=700) = 1;
+% temp.data = niAnatomy.data + 3000*temp.data;
+
+
 for kk = -60:10:60
     curPos(1) = kk;
     bbOverlayFuncAnat(overlayPlot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,1,1,cod_th);
@@ -91,10 +99,10 @@ for roi_ind = 1:8
     curPos = bb_roi(roi_ind).curPos;
     voxelLabel = bb_roi(roi_ind).voxelLabel;
     plot(curPos(2),curPos(3),'w.')
-    text(curPos(2),curPos(3),voxelLabel,'Color',[1 1 1])
+%     text(curPos(2),curPos(3),voxelLabel,'Color',[1 1 1])
 end
 % print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_ROIs'])
-print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_ROItext'])
+% print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_ROItext'])
 %%
 % load time series and associated time
 ppgTSname = fullfile(dDir,subj,scan,[scanName '_' in_data 'trigResponse.nii.gz']);
