@@ -56,10 +56,10 @@ for ss = 1:length(all_subs)
     % Get odd/even cod (made with bbCod/Correlate2physio):
     ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
     ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
-    % Set maximum of ppgTS to 1 for each voxel
-    ppgResp.data = ppgResp.data ./ repmat(max(abs(ppgResp.data),[],4),[1,1,1,size(ppgResp.data,4)]);
-    % Multiply by cod size (always >= 0)
-    ppgResp.data = ppgResp.data .* repmat(ppgR.data,[1,1,1,size(ppgResp.data,4)]);
+%     % Set maximum of ppgTS to 1 for each voxel
+%     ppgResp.data = ppgResp.data ./ repmat(max(abs(ppgResp.data),[],4),[1,1,1,size(ppgResp.data,4)]);
+%     % Multiply by cod size (always >= 0)
+%     ppgResp.data = ppgResp.data .* repmat(ppgR.data,[1,1,1,size(ppgResp.data,4)]);
     
     % load segmentation
     niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
@@ -114,8 +114,8 @@ this_area = 1; % caudal anterior cingulate 1
 % title(roiNames{this_area});
 up_ci = mean(avResp_hr(:,this_area,:),3) + 2*std(avResp_hr(:,this_area,:),[],3)/sqrt(n_subs);
 low_ci = mean(avResp_hr(:,this_area,:),3) - 2*std(avResp_hr(:,this_area,:),[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5],'LineWidth',1)
+fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,100*squeeze(avResp_hr(:,this_area,:)),'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,1,2),hold on
@@ -123,17 +123,17 @@ subplot(4,1,2),hold on
 thisSignal = (squeeze(avResp_hr(:,74,:))+squeeze(avResp_hr(:,89,:)))/2;
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
 % average left and lateral ventricles 74 89
-plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,1,3),hold on
 % title('Veins')
 up_ci = mean(avRespVeno_hr(:,1,:),3) + 2*std(avRespVeno_hr(:,1,:),[],3)/sqrt(n_subs);
 low_ci = mean(avRespVeno_hr(:,1,:),3) - 2*std(avRespVeno_hr(:,1,:),[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(avRespVeno_hr(:,1,:)),'Color',[.5 .5 .5],'LineWidth',1)
+fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,100*squeeze(avRespVeno_hr(:,1,:)),'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,1,4),hold on
@@ -143,14 +143,14 @@ thisSignal(isnan(thisSignal)) = 0;
 thisSignal = zscore(squeeze(thisSignal));
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
 plot([0 0],[-1 3],'Color',[.7 .7 .7])
-plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
+print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
 
 %% Render subject 1
 
@@ -188,11 +188,11 @@ cmap(isnan(cmap)) = 0.7;
 figure
 ieeg_RenderGiftiLabels(gi,vert_label,cmap,colortable.struct_names)
 ieeg_viewLight(90,0)
-% 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_mesial'])
-% ieeg_viewLight(270,0)
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_lateral'])
+ 
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_mesial'])
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_lateral'])
 
 %%
 % create colors for rendering and plots:
@@ -253,9 +253,9 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_hr,mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_hr,100*mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
-ylim([-0.3 0.3])
+ylim([-1 1])
 
 subplot(3,1,2),hold on
 ind_art = 2001:2004; % main branch of middle cerebral artery
@@ -266,9 +266,9 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_hr,mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_hr,100*mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
-ylim([-0.3 0.3])
+ylim([-1 1])
 
 subplot(3,1,3),hold on
 ind_art = 3001:3004; % main branch of posterior cerebral artery
@@ -279,19 +279,20 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_hr,mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_hr,100*mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
-ylim([-0.3 0.3])
+% ylim([-0.3 0.3]) % for scales by R
+ylim([-1 1])
 xlabel('heartbeat cycle')
 
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
 
 %% get amplitude across subjects and test for significance
 
 % t_int = t_hr>-0.2 & t_hr<0; % for mean
-t_int = t_hr>-0.5 & t_hr<0.5; % for min
+t_int = t_hr>-0.5 & t_hr<0.5; % for max-min contrast
 
 figure('Position',[0 0 200 400])
 subplot(3,1,1),hold on
@@ -305,7 +306,7 @@ for kk = 1:length(ind_art)
     these_colors1(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art1_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+    art1_amp(kk,:,:) = 100*squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -313,12 +314,18 @@ for kk = 1:length(ind_art)
 %     bar(kk,mean(mean(art1_amp(kk,:,t_int),3)),'FaceColor',these_colors1(kk,:))
 %     plot(kk,mean(art1_amp(kk,:,t_int),3),'k.')
     
-    % take min across a section
-    bar(kk,min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
-    plot(kk,min(art1_amp(kk,:,t_int),[],3),'k.')
+%     % take min across a section
+%     bar(kk,min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
+%     plot(kk,min(art1_amp(kk,:,t_int),[],3),'k.')
+    
+    % take contrast across a section
+    bar(kk,max(mean(art1_amp(kk,:,t_int)),[],3) - min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
+    plot(kk,max(art1_amp(kk,:,t_int),[],3) - min(art1_amp(kk,:,t_int),[],3),'k.')
+
 end
 % plot(mean(art1_amp(:,:,t_int),3),'k')
-plot(min(art1_amp(:,:,t_int),[],3),'k')
+% plot(min(art1_amp(:,:,t_int),[],3),'k')
+plot(max(art1_amp(:,:,t_int),[],3) - min(art1_amp(:,:,t_int),[],3),'k')
 set(gca,'XTick',[1:4])
 
 subplot(3,1,2),hold on
@@ -332,7 +339,7 @@ for kk = 1:length(ind_art)
     these_colors2(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art2_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+    art2_amp(kk,:,:) = 100*squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -341,11 +348,16 @@ for kk = 1:length(ind_art)
 %     plot(kk,mean(art2_amp(kk,:,t_int),3),'k.')
     
     % take min across a section
-    bar(kk,min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
-    plot(kk,min(art2_amp(kk,:,t_int),[],3),'k.')
+%     bar(kk,min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
+%     plot(kk,min(art2_amp(kk,:,t_int),[],3),'k.')
+
+    % take contrast across a section
+    bar(kk,max(mean(art2_amp(kk,:,t_int)),[],3) - min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
+    plot(kk,max(art2_amp(kk,:,t_int),[],3) - min(art2_amp(kk,:,t_int),[],3),'k.')
 end
 % plot(mean(art2_amp(:,:,t_int),3),'k')
-plot(min(art2_amp(:,:,t_int),[],3),'k')
+% plot(min(art2_amp(:,:,t_int),[],3),'k')
+plot(max(art2_amp(:,:,t_int),[],3) - min(art2_amp(:,:,t_int),[],3),'k')
 set(gca,'XTick',[1:4])
 
 subplot(3,1,3),hold on
@@ -359,7 +371,7 @@ for kk = 1:length(ind_art)
     these_colors3(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art3_amp(kk,:,:) = squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
+    art3_amp(kk,:,:) = 100*squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -367,13 +379,19 @@ for kk = 1:length(ind_art)
 %     bar(kk,mean(mean(art3_amp(kk,:,t_int),3)),'FaceColor',these_colors3(kk,:))
 %     plot(kk,mean(art3_amp(kk,:,t_int),3),'k.')
     
-    % take min across a section
-    bar(kk,min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
-    plot(kk,min(art3_amp(kk,:,t_int),[],3),'k.')
+%     % take min across a section
+%     bar(kk,min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
+%     plot(kk,min(art3_amp(kk,:,t_int),[],3),'k.')
 
+    % take contrast across a section
+    bar(kk,max(mean(art3_amp(kk,:,t_int)),[],3) - min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
+    plot(kk,max(art3_amp(kk,:,t_int),[],3) - min(art3_amp(kk,:,t_int),[],3),'k.')
+
+    
 end
 % plot(mean(art3_amp(:,:,t_int),3),'k')
-plot(min(art3_amp(:,:,t_int),[],3),'k')
+% plot(min(art3_amp(:,:,t_int),[],3),'k')
+plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'k')
 set(gca,'XTick',[1:4])
 
 set(gcf,'PaperPositionMode','auto')

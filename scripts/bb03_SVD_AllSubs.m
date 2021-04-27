@@ -17,14 +17,16 @@ s_nr = [1 2 3 4 5 6];
 % scan nrs, here take the 25 or 20 degree flip angle
 % scan_nr  = [1 1 2];
 % scan nrs, take the 48 degree flip angles
+% scan_nr  = [3 3 3 1 1 2]; % subjects 6 scan 2 has same sign for pc2
 scan_nr  = [3 3 3 1 1 2];
 
 % load first two principle components for these subjects and scans
-all_pcs = zeros(length(s_nr),2,128);
+all_pcs = zeros(length(s_nr),3,128);
 for kk = 1:length(s_nr)
-    load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','t_hr')
+    load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','y3','t_hr')
     all_pcs(kk,1,:) = y1;
     all_pcs(kk,2,:) = y2;
+    all_pcs(kk,3,:) = y3;
 end
 
 t_svd = linspace(-.5,1.5,128);
@@ -34,6 +36,7 @@ figure('Position',[0 0 200 200])
 subplot(2,1,1),hold on
 plot(t_svd,squeeze(all_pcs(:,1,:)),'k','LineWidth',2)
 plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',2)
+% plot(t_svd,squeeze(all_pcs(:,3,:)),'Color',[1 .5 1],'LineWidth',2)
 title('heartbeat components for 6 subjects')
 
 % reshape into matrix size subject/scan*2 X time
@@ -67,6 +70,7 @@ save(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
 pc1 = pc1(1:75);
 pc2 = pc2(1:75);
+pc3 = pc3(1:75);
 
 figure('Position',[0 0 600 300])
 subplot(2,2,1)
@@ -107,9 +111,9 @@ axis tight
 axis off
 title('canonical PCs across 6 subjects')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','model'))
-print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','model'))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','model'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','model'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -122,11 +126,12 @@ s_nr = [1:6];
 scan_nr  = [3 3 3 1 1 2];
 
 % load first two principle components for these subjects and scans
-all_pcs = zeros(length(s_nr),2,128);
+all_pcs = zeros(length(s_nr),3,128);
 for kk = 1:length(s_nr)
     load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','t_hr')
     all_pcs(kk,1,:) = y1;
     all_pcs(kk,2,:) = y2;
+%     all_pcs(kk,3,:) = y3;
 end
 
 t_svd = linspace(-.5,1.5,128);
@@ -144,9 +149,9 @@ for kk = 1:length(s_nr)
     temp = u*s;
     pc1  = temp(:,1);
     pc2  = temp(:,2);
-    pc3  = temp(:,3);
+%     pc3  = temp(:,3);
     
-    save(['./local/canonicalPC_leavout' int2str(s_nr(kk))],'pc1','pc2','pc3','t_svd')
+    save(['./local/canonicalPC_leavout' int2str(s_nr(kk))],'pc1','pc2','t_svd')
 
 end
 
@@ -156,11 +161,11 @@ end
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % Load canonical heartbeat responses:
-load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
+load(['./local/allsubs_pc12'],'pc1','pc2')
 
 % Load PPG responses:
-s_nr        = 1;
-scan_nr     = 3;
+s_nr        = 6;
+scan_nr     = 2;
 s_info      = bb_subs(s_nr);
 subj        = s_info.subj;
 scan        = s_info.scan{scan_nr};
@@ -215,7 +220,7 @@ test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 t_hr = linspace(min(t_sel),max(t_sel),128);
 y1 = interp1(t_hr,pc1,t_sel);
 y2 = interp1(t_hr,pc2,t_sel);
-y3 = interp1(t_hr,pc3,t_sel);
+% y3 = interp1(t_hr,pc3,t_sel);
 
 % get beta values on PC1 and PC2 model for every voxel in even response using regression
 disp('get beta weights')
@@ -236,7 +241,7 @@ relRMS_weights = zeros(size(a,1),1);
 test_train_error = sqrt(sum((test_set - a).^2,2));
 % model
 model_v = beta_weights(:,1:2)*[y1;y2]; % use 2 pcs
-% model_v = beta_weights*[y1;y2;y3];
+% model_v = beta_weights*[y1;y2;y3]; 
 % model error
 test_model_error = sqrt(sum((test_set - model_v).^2,2));
 % relative RMS error:
@@ -249,7 +254,8 @@ end
 r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
 disp('done')
 
-%% save beta weights in a nifti in T1 space
+%% save beta weights in a nifti in functional space 
+% bb08_MNI_PCA writes it to T1 and then to MNI space
 
 % add beta weights in niftis in functional space
 ni1 = ni; % PC1
@@ -261,17 +267,10 @@ ni2.data(:) = beta_weights(:,2);
 
 % name for pc1
 pc1_newName = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc1.nii.gz']);
-
-% reslice in anatomy space
-%%%% NOT WORKING: I think because the anatomical is not ACPC...
-% xform = inv(acpcXform); % inv(acpcXform)
-% bbDat = sort(floor(mrAnatXformCoords(niAnatomy.sto_xyz, [1 1 1; size(niAnatomy.data(:,:,:))])));
-% bbDat = bbDat(:,[2 3 1]); % check order with [1 2 3]*niAnatomy.qto_xyz(1:3,1:3)
-% [newImg, xform, deformField] = mrAnatResliceSpm(ni1.data,xform,bbDat,niAnatomy.pixdim(1:3),[7 7 7 0 0 0],1);
-% pc1_anat = niAnatomy;
-% pc1_anat.data = newImg;
-% pc1_anat.fname = pc1_newName;
-% niftiWrite(pc1_anat,pc1_newName) % save
+niftiWrite(ni1,pc1_newName)
+% name for pc2
+pc2_newName = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc2.nii.gz']);
+niftiWrite(ni2,pc2_newName)
 
                           
 %% how good are canonical principle components

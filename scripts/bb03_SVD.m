@@ -13,7 +13,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
 
-s_nr = 1;
+s_nr = 6;
 s_info = bb_subs(s_nr);
 subj = s_info.subj;
 
@@ -34,7 +34,7 @@ niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']
 data_in = 'PPG';
 
 % load PPG responses
-scan_nr = 3;
+scan_nr = 2;
 scan = s_info.scan{scan_nr};
 scanName = s_info.scanName{scan_nr};
 
@@ -130,7 +130,7 @@ subplot(2,1,1),hold on
 plot(t_sel,sqrt(u(:,1).^2+u(:,2).^2),':','Color',[.5 .5 .5],'LineWidth',1)
 set(gca,'XTick',[0 1])
 subplot(2,1,2),hold on
-legend({'pc1','pc2'})%,'pc3','pc4'})
+legend({'pc1','pc2'})%,'pc3','pc4'})x
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
 % print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
@@ -140,24 +140,25 @@ set(gcf,'PaperPositionMode','auto')
 
 figure
 subplot(2,1,1),hold on
-plot(u(:,1:2))
+plot(u(:,1:3))
 
 % y1 = resample(double(u(:,1)),128,length(t_sel));
 % y2 = resample(double(u(:,2)),128,length(t_sel));
 t_hr = linspace(min(t_sel),max(t_sel),128);
 y1 = interp1(t_sel,double(u(:,1)),t_hr);
 y2 = interp1(t_sel,double(u(:,2)),t_hr);
+y3 = interp1(t_sel,double(u(:,3)),t_hr);
 
 subplot(2,1,2),hold on
-plot([y1' y2'])
+plot([y1' y2' y3'])
 
-save(['./local/s-' int2str(s_nr) '_scan-' int2str(scan_nr) 'pc12'],'y1','y2','t_hr')
+save(['./local/s-' int2str(s_nr) '_scan-' int2str(scan_nr) 'pc12'],'y1','y2','y3','t_hr')
 
 
 %%
 %% plot a number of components:
 %%
-nrc_plot=7;
+nrc_plot = 7;
 
 sl_plotx = 26;
 sl_plotz = 20;

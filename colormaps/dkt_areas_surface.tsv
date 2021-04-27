@@ -13,7 +13,7 @@ index	number	name	r	g	b		volume_left_name	DKT_nr	ind_arterial	r1	g1	b1
 12	11	lateraloccipital	20	30	140	0	leftlateraloccipital	9	2004	0.8	0.85	0.8
 13	12	lateralorbitofrontal	35	75	50	0	leftlateralorbitofrontal	10	3004	0.8	0.8	0.85
 14	13	lingual	225	140	140	0	leftlingual	11	2002	0.26	0.85	0.26
-15	14	medialorbitofrontal	200	35	75	0	leftmedialorbitofrontal	12	1002	0.85	0.26	0.26
+15	14	medialorbitofrontal	200	35	75	0	leftmedialorbitofrontal	12	1001	0.5	0	0
 16	15	middletemporal	160	100	50	0	leftmiddletemporal	13	3004	0.8	0.8	0.85
 17	16	parahippocampal	20	220	60	0	leftparahippocampal	14	2001	0	0.5	0
 18	17	paracentral	60	220	60	0	leftparacentral	15	1004	0.85	0.8	0.8
