@@ -31,8 +31,7 @@ ni.sto_ijk = inv(acpcXform);
 
 niftiWrite(ni,fcod);
 
-
-%% now we can normalize the cod image
+%%%%%% now we normalize the cod image
 
 spm('Defaults','fmri')
 
@@ -47,7 +46,7 @@ fcod = fullfile(dDir,subj,scan, ['f' scanName '_codPPG.nii']);
 flags.preserve  = 0;
 flags.bb        = [-90 -120 -60; 90 96 130];
 flags.vox       = [1 1 1]; % here is the voxel size
-flags.interp    = 0;
+flags.interp    = 0; % 0: neirest neighbor, 4: 4th degree b spline
 flags.wrap      = [0 0 0];
 flags.prefix    = 'w';
 

@@ -47,7 +47,7 @@ niftiWrite(pc1,pc1_NameSave);
 niftiWrite(pc2,pc2_NameSave);
 
 
-%% now we can normalize the PC1 and PC2 beta weight image
+%%%%%% now we can normalize the PC1 and PC2 beta weight image
 
 spm('Defaults','fmri')
 
@@ -63,7 +63,7 @@ pc2_NameSave = fullfile(dDir,subj,scan,['f' scanName '_' data_in '_pc2w.nii']);
 flags.preserve  = 0;
 flags.bb        = [-90 -120 -60; 90 96 130];
 flags.vox       = [1 1 1]; % here is the voxel size
-flags.interp    = 0;
+flags.interp    = 0; % 0: nearest neighbor, 4: 4th degree b spline
 flags.wrap      = [0 0 0];
 flags.prefix    = 'w';
 
@@ -81,7 +81,6 @@ spm_run_norm(job);
 
 
 %% load all subjects and add in one MNI image 
-
 
 subj_inds   = [1 2 3 4 5 6];
 scan_inds   = [3 3 3 1 1 2];
@@ -123,106 +122,106 @@ cod_MNI_all = './local/allMNI_cod.nii.gz';
 
 % save pc1 beta weights, threshold by cod, and add across subjects
 pc1_mni.data = all_mni_pc1;
-cod_th = 0.3;
+cod_th = 0.1;
 pc1_mni.data(all_mni_cod<cod_th) = 0;
-pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1>0) = 1;
-pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1;
-pc1_mni.data = sum(pc1_mni.data,4);
+pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1>0) = 1; % 1 to everything pc1>0
+pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1; % -1 to everything pc1<0
+pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
 niftiWrite(pc1_mni,pc1_MNI_all);
 
 
-% LEFT OFF HERE
-pc2_mni.data = all_mni_pc2;
-niftiWrite(pc2_mni,pc2_MNI_all);
-
-cod_mni = pc1_mni;
-cod_mni.data = all_mni_cod;
-niftiWrite(cod_mni,cod_MNI_all);
-
-
-
-
-%% load all subjects and render MNI
-%% W - I - P
-
-Rthreshold = 0.9;
-
-subj_inds = [1 2 3 4 5 6];
-scan_inds = [3 3 3 1 1 2];
-all_mni = [];
-
-data_in = 'PPG';
-for aa = 1:length(subj_inds)
-
-    s = subj_inds(aa);
-    scan_nr = scan_inds(aa);
-
-    s_info = bb_subs(s);
-    subj = s_info.subj;
-
-    scan = s_info.scan{scan_nr};
-    scanName = s_info.scanName{scan_nr};
-
-    pc1_mni = niftiRead(fullfile(dDir,subj,scan,['wf' scanName '_' data_in '_pc1w.nii']));
-    pc2_mni = niftiRead(fullfile(dDir,subj,scan,['wf' scanName '_' data_in '_pc2w.nii']));
-    
-    % also get COD to maybe draw a reliability threshold
-    wfcod = niftiRead(fullfile(dDir,subj,scan, ['wf' scanName '_codPPG.nii']));
-
-    select_voxels = find(wfcod.data>=Rthreshold);
-
-    % Get indiced of selected voxels
-    [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
-    ijk_func = [ii jj kk];
-    clear ii jj kk % housekeeping
-
-    % Get mni coordinates of voxels 
-    all_mni(aa).xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
-end
+%% LEFT OFF HERE, not writing PC2 yet
+% pc2_mni.data = all_mni_pc2;
+% niftiWrite(pc2_mni,pc2_MNI_all);
+% 
+% cod_mni = pc1_mni;
+% cod_mni.data = all_mni_cod;
+% niftiWrite(cod_mni,cod_MNI_all);
 
 
 %%
-figure,hold on
+%% load all subjects and render MNI
+%%
+% working on this
 
-for aa = 1:length(subj_inds)
-    x = all_mni(aa).xyz_mni(:,1);
-    y = all_mni(aa).xyz_mni(:,2);
-    z = all_mni(aa).xyz_mni(:,3);
-    plot3(x,y,z,'b.')
+Nthreshold = 4;
+pc1_posneg = {'pc1pos','pc1neg'};
+
+for plot_positive = 1:2 % 1 = positive, 2 = negative, 
+
+    if plot_positive==1
+        select_voxels = find(pc1_mni.data>=Nthreshold);
+    elseif plot_positive==2
+        select_voxels = find(pc1_mni.data<=-Nthreshold);
+    end
+
+    % Get indiced of selected voxels
+    [ii,jj,kk] = ind2sub(size(pc1_mni.data),select_voxels);
+    ijk_func = [ii jj kk];
+    clear ii jj kk % housekeeping
+
+    % average PC 2 for color
+    pc2_mean = mean(all_mni_pc2,4);
+    ijk_color = pc2_mean(select_voxels);
+    ijk_colorInd = (ijk_color-min(ijk_color));
+    ijk_colorInd = 1+round(99*ijk_colorInd/max(ijk_colorInd));
+
+    if plot_positive==1
+        cm = jet(100);
+        cm = cm(end:-1:1,:);
+    elseif plot_positive==2
+        cm = jet(100);
+    end
+
+    % Get mni coordinates of voxels 
+    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+
+
+    % load MNI rendings 
+    load(fullfile(dDir,'MNI_cortex_left.mat'))
+    gl.vertices = cortex.vert;
+    gl.faces = cortex.tri;
+    gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+    gl = gifti(gl);
+
+    load(fullfile(dDir,'MNI_cortex_right.mat'))
+    gr.vertices = cortex.vert;
+    gr.faces = cortex.tri;
+    gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+    gr = gifti(gr);
+
+    % plot right
+    figure,hold on
+    ieeg_RenderGifti(gr)
+    % add PC2 in color:
+    for kk = 1:size(xyz_mni,1)
+        if xyz_mni(kk,1)>-10
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',cm(ijk_colorInd(kk),:))
+        end
+    end
+    set(gcf,'PaperPositionMode','auto') 
+    ieeg_viewLight(270,0)
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_right_render' pc1_posneg{plot_positive} '_view1_v00'])
+    ieeg_viewLight(90,0)
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_right_render' pc1_posneg{plot_positive} '_view2_v00'])
+    
+    % plot left
+    figure,hold on
+    ieeg_RenderGifti(gl)
+    % add PC2 in color:
+    for kk = 1:size(xyz_mni,1)
+        if xyz_mni(kk,1)<10
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',cm(ijk_colorInd(kk),:))
+        end
+    end
+    set(gcf,'PaperPositionMode','auto') 
+    ieeg_viewLight(270,0)
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_left_render' pc1_posneg{plot_positive} '_view1_v00'])
+    ieeg_viewLight(90,0)
+    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_left_render' pc1_posneg{plot_positive} '_view2_v00'])
+
 end
 
-%% test with rendering
-
-load(fullfile(dDir,'MNI_cortex_left.mat'))
-
-g.vertices = cortex.vert;
-g.faces = cortex.tri;
-g.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-g = gifti(g);
-
-p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni; all_mni(4).xyz_mni; all_mni(5).xyz_mni; all_mni(6).xyz_mni];
-
-this_p = p;
-this_p(p(:,1)>30,:) = [];
-figure
-ieeg_RenderGifti(g)
-ieeg_elAdd(this_p,[.5 0 1],5)
-
-% for aa = 1:length(subj_inds)
-%     select_these_point = all_mni(aa).xyz_mniloc_view(:,1)<10; % left
-%     x = all_mni(aa).xyz_mni(select_these_point,1);
-%     y = all_mni(aa).xyz_mni(select_these_point,2);
-%     z = all_mni(aa).xyz_mni(select_these_point,3);
-%     scatter3(x,y,z,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.1)
-% end
-
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_left_render_V1_codth0_9'])
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_left_render_V2_codth0_9'])
-
-    
 %%
 %%
 %%
