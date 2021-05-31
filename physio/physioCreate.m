@@ -33,8 +33,8 @@ function p = physioCreate(varargin)
 ppg = ppgInit;
 p.ppg = ppg;
 
-resp = respInit;
-p.resp = resp;
+% resp = respInit;
+% p.resp = resp;
 
 p.filename = 'filename';
 
@@ -50,8 +50,16 @@ if ~isempty(varargin)
             
             
         elseif strcmp(varargin{1},'nifti')
-            ni=varargin{2};
-            p.filename=ni.fname;
+            ni = varargin{2};
+            p.filename = ni.fname;
+            
+            physio_name = [extractBefore(p.filename,'_bold.nii') '_recording-PPG_physio.tsv.gz'];
+            if ~exist(physio_name)
+                error('ERROR: physio file %s does not exist',physio_name)
+            end
+            % LEFT OF HERE
+            % now read the physio file, see whether we need to add
+            % bids_matlab to path to read tsv.gz files...
             
             % Should add physio file handling to niftiGet(ni,'physio ....');
             [fPath,fName] = fileparts(ni.fname);
@@ -79,39 +87,39 @@ if ~isempty(varargin)
 
             % This the Matlab structure we return. 
             physio_output = [];
-            for k=1:length(physioData)
-                if isequal(physioData(k).name(1:6),'PPGDat');
+            for kk = 1:length(physioData)
+                if isequal(physioData(kk).name(1:6),'PPGDat')
                     physio_output.ppg.name = 'PPG';
                     physio_output.ppg.srate = 100; % here, we are hardcoding the CNI sampling rate for ECG
-                    physio_output.ppg.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(k).name));
-                elseif isequal(physioData(k).name(1:6),'RESPDa')
+                    physio_output.ppg.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(kk).name));
+                elseif isequal(physioData(kk).name(1:6),'RESPDa')
                     physio_output.resp.name = 'RESP';
                     physio_output.resp.srate = 25; % here, we are hardcoding the CNI sampling rate for respiration
-                    physio_output.resp.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(k).name));
+                    physio_output.resp.rawdata = load(fullfile(UnTarpPhysio_dir,physioData(kk).name));
                 end
             end
 
             % now we are going to time-lock it to the scan, and include a
             % parameter for scan-onset
-            scan_duration=ni.dim(4)*ni.pixdim(4);% in sec
+            scan_duration = ni.dim(4)*ni.pixdim(4);% in sec
             %%%% PPG:
             % chop of the beginning
-            physio_output.ppg.data=physio_output.ppg.rawdata(end-round(scan_duration*physio_output.ppg.srate)+1:end);
+            physio_output.ppg.data = physio_output.ppg.rawdata(end-round(scan_duration*physio_output.ppg.srate)+1:end);
             % add scan onset:
-            physio_output.ppg.scan_onset=zeros(size(physio_output.ppg.data));
-            for m=1:round(ni.dim(4))
-                physio_output.ppg.scan_onset(round(ni.pixdim(4)*(m-1)*physio_output.ppg.srate+1))=1;
+            physio_output.ppg.scan_onset = zeros(size(physio_output.ppg.data));
+            for mm = 1:round(ni.dim(4))
+                physio_output.ppg.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ppg.srate+1)) = 1;
             end
             %%%% RESP:
             % chop of the beginning
-            physio_output.resp.data=physio_output.resp.rawdata(end-round(scan_duration*physio_output.resp.srate)+1:end);
+            physio_output.resp.data = physio_output.resp.rawdata(end-round(scan_duration*physio_output.resp.srate)+1:end);
             % add scan onset:
-            physio_output.resp.scan_onset=zeros(size(physio_output.resp.data));
-            for m=1:round(ni.dim(4))
-                physio_output.resp.scan_onset(round(ni.pixdim(4)*(m-1)*physio_output.resp.srate+1))=1;
+            physio_output.resp.scan_onset = zeros(size(physio_output.resp.data));
+            for mm = 1:round(ni.dim(4))
+                physio_output.resp.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.resp.srate+1))=1;
             end
 
-            p=physio_output;
+            p = physio_output;
             
             % make a figure of output as a check
             if length(varargin)>2
