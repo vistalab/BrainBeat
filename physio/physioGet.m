@@ -62,10 +62,11 @@ switch param
             [peaks_ac,peaks_ac_i] = findpeaks(acf(obj.data,500));
             % the first maximum peak (zero is not included) is the first
             % autocorrelation time
-            [~,max_peaks_ac_i]=max(peaks_ac);
+            [~,max_peaks_ac_i] = max(peaks_ac);
             % set the interval at 70% of the ppg/resp rate:
             interval = .7 * peaks_ac_i(max_peaks_ac_i)/srate;
-        else interval = varargin{1};
+        else
+            interval = varargin{1};
         end
         
         % set minimum inter-heartbeat interval in seconds
