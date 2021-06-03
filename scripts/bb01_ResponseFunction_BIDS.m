@@ -84,39 +84,38 @@ for ss = 1 % subjects/ses/acq
         clear ni1
     end
     
-    %%%% LEFT OF HERE
-    
-    for scan_nr = [1:10]%1:length(s_info.scan)
-        disp(['Calculating PPG locked correlation sub-' int2str(s) ' scan-' int2str(scan_nr)])
-        scan = s_info.scan{scan_nr};
-        scanName = s_info.scanName{scan_nr};
 
-        ni_odd = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_odd.nii.gz']));
-        ni_even = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse_even.nii.gz']));
+    for rr = 1 % runs
         
-        % compute the correlation between the even and odd repetitions of
-        % the PPG triggered BOLD signal for the whole brain:
-        [out_r_map] = bbCorrelate2physio(ni_odd,ni_even);
-        % save as nifti
-        ni1 = ni_odd;
-        ni1.data = out_r_map;
-        ni1.fname = [scanName '_corrPPG.nii.gz'];
-        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
-        clear ni1 out_r_map
-
-        % compute the cod between the even and odd repetitions of
+        run_nr = run_nrs{rr};
+        
+        disp(['Calculating PPG locked reliability (COD) for ' fmri_BIDSname])
+        
+        fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
+            ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+        fmri_name = fullfile(dDir,fmri_BIDSname);
+        save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
+        save_name_base = ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)];
+        
+        ni_odd = niftiRead(fullfile(save_dir,[save_name_base '_PPGtrigResponse_odd.nii.gz']));
+        ni_even = niftiRead(fullfile(save_dir,[save_name_base '_PPGtrigResponse_even.nii.gz']));
+        
+        % compute the COD between the even and odd repetitions of
         % the PPG triggered BOLD signal for the whole brain:
         [out_R_map] = bbCod2physio(ni_odd,ni_even);
+        
         % save as nifti
         ni2 = ni_odd;
         ni2.data = out_R_map;
-        ni2.fname = [scanName '_codPPG.nii.gz'];
-        niftiWrite(ni2,fullfile(dDir,subj,scan,ni2.fname))
+        ni2.fname = [save_name_base '_codPPG.nii.gz'];
+        niftiWrite(ni2,fullfile(save_dir,ni2.fname))
         clear ni2 out_R_map
        
     end
 end
 
+%%
+%% This has not been adjusted to BIDS yet...
 %%
 %% Preprocess the data: RESP time series and correlation
 
