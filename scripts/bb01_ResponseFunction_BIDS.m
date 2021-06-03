@@ -33,6 +33,12 @@ for ss = 1 % subjects/ses/acq
         fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
             ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
         fmri_name = fullfile(dDir,fmri_BIDSname);
+        save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
+        if ~exist(save_dir,'dir')
+            disp(['creating output directory ' save_dir])
+            mkdir(save_dir)
+        end
+        save_name_base = ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)];
 
         if ~exist(fmri_name,'file')
             clear ni
@@ -47,36 +53,38 @@ for ss = 1 % subjects/ses/acq
             = bbResponse2physio(ni);
 
         % safe time T:
-        save(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT']),'t')
+        save(fullfile(save_dir,[save_name_base '_PPGtrigResponseT']),'t')
 
         % save average of all heartbeats:
         ni1 = ni;
         ni1.data = response_matrix;
-        ni1.fname = [scanName '_PPGtrigResponse.nii.gz'];
-        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+        ni1.fname = [save_name_base '_PPGtrigResponse.nii.gz'];
+        niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
 
         % save standard error of all heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_std;
-        ni1.fname = [scanName '_PPGtrigResponse_std.nii.gz'];
-        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+        ni1.fname = [save_name_base '_PPGtrigResponse_std.nii.gz'];
+        niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
         
         % save average of all odd heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_odd;
-        ni1.fname = [scanName '_PPGtrigResponse_odd.nii.gz'];
-        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+        ni1.fname = [save_name_base '_PPGtrigResponse_odd.nii.gz'];
+        niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
         
         % save average of all even heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_even;
-        ni1.fname = [scanName '_PPGtrigResponse_even.nii.gz'];
-        niftiWrite(ni1,fullfile(dDir,subj,scan,ni1.fname))
+        ni1.fname = [save_name_base '_PPGtrigResponse_even.nii.gz'];
+        niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
     end
+    
+    %%%% LEFT OF HERE
     
     for scan_nr = [1:10]%1:length(s_info.scan)
         disp(['Calculating PPG locked correlation sub-' int2str(s) ' scan-' int2str(scan_nr)])

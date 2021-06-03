@@ -106,6 +106,7 @@ switch(param)
     case {'sliceacquisitionorder'}
         % This is currently hard coded for the CNI.  In a better brighter
         % world this information will be stored in the NIFTI
+        disp('Warning: slice acquisition order is hardcoded for data from Stanford CNI')
         nslices= bbGet(ni,'super slices');
         val = [(1:2:round(nslices)) (2:2:round(nslices))];
 
