@@ -1,11 +1,4 @@
 *.m~
 local/*
-
-data/*
-
 .DS_Store
-
-.ps
-.png
-.eps
 
