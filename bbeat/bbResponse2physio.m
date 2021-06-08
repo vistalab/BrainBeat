@@ -1,31 +1,46 @@
 function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] = bbResponse2physio(ni,slices,varargin)
-% function to get brain response after the peak of a heartbeat (or
-% respiration later)
+% Gate brain response to the peak of a heartbeat (or respiration later)
 %
-% [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
+% Synopsis
+%   [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
 % 
-% ni: a nifti structure loaded by niftiRead
+% Inputs
+%  ni: a nifti structure loaded by niftiRead
 %
 % optional inputs:
-% slices: slices for which to calculate response function, if no input, do
-% all slices
+%  slices: slices for which to calculate response function, if no input, do
+%          all slices
+%
+% Outputs
+%  response_matrix
+%  t
+%  response_matrix_odd
+%  response_matrix_even
 %
 % [response_matrix,t,response_matrix_odd,response_matrix_even] = bbResponse2physio(ni,slices)
 
 % DHermes, Copyright Vistasoft Team 2014
 
+
+%%
+p = inputParser;
+p.addRequired('ni',@isstruct);
+p.addParameter(slices,1:size(ni.data,3),@isvector);
+
+%{
 if ~exist('slices','var') % do whole brain
     slices = [1:size(ni.data,3)];
 elseif exist('slices','var') && isempty(slices)% do whole brain
     slices = [1:size(ni.data,3)];
 end
+%}
 
-% get the nifti stuff we need:
+%% get the nifti stuff we need:
 timing = bbGet(ni,'timing'); % timing per slice
-mux_f = bbGet(ni,'super slices');
-srate = 1/bbGet(ni,'tr');
+mux_f  = bbGet(ni,'super slices');
+srate  = 1/bbGet(ni,'tr');
 
-% get physio stuff we need:
+%% get physio stuff we need:
 physio = physioCreate('nifti',ni);
 if isempty(varargin) % do PPG
     ppg_onsets = physioGet(physio,'ppg peaks');

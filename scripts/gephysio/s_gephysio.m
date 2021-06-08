@@ -25,11 +25,11 @@ st = scitran('cni');
 %% Download files from Flywheel using scitran
 
 % General information so we can find the physio data
-group = 'leanew1';
+group         = 'leanew1';
 project_label = 'iris';
-subj_label = 'IRIS021';
+subj_label    = 'IRIS021';
 session_label = '22776';
-acq_label = 'resting_2';
+acq_label     = 'resting_2';
 
 % Several ways to find data
 
@@ -55,6 +55,17 @@ gephysioZip = stSelect(thisAcq.files,'name','gephysio','contains',true);
 gephysioFile = fullfile(bbPath,'local','geophysio.zip');
 gephysioZip{1}.download(gephysioFile);
 unzip(gephysioFile);
+
+%% Let's get the parameters from the dicom file metadata (info)
+
+dcmFile = stSelect(thisAcq.files,'name','dicom','contains',true);
+TR      = dcmFile{1}.info.RepetitionTime;
+nvols   = dcmFile{1}.info.NumberOfTemporalPositions;
+scan_duration = TR * nvols;   % milliseconds
+
+niFile = stSelect(thisAcq.files,'name','nii','contains',true);
+tmp = niFile{1}.info.SliceTiming;
+[~,sliceOrder] = sort(tmp);
 
 %{
 % Get the physio data and acquisition information from Flywheel if SDK exists 
@@ -103,11 +114,13 @@ resp_sample = 40;       % Respiratory data samples  at 40 ms
 
 plot_window = 10000;    % Duration of physio data to plot for inspection (10 seconds)
 
-
 %% Pulsimetry data
+
+datadir = pwd;
 f = dir(fullfile(datadir,'PPGData*'));
 foo = readmatrix(fullfile(f.folder, f.name));
 ppg = foo(:,2);
+
 f = dir(fullfile(datadir,'PPGTrig*'));
 ppg_trig = readmatrix(fullfile(f.folder, f.name)); % These are times that the PPG detects as an event
 
