@@ -125,6 +125,10 @@ for p = 1:numel(physioType)
         (plot_start < param.(physioType{p}).trig.data_filt) & ...
         (param.(physioType{p}).trig.data_filt < plot_end));
     plot(trig_in_window, ones(size(trig_in_window))*max(param.(physioType{p}).wave.data_sync),'ko');
+    getrig_in_window = param.(physioType{p}).trig.data_sync(...
+        (plot_start < param.(physioType{p}).trig.data_sync) & ...
+        (param.(physioType{p}).trig.data_sync < plot_end));
+    plot(getrig_in_window, ones(size(getrig_in_window))*max(param.(physioType{p}).wave.data_sync),'gx');
     xlabel('Time (ms)'); ylabel(sprintf('%s recorded data', physioType{p})); xlim([plot_start, plot_end]);
 end
 

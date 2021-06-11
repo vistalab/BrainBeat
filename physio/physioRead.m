@@ -1,4 +1,4 @@
-function [rawdata, syncdata] = physioRead(fname, dt, scanDuration, dataType, scanStart)
+function [rawdata, syncdata, t_samples, scanStart] = physioRead(fname, dt, scanDuration, dataType, scanStart)
 % Read the physio files and figure out the synchronization
 %
 % Input:
@@ -18,6 +18,8 @@ rawdata = readmatrix(fname,'leadingDelimitersRule','ignore');
 
 if strcmp(dataType, 'wave')
     syncdata = rawdata(end-round(scanDuration/dt)+1 : end);
+    scanStart = length(rawdata)*dt - scanDuration; % in milliseconds
+    t_samples = linspace(dt, scanDuration, numel(syncdata));
 elseif strcmp(dataType, 'trig')
     if ~exist('scanStart', 'var')
         error('Must provide scan start time to align the triggers \n');
