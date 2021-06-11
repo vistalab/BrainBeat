@@ -1,3 +1,5 @@
+*.asv
+*.swp
 *.m~
 local/*
 .DS_Store
