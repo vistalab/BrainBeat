@@ -67,7 +67,7 @@ for ss = 1:length(slices)
 
     % demean and express in percent modulation 
     d_norm = reshape(d,[size(d,1) * size(d,2), size(d,3)]);
-    points_use = 4:size(d_norm,2); % do not use the first couple of scans
+    points_use = 4:size(d_norm,2); % do not use the first three scans
     for kk = 1:size(d_norm,1) % run through voxels in this slice
         % do not use first scans:
         x = points_use;

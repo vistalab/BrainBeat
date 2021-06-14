@@ -1,4 +1,4 @@
-function [out_r_map]=bbCod2physio(ni_odd,ni_even,slices)
+function [out_r_map] = bbCod2physio(ni_odd,ni_even,slices)
 %
 % Function calculates coefficient of determination between PPG triggered
 % signal for even and odd heartbeats.

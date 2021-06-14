@@ -103,11 +103,11 @@ switch(param)
     case{'mux','simultaneousslices'}
         % Number of slices acquired simultaneously
         val = round(ni.dim(3)./bbGet(ni,'super slices'));
-    case {'sliceacquisitionorder'}
+    case{'sliceacquisitionorder'}
         % This is currently hard coded for the CNI.  In a better brighter
         % world this information will be stored in the NIFTI
-        disp('Warning: slice acquisition order is hardcoded for data from Stanford CNI')
-        nslices= bbGet(ni,'super slices');
+        warning('Slice acquisition order is hardcoded for data from Stanford CNI, we could get this from the _bold.json instead')
+        nslices = bbGet(ni,'super slices');
         val = [(1:2:round(nslices)) (2:2:round(nslices))];
 
     case{'timing'}
@@ -130,7 +130,7 @@ switch(param)
         sliceTime = mux_slice_acq_time(idx);
         
         sAcquisitionTiming = zeros(mux,nslices);
-        for ii=1:mux
+        for ii = 1:mux
             sAcquisitionTiming(ii,:) = sliceTime;
         end
         sAcquisitionTiming = sAcquisitionTiming';
@@ -139,9 +139,9 @@ switch(param)
         % The timing matrix
         nVolumes = bbGet(ni,'n volumes');
         timing = zeros(bbGet(ni,'total slices'),nVolumes);
-        for k=1:nVolumes
-            dt = (k-1)*tr;
-            timing(:,k) = sAcquisitionTiming + dt;
+        for kk = 1:nVolumes
+            dt = (kk-1)*tr;
+            timing(:,kk) = sAcquisitionTiming + dt;
         end
         val = timing;
         

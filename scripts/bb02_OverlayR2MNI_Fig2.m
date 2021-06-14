@@ -1,4 +1,8 @@
 
+% make sure full path is added
+spm('Defaults','fmri')
+spm_path = fileparts(which('spm'));
+addpath(fullfile(spm_path,'config'))
 
 %% The functionals were not writted in the same space as the T1 
 % here save the coregistration matrix to the f.._codPPG.nii in sto_xyz/ijk
@@ -6,42 +10,55 @@
 
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-in_data = 'PPG';
-s = 6;
-scan_nr = 2;
+sub_labels = {'1'}; 
+ses_labels = {'2'}; 
+acq_labels = {'4mmFA48'};
+run_nrs = {[1]};
 
-s_info = bb_subs(s);
-subj = s_info.subj;
-    
-scan = s_info.scan{scan_nr};
-scanName = s_info.scanName{scan_nr};
+ss = 1;%:length(sub_labels) % subjects/ses/acq
+rr = 1;% run_nr
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
 
-fcod = fullfile(dDir,subj,scan, ['f' scanName '_codPPG.nii']);
-ni = niftiRead(fcod);
+run_nr = run_nrs{ss}(rr);
 
-% load coregistration matrix for the functionals
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+% Get the anatomy used for SPM segmentation:
+t1w_BIDSnameSPM = fullfile('derivatives','spmSegmentation',['sub-' sub_label],['ses-' ses_label],...
+            ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
+niAnatomySPM = niftiRead(fullfile(dDir,t1w_BIDSnameSPM));
+
+save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
+save_name_base = (['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+% load coregistration matrix (for the functionals):
+load(fullfile(save_dir,[save_name_base '_AcpcXform_new.mat']));
 acpcXform = acpcXform_new; clear acpcXform_new
 
-% save this coregistration matrix in the f_...codPPG.nii
+% reliability (COD)
+ppgRname = fullfile(save_dir,[save_name_base '_codPPG.nii.gz']);
+ppgR = niftiRead(ppgRname); % correlation with PPG
+ppgRnameT1spaceName = fullfile(save_dir,['f' save_name_base '_codPPG.nii']);
+
+% save COD in T1w space
+ni  = ppgR;
+% save this coregistration matrix in the f_...codPPG.nii 
 ni.qto_xyz = acpcXform;
 ni.qto_ijk = inv(acpcXform);
 ni.sto_xyz = acpcXform;
 ni.sto_ijk = inv(acpcXform);
 
-niftiWrite(ni,fcod);
+niftiWrite(ni,ppgRnameT1spaceName);
 
-%%%%%% now we normalize the cod image
-
-spm('Defaults','fmri')
+%%%%%% now we normalize the new fcod image
 
 % A) volume where parameters are estimated: anat
 % code will search for y_anat.nii file to use for normalization
-niAnatomy = fullfile(dDir,subj,s_info.anat,['f' s_info.anatName '.nii']);
+% t1w_BIDSnameSPM
 
 % B) volume you want to normalize, needs to be coregistered with A)
 % code will append a w before this file
-fcod = fullfile(dDir,subj,scan, ['f' scanName '_codPPG.nii']);
+% ppgRnameT1spaceName;
 
 flags.preserve  = 0;
 flags.bb        = [-90 -120 -60; 90 96 130];
@@ -50,8 +67,8 @@ flags.interp    = 0; % 0: neirest neighbor, 4: 4th degree b spline
 flags.wrap      = [0 0 0];
 flags.prefix    = 'w';
 
-job.subj.vol{1} = niAnatomy;
-job.subj.resample{1} = fcod;
+job.subj.vol{1} = fullfile(dDir,t1w_BIDSnameSPM);
+job.subj.resample{1} = ppgRnameT1spaceName;
 job.woptions = flags;
 
 % normalize the image with COD
