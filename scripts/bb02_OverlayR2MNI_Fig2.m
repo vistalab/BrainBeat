@@ -10,8 +10,8 @@ addpath(fullfile(spm_path,'config'))
 
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-sub_labels = {'1'}; 
-ses_labels = {'2'}; 
+sub_labels = {'5'}; 
+ses_labels = {'1'}; 
 acq_labels = {'4mmFA48'};
 run_nrs = {[1]};
 
@@ -77,25 +77,37 @@ spm_run_norm(job);
 %% load all subjects and render MNI
 
 Rthreshold = 0.9;
+flags.bb    = [-90 -120 -60; 90 96 130];
 
-subj_inds = [1 2 3 4 5 6];
-scan_inds = [3 3 3 1 1 1];
-all_mni = [];
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],1,1,1,1,1};
 
-in_data = 'PPG';
-for aa = 1:length(subj_inds)
+% initialize output for COD in MNI space for all subjects
+all_mni_cod = NaN([diff(flags.bb)+1 length(sub_labels)]);
 
-    s = subj_inds(aa);
-    scan_nr = scan_inds(aa);
+% just take one run
+rr = 1;% run_nr
 
-    s_info = bb_subs(s);
-    subj = s_info.subj;
+all_mni_cod = [];
 
-    scan = s_info.scan{scan_nr};
-    scanName = s_info.scanName{scan_nr};
+for ss = 1:length(sub_labels)
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
 
-    wfcod = niftiRead(fullfile(dDir,subj,scan, ['wf' scanName '_codPPG.nii']));
+    run_nr = run_nrs{ss}(rr);
 
+    save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
+    save_name_base = (['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+    wfcod = niftiRead(fullfile(save_dir,['wf' save_name_base '_codPPG.nii']));
+
+    % get COD in MNI space for all subjects
+    all_mni_cod(:,:,:,ss) = wfcod.data;
+    
+    % Get mni coordinates of voxels above threshold
     select_voxels = find(wfcod.data>=Rthreshold);
 
     % Get indiced of selected voxels
@@ -103,11 +115,22 @@ for aa = 1:length(subj_inds)
     ijk_func = [ii jj kk];
     clear ii jj kk % housekeeping
 
-    % Get mni coordinates of voxels 
-    all_mni(aa).xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+    all_mni(ss).xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
 end
 
+%% 
 
+save_dir = fullfile(dDir,'derivatives','brainbeat','group');
+save_name = fullfile(save_dir,['group_4mmFA48_wfcodPPG.nii']);
+
+cod_mni = wfcod;
+
+cod_mni.data = sum(all_mni_cod>0.7,4);
+
+niftiWrite(cod_mni,save_name);
+
+%%
+%% left off here
 %%
 figure,hold on
 
