@@ -13,8 +13,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 %% Get the average responses across subjects
 
-all_subs = [1 2 3 4 5 6];
-all_scans = [3 3 3 1 1 1];
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],1,1,1,1,1};
 
 dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
@@ -22,26 +24,24 @@ roiNames = dkt_table.label;
 roiCodes = dkt_table.label_nr;
 
 t_hr = linspace(-.5,1.5,128);
-avResp_hr = NaN(length(t_hr),length(roiNames),length(all_subs));
-avRespVeno_hr = NaN(length(t_hr),1,length(all_subs));
-ppgCurve_hr = NaN(length(t_hr),length(all_subs));
+avResp_hr = NaN(length(t_hr),length(roiNames),length(sub_labels));
+avRespVeno_hr = NaN(length(t_hr),1,length(sub_labels));
+ppgCurve_hr = NaN(length(t_hr),length(sub_labels));
     
-for ss = 1:length(all_subs)
+for ss = 1:length(sub_labels)
     % Functionals
-    % Select a subject and scan nummer
-    s_nr = all_subs(ss); %[1 2 3 4 5 6]
-    scan_nr = all_scans(ss); % [3 3 3 1 1 1]
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
 
-    subs = bb_subs(s_nr);
-    subj = subs.subj;
-    scan = subs.scan{scan_nr};
-    scanName = subs.scanName{scan_nr};
-    fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-    if ~exist(fmri,'file')
-        clear ni
-        error('filename %s does not exist',fmri)
-    end
-    ni = niftiRead(fmri);
+    rr = 1;% run_nr
+    run_nr = run_nrs{ss}(rr);
+    
+    % Functionals
+    fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+    fmri_name = fullfile(dDir,fmri_BIDSname);
+    ni = niftiRead(fmri_name);
 
     % get physio stuff we need:
     physio      = physioCreate('nifti',ni);
@@ -49,26 +49,28 @@ for ss = 1:length(all_subs)
     ppgCurveT   = physioGet(physio,'ppg ppgtcurve');
     srate       = 1/bbGet(ni,'tr');
 
-    ppgResp = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
-    ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
+    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+    ppgResp = niftiRead([save_name_base '_PPGtrigResponse.nii.gz']); % ppg triggered time series
+    ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
 
     %%%% Scale the time-series matrix by the reliability
     % Get odd/even cod (made with bbCod/Correlate2physio):
-    ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
-    ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
+    ppgR = niftiRead([save_name_base '_codPPG.nii.gz']); % COD between even and odd heartbeats
 %     % Set maximum of ppgTS to 1 for each voxel
 %     ppgResp.data = ppgResp.data ./ repmat(max(abs(ppgResp.data),[],4),[1,1,1,size(ppgResp.data,4)]);
 %     % Multiply by cod size (always >= 0)
 %     ppgResp.data = ppgResp.data .* repmat(ppgR.data,[1,1,1,size(ppgResp.data,4)]);
     
     % load segmentation
-    niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
+    niSegm = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
     % matrix to vector
     segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
 
     % also get the Venogram segmentation from niSegm2
     % niSegm2 has labels 1:5 with names {'GM','WM','Ventricles','CSF','Veno'};
-    niSegm2 = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+    niSegm2 = niftiRead([save_name_base '_combineSegm.nii.gz']);
     segm2Vect = reshape(niSegm2.data,[size(niSegm2.data,1) * size(niSegm2.data,2) * size(niSegm2.data,3)],1);
     
     % put the data in a matrix Voxel X Time
@@ -103,7 +105,7 @@ for ss = 1:length(all_subs)
 end
 
 %%
-%% plot some responses for Figure 1
+%% Figure 4D: plot set of responses
 
 n_subs = size(avResp_hr,3);
 
@@ -148,25 +150,28 @@ plot([0 0],[-1 3],'Color',[.7 .7 .7])
 plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig2D_allSubs_tracessegm01'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig4D_allSubs_tracessegm01'])
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig4D_allSubs_tracessegm01'])
 
-%% Render subject 1
+%% Figure 5A: Render subject 1 with DKT colored by arterial branch
 
 % Select a subject number and hemisphere
 ss = 1;
 hemi = 'l'; % 'l' or 'r'
-dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 
-s_nr = all_subs(ss); %[1 2 3 4 5 6]
-subs = bb_subs(s_nr);
-subj = subs.subj;
+% Functionals
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
+
 % load gifti
-gi = gifti(fullfile(dDir,subj,subs.anat,['T1w_' hemi 'h_render.gii']));
+gi = gifti(fullfile(dDir,'derivatives','surfaces',['sub-' sub_label],['ses-' ses_label],...
+    ['T1w_' hemi 'h_render.gii']));
 
 % load DKT surface labels
-surface_labels_name = fullfile(dDir,subj,'freesurfer','label',[hemi 'h.aparc.DKTatlas.annot']);
+surface_labels_name = fullfile(dDir,'derivatives','freesurfer',['sub-' sub_label],['ses-' ses_label],...
+    'label',[hemi 'h.aparc.DKTatlas.annot']);
 
 % surface_labels = MRIread(surface_labels_name);
 [vertices, label, colortable] = read_annotation(surface_labels_name);
@@ -189,10 +194,10 @@ figure
 ieeg_RenderGiftiLabels(gi,vert_label,cmap,colortable.struct_names)
 ieeg_viewLight(90,0)
  
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_mesial'])
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_lateral'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5A_s' int2str(s_nr) '_mesial'])
+% ieeg_viewLight(270,0)
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5A_s' int2str(s_nr) '_lateral'])
 
 %%
 % create colors for rendering and plots:
@@ -237,7 +242,7 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm3'])
 
 
-%% plot responses in these colors
+%% Figure 5B: plot responses in these colors
 
 % we have avResp_hr with 106 regions
 % there are 31 surface areas with dkt_table.DKT_nr corresponding to dkt_table_surface.DKT_nr
@@ -285,11 +290,11 @@ end
 ylim([-1 1])
 xlabel('heartbeat cycle')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
 
-%% get amplitude across subjects and test for significance
+%% Figure 5C: get amplitude across subjects and test for significance
 
 % t_int = t_hr>-0.2 & t_hr<0; % for mean
 t_int = t_hr>-0.5 & t_hr<0.5; % for max-min contrast
@@ -394,7 +399,7 @@ end
 plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'k')
 set(gca,'XTick',[1:4])
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs_bar'])
-print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs_bar'])
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig5C_ArteryAvgs_bar'])
+% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5C_ArteryAvgs_bar'])
 
