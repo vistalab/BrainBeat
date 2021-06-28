@@ -129,6 +129,30 @@ cod_mni.data = sum(all_mni_cod>0.7,4);
 
 niftiWrite(cod_mni,save_name);
 
+
+
+%%
+%% NOT WORKING YET
+%% Overlay MNI Sagittal slices T1 + COD
+%%
+
+mniAnat = niftiRead(fullfile(dDir,'derivatives','brainbeat','group','spmMNI152_single_subj_T1.nii'));
+
+curPos = [-10,1,-20]; 
+sliceThisDim = 1; 
+imDims = [-90 -120 -120; 90 130 90];
+overlayPlot = cod_mni;
+overlayPlot.data = overlayPlot.data/6;
+nr_subs_th = 6;
+
+for kk = 1%-60:10:60
+    curPos(1) = kk;
+    bbOverlayFuncAnat(overlayPlot,mniAnat,acpcXform,sliceThisDim,imDims,curPos,.4,1,.1);
+    title(['slice ' int2str(kk) ', R^2>' num2str(nr_subs_th,3)])
+    set(gcf,'PaperPositionMode','auto')    
+%     print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(kk)])
+end
+
 %%
 %% left off here
 %%

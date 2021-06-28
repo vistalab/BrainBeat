@@ -11,28 +11,29 @@ close all
 dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 % chdir(dDir)
 
-%% Basic check from here!!!
-%% Generate basic fMRI change from segmentation 
+%% Plot fMRI signals from DKT segmentation in one subject
 
-% Functionals
-% Select a subject and scan nummer
-s_nr = 1; %[1 2 3 4 5 6]
-scan_nr = 3; % [3 3 3 1 1 1]
+sub_labels = {'1'}; 
+ses_labels = {'1'}; 
+acq_labels = {'4mmFA48'};
+run_nrs = {[1]};
 
+ss = 1;%:length(sub_labels) % subjects/ses/acq
+rr = 1;% run_nr
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
+
+run_nr = run_nrs{ss}(rr);
+        
 dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 dktNames = dkt_table.label;
 dktCodes = dkt_table.label_nr;
 
-subs = bb_subs(s_nr);
-subj = subs.subj;
-scan = subs.scan{scan_nr};
-scanName = subs.scanName{scan_nr};
-fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-if ~exist(fmri,'file')
-    clear ni
-    error('filename %s does not exist',fmri)
-end
-ni = niftiRead(fmri);
+fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+fmri_name = fullfile(dDir,fmri_BIDSname);
+ni = niftiRead(fmri_name);
 
 % get physio stuff we need:
 physio      = physioCreate('nifti',ni);
@@ -41,10 +42,14 @@ ppgCurve    = physioGet(physio,'ppg ppgcurve');
 ppgCurveT   = physioGet(physio,'ppg ppgtcurve');
 srate       = 1/bbGet(ni,'tr');
 
-ppgResp = niftiRead(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']));
-ppgT = load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']));
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
-niSegm = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
+ppgResp = niftiRead([save_name_base '_PPGtrigResponse.nii.gz']); % ppg triggered time series
+ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
+
+%%
+niSegm = niftiRead([save_name_base '_combineSegm.nii.gz']);
 roiNames = {'GM','WM','Ventricles','CSF','Veno'};
 % Freesurfer for GM, WM, Ventricles, CSF from SPM and Venogram
 
@@ -52,7 +57,7 @@ roiNames = {'GM','WM','Ventricles','CSF','Veno'};
 segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
 
 % load DKT atlas
-niDKT = niftiRead(fullfile(dDir,subj,scan,[scanName '_r_DKTatlas_aseg.nii.gz']));
+niDKT = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
 % matrix to vector
 segmVectDKT = reshape(niDKT.data,[size(niDKT.data,1) * size(niDKT.data,2) * size(niDKT.data,3)],1);
 
@@ -136,15 +141,8 @@ title('ppg')
 
 
 %%
-
-figure,
-for kk = 1:5
-    subplot(1,5,kk)
-    imagesc(ppgT.t,[1:length(find(segmVect==kk))],100*respMat(segmVect==kk,:),[-1 1])
-    hold on
-    plot([0 0],[1 length(find(segmVect==kk))],'k','LineWidth',2)
-end
-
+%% LEFT OFF HERE
+%%
 
 %% Now plot the average responses across subjects
 
