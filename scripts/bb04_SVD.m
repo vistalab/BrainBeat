@@ -6,69 +6,59 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % chdir(dDir)
 
-%% The T2* data are here.  
+%% Get all relevant scans and PPG triggered response
 
-% TODO: Also try first half and second half reliability
+sub_labels = {'1'}; 
+ses_labels = {'1'}; 
+acq_labels = {'4mmFA48'};
+run_nrs = {[1]};
 
-% The pixdim field in the ni structure has four dimensions, three spatial
-% and the fourth is time in seconds.
+ss = 1;%:length(sub_labels) % subjects/ses/acq
+rr = 1;% run_nr
 
-s_nr = 6;
-s_info = bb_subs(s_nr);
-subj = s_info.subj;
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
+run_nr = run_nrs{ss}(rr);
 
 % Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+niAnatomy = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'anat',...
+    ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']));
 
-% % Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
-% % load Veno rotation matrix:
-% xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
+% Get functional for physioGet
+ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
 
+% Get PPG triggered curves
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
-%%
-%% SVD on the odd responses:
-%%
-% group with FA of 48 includes sub/scan: [1/3, 2/3, 3/3, 4/1, 5/1, 6/1]
+ppgTSodd = niftiRead([save_name_base '_PPGtrigResponse_odd.nii.gz']); % ppg triggered time series
+ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg triggered time series
+ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
+t = ppgT.t;
 
-data_in = 'PPG';
-
-% load PPG responses
-scan_nr = 2;
-scan = s_info.scan{scan_nr};
-scanName = s_info.scanName{scan_nr};
-
-% nifti:
-ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
-
-load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
-
-% load average of all odd heartbeats:
-ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
-
-% load average of all even heartbeats:
-ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
-
-% Load coregistration matrix:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+% load coregistration matrix (for the functionals):
+load([save_name_base '_AcpcXform_new.mat']);
 acpcXform = acpcXform_new; clear acpcXform_new
 
-%%%% Scale the time-series matrix by the reliability
-% Get odd/even corr/corr (made with bbCod/Correlate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
-% ppgRname = fullfile(dDir,subj,scan,[scanName '_corr' data_in '.nii.gz']);
-ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
+%%%% cod 
+ppgRname = [save_name_base '_codPPG.nii.gz'];
+ppgR = niftiRead(ppgRname); % correlation with PPG
+
+%% Do the SVD
+
 % Set maximum of ppgTS to 1 for each voxel
-ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
+ppgTSodd.data = ppgTSodd.data ./ repmat(max(abs(ppgTSodd.data),[],4),[1,1,1,size(ppgTSodd.data,4)]);
 ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
-% Multiply by correlation size (absolute)
-ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
+% Multiply by COD size (absolute)
+ppgTSodd.data = ppgTSodd.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSodd.data,4)]));
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
 % Reshape to voxel X time:
-a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
+a = reshape(ppgTSodd.data,[numel(ppgTSodd.data(:,:,:,1)) length(t)]);
 
-% Select times to include in SVD:
+% Select times to include in SVD: we want -0.5 to 1.5 heartbeat cycle
 physio      = physioCreate('nifti',ni);
 ppg_cycle   = 1./physioGet(physio,'PPGrate');
 a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
@@ -77,6 +67,7 @@ t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 % Do the SVD:
 meanTS = mean(a,2);
 a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
+a(isnan(a)) = 0; % replace NaN by zero
 [u,s,v] = svd(a','econ');
 s = diag(s);
 
@@ -112,7 +103,7 @@ for kk = 1:nr_pc_plot
     plot(t_sel,u(:,kk),'Color',pc_colors{kk},'LineWidth',2)
     xlim([t_sel(1) t_sel(end)])
     xlabel('time (s)')
-    title(['FlipA = ' int2str(s_info.scanFA{scan_nr})])
+    title([acq_labels{ss}])
 
     % plot fft of pc
     p1 = abs(fft(u(:,kk))/L);
@@ -171,7 +162,7 @@ for k=1:nrc_plot
     xlim([min(t_sel) max(t_sel)])
     title(['c' int2str(k) ' cumvar ' num2str(var_explained(k),2)])
 
-    whole_brain_v=reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+    whole_brain_v=reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 
     subplot(3,nrc_plot,nrc_plot+k)
     imagesc(squeeze(whole_brain_v(:,:,sl_plotz)),[-.03 .03])
@@ -232,8 +223,8 @@ title('components')
 %% Plot the mean:
 % Note that ppgTS is rescaled according to cod(R)
 
-meanSig = ppgTS;
-meanSig.data = reshape(meanTS,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+meanSig = ppgTSodd;
+meanSig.data = reshape(meanTS,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 
 sliceThisDim = 1;
 
@@ -256,16 +247,16 @@ bbOverlayFuncAnat(meanSig,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 % put 2 components weights in a matrix
 out = [];
 for k=1:3
-    out(k).weights = reshape(v(:,k),[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+    out(k).weights = reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 end
 
 % %%%%% MODEL WITH 2 COMPONENTS:
 pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
-svdResults.model = reshape(pred,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3) size(pred,2)]);
+svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3) size(pred,2)]);
 
 %%%%% MODEL ERROR
 % train and test-sets
-train_set = reshape(ppgTS.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTS.dim(1:3)) size(pred,2)]);
+train_set = reshape(ppgTSodd.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTSodd.dim(1:3)) size(pred,2)]);
 test_set = reshape(ppgTSeven.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTSeven.dim(1:3)) size(pred,2)]);
 % test-retest error
 test_train_error = sqrt(sum((test_set - train_set).^2,2));
@@ -274,7 +265,7 @@ test_model_error = sqrt(sum((test_set - pred).^2,2));
 % relative RMS error:
 rel_rms_error = test_model_error./test_train_error;
 
-svdResults.error = reshape(rel_rms_error,[size(ppgTS.data,1) size(ppgTS.data,2) size(ppgTS.data,3)]);
+svdResults.error = reshape(rel_rms_error,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 
 % save first component weight:
 % ni_save = ni;
@@ -567,7 +558,7 @@ set(gcf,'PaperPositionMode','auto')
 % model:
 pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
 
-train_set = reshape(ppgTS.data,[prod(ppgTS.dim(1:3)) ppgTS.dim(4)]);
+train_set = reshape(ppgTSodd.data,[prod(ppgTSodd.dim(1:3)) ppgTSodd.dim(4)]);
 test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
 
 % error
