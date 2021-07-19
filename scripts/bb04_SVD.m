@@ -97,7 +97,9 @@ clear pred_temp
 
 % save([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
 
-%% save outputs in nifti structures
+%% save outputs in nifti structures in T1 space
+
+%%%% TODO: convert to t1space
 
 % spatial weights pc1, pc2, pc3 to nifti structures:
 % put 2 components weights in a matrix of size x*y*z
@@ -107,7 +109,12 @@ for kk = 1:3
     % save pc1 spatial weight:
     ni_save = ni;
     ni_save.data = out(kk).weights;
-    ni_save.fname = fullfile([save_name_base '_pc' int2str(kk) '_weights.nii.gz']);
+    % make sure T1 space:
+    ni_save.qto_xyz = acpcXform;
+    ni_save.qto_ijk = inv(acpcXform);
+    ni_save.sto_xyz = acpcXform;
+    ni_save.sto_ijk = inv(acpcXform);
+    ni_save.fname = fullfile([save_name_base '_space-T1w_pc' int2str(kk) 'weights.nii.gz']);
     niftiWrite(ni_save,[ni_save.fname])
     clear ni_save
 end
@@ -125,12 +132,20 @@ svdResults.error = reshape(rel_rms_error,[size(ppgTSodd.data,1) size(ppgTSodd.da
 % save model
 ni_save = ni;
 ni_save.data = svdResults.model;
-ni_save.fname = fullfile([save_name_base '_modelpc12.nii.gz']);
+ni_save.qto_xyz = acpcXform;
+ni_save.qto_ijk = inv(acpcXform);
+ni_save.sto_xyz = acpcXform;
+ni_save.sto_ijk = inv(acpcXform);
+ni_save.fname = fullfile([save_name_base '_space-T1w_modelpc12.nii.gz']);
 niftiWrite(ni_save,[ni_save.fname])
 % save error
 ni_save = ni;
 ni_save.data = svdResults.error;
-ni_save.fname = fullfile([save_name_base '_modelerrorpc12.nii.gz']);
+ni_save.qto_xyz = acpcXform;
+ni_save.qto_ijk = inv(acpcXform);
+ni_save.sto_xyz = acpcXform;
+ni_save.sto_ijk = inv(acpcXform);
+ni_save.fname = fullfile([save_name_base '_space-T1w_modelerrorpc12.nii.gz']);
 niftiWrite(ni_save,[ni_save.fname])
 
 %% Plot 2 components:
