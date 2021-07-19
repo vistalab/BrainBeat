@@ -12,21 +12,30 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 %% Save canonical heartbeat responses (across all subjects)
 
-% subjects indices
-s_nr = [1 2 3 4 5 6];
-% scan nrs, here take the 25 or 20 degree flip angle
-% scan_nr  = [1 1 2];
-% scan nrs, take the 48 degree flip angles
-% scan_nr  = [3 3 3 1 1 2]; % subjects 6 scan 2 has same sign for pc2
-scan_nr  = [3 3 3 1 1 2];
+sub_labels = {'1','2','3','4','5'}; 
+ses_labels = {'1','1','1','1','1'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1]};
 
-% load first two principle components for these subjects and scans
-all_pcs = zeros(length(s_nr),3,128);
-for kk = 1:length(s_nr)
-    load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','y3','t_hr')
-    all_pcs(kk,1,:) = y1;
-    all_pcs(kk,2,:) = y2;
-    all_pcs(kk,3,:) = y3;
+all_pcs = zeros(length(sub_labels),2,128);
+
+for ss = 1:length(sub_labels) % subjects/ses/acq
+
+    rr = 1;% run_nr
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
+    run_nr = run_nrs{ss}(rr);
+    
+    % Get PPG triggered curves
+    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+    % load first two principle components for these subjects and scans
+    load([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
+
+    all_pcs(ss,1,:) = y1;
+    all_pcs(ss,2,:) = y2;
 end
 
 t_svd = linspace(-.5,1.5,128);
@@ -40,45 +49,43 @@ plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',2)
 title('heartbeat components for 6 subjects')
 
 % reshape into matrix size subject/scan*2 X time
-all_pcs = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
+all_pcs_temp = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
 
 % do the pca on the first two pca's
-[u,s,v] = svd(all_pcs);
+[u,s,v] = svd(all_pcs_temp);
 % s = diag(s);
-
-subplot(2,1,2),hold on
 temp = u*s;
-% plot(u(:,1:3))
-plot(t_svd,temp(:,1),'k','LineWidth',2)
-plot(t_svd,temp(:,2),'Color',[1 .5 0],'LineWidth',2)
-xlabel('time (heartbeat cycles)')
-
+% flip second pc, because it does not match data...
 pc1  = temp(:,1);
 pc2  = temp(:,2);
-pc3  = temp(:,3);
+disp('flipping second pc for consistency')
+
+subplot(2,1,2),hold on
+plot(t_svd,pc1,'k','LineWidth',2)
+plot(t_svd,pc2,'Color',[1 .5 0],'LineWidth',2)
+xlabel('time (heartbeat cycles)')
 title('canonical heartbeat components')
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','canonicalPC_S1-6'))
-print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','canonicalPC_S1-6'))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
 
 % save them:
-save(['./local/allsubs_pc12'],'pc1','pc2','pc3')
+save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
 %% Plot canonical PCs in figure:
 
-load(['./local/allsubs_pc12'],'pc1','pc2','pc3')
-pc1 = pc1(1:75);
-pc2 = pc2(1:75);
-pc3 = pc3(1:75);
+
+pc1_plot = pc1(1:75);
+pc2_plot = pc2(1:75);
 
 figure('Position',[0 0 600 300])
 subplot(2,2,1)
-plot(pc1,'k','LineWidth',2)
+plot(pc1_plot,'k','LineWidth',2)
 axis tight
 axis off
 subplot(2,2,3)
-plot(pc2,'k','LineWidth',2)
+plot(pc2_plot,'k','LineWidth',2)
 axis tight
 axis off
 
@@ -96,11 +103,11 @@ subplot(1,2,2),hold on
 for kk = -1:.4:1
     for ll = -1:.4:1
         if kk<0
-            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1 + ll*pc2),...
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1_plot + ll*pc2_plot),...
                 'Color',cm2D(round(-kk*100),round((-ll+1)*99+1),:),...
                 'LineWidth',2)
         elseif kk>0
-            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1 + ll*pc2),...
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1_plot + ll*pc2_plot),...
                 'Color',cm2D(round(kk*100),round((ll+1)*99+1),:),...
                 'LineWidth',2)
         end
@@ -109,11 +116,11 @@ end
 axis square
 axis tight
 axis off
-title('canonical PCs across 6 subjects')
+title('canonical PCs across 5 subjects')
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','model'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd','model'))
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)

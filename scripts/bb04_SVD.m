@@ -1,3 +1,11 @@
+
+%
+% This script runs the SVD for each individual subject
+%
+% There are some options for making figures to check the outputs that are
+% not used for manuscript figures (yet)
+%
+
 clear all
 close all
 
@@ -46,7 +54,7 @@ acpcXform = acpcXform_new; clear acpcXform_new
 ppgRname = [save_name_base '_codPPG.nii.gz'];
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
-%% Do the SVD
+%%%% Do the SVD
 
 % Set maximum of ppgTS to 1 for each voxel
 ppgTSodd.data = ppgTSodd.data ./ repmat(max(abs(ppgTSodd.data),[],4),[1,1,1,size(ppgTSodd.data,4)]);
@@ -65,7 +73,7 @@ train_set   = train_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 t_sel       = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
 % Do the SVD:
-meanTS = mean(a,2);
+meanTS = mean(train_set,2);
 a = train_set-repmat(meanTS,1,size(train_set,2)); % subtract the mean
 a(isnan(a)) = 0; % replace NaN by zero
 [u,s,v] = svd(a','econ');
@@ -95,11 +103,9 @@ for mm = 1:length(s)
 end
 clear pred_temp
 
-% save([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
+save([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
 
-%% save outputs in nifti structures in T1 space
-
-%%%% TODO: convert to t1space
+%%%%% save outputs in nifti structures in T1 space
 
 % spatial weights pc1, pc2, pc3 to nifti structures:
 % put 2 components weights in a matrix of size x*y*z
@@ -197,6 +203,28 @@ box off
 % set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
 % print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
+
+%%
+%% now make some figures for individual subjects if you want:
+%%
+
+%% plot pc1 weights versus pc2 weights
+
+weight1 = s(1)*v(:,1);
+weight2 = s(2)*v(:,2);
+weight3 = s(3)*v(:,3);
+
+weight1(ppgR.data<0.8) = [];
+weight2(ppgR.data<0.8) = [];
+weight3(ppgR.data<0.8) = [];
+
+figure
+plot3(weight1,weight2,weight3,'.')
+axis equal
+axis square
+% color points by local density
+% with 3 weights seems like spatial weights 3 are correlated with 1 and/or 2.
+
 
 %%
 %% check: plot a number of components (spatial/temporal weights)
