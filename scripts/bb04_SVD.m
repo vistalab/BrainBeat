@@ -9,7 +9,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 %% Get all relevant scans and PPG triggered response
 
 sub_labels = {'1'}; 
-ses_labels = {'1'}; 
+ses_labels = {'2'}; 
 acq_labels = {'4mmFA48'};
 run_nrs = {[1]};
 
@@ -38,11 +38,11 @@ ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg tr
 ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
 t = ppgT.t;
 
-% load coregistration matrix (for the functionals):
+% Load coregistration matrix (for the functionals):
 load([save_name_base '_AcpcXform_new.mat']);
 acpcXform = acpcXform_new; clear acpcXform_new
 
-%%%% cod 
+%%%% COD 
 ppgRname = [save_name_base '_codPPG.nii.gz'];
 ppgR = niftiRead(ppgRname); % correlation with PPG
 
@@ -56,45 +56,92 @@ ppgTSodd.data = ppgTSodd.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSodd.data,
 ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
 % Reshape to voxel X time:
-a = reshape(ppgTSodd.data,[numel(ppgTSodd.data(:,:,:,1)) length(t)]);
+train_set = reshape(ppgTSodd.data,[numel(ppgTSodd.data(:,:,:,1)) length(t)]);
 
 % Select times to include in SVD: we want -0.5 to 1.5 heartbeat cycle
 physio      = physioCreate('nifti',ni);
 ppg_cycle   = 1./physioGet(physio,'PPGrate');
-a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
-t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+train_set   = train_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+t_sel       = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
 % Do the SVD:
 meanTS = mean(a,2);
-a = a-repmat(meanTS,1,size(a,2)); % subtract the mean
+a = train_set-repmat(meanTS,1,size(train_set,2)); % subtract the mean
 a(isnan(a)) = 0; % replace NaN by zero
 [u,s,v] = svd(a','econ');
 s = diag(s);
 
-% % % figure to show Matrix A
-% figure('Position',[0 0 200 500]),hold on
-% imagesc(t_sel,[1:size(a,1)],a,[-.3 .3])
-% xlim([t_sel(1) t_sel(end)])
-% ylim([1 size(a,1)])
-% J = customcolormap([0 0.5 1],[0 0.8 1;.2 .2 .2;.9 0 0]);   %
-% colormap(J)
-% colorbar('southoutside');
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd','MatrixA'))
-
-% Get to cumulative explained variance:
+% Get cumulative explained variance:
 var_explained = cumsum(s.^2) / sum(s.^2);
-clear a a_test
 
-% Plot 2 components:
+% Resample the eigenvectors to heartrate time and save for later use
+t_hr = linspace(min(t_sel),max(t_sel),128);
+y1 = interp1(t_sel,double(u(:,1)),t_hr);
+y2 = interp1(t_sel,double(u(:,2)),t_hr);
+y3 = interp1(t_sel,double(u(:,3)),t_hr);
+
+% test model fit on even heartbeats
+all_pred_acc = zeros(length(s),1);
+% test data
+test_set = reshape(ppgTSeven.data,[numel(ppgTSeven.data(:,:,:,1)) length(t)]);
+test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+
+for mm = 1:length(s)
+    % prediction:
+    kk = 1:mm;
+    % COD for 1:mm components
+    pred_temp = [u(:,kk)*diag(s(kk))*v(:,kk)']';
+    all_pred_acc(mm) = calccod(pred_temp(:),test_set(:),1,0,0)./100;
+end
+clear pred_temp
+
+% save([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
+
+%% save outputs in nifti structures
+
+% spatial weights pc1, pc2, pc3 to nifti structures:
+% put 2 components weights in a matrix of size x*y*z
+out = [];
+for kk = 1:3
+    out(kk).weights = reshape(v(:,kk),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
+    % save pc1 spatial weight:
+    ni_save = ni;
+    ni_save.data = out(kk).weights;
+    ni_save.fname = fullfile([save_name_base '_pc' int2str(kk) '_weights.nii.gz']);
+    niftiWrite(ni_save,[ni_save.fname])
+    clear ni_save
+end
+
+%%%%% MODEL WITH 2 COMPONENTS:
+pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
+svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3) size(pred,2)]);
+% test-retest error
+test_train_error = sqrt(sum((test_set - train_set).^2,2));
+% model error
+test_model_error = sqrt(sum((test_set - pred).^2,2));
+% relative RMS error:
+rel_rms_error = test_model_error./test_train_error;
+svdResults.error = reshape(rel_rms_error,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
+% save model
+ni_save = ni;
+ni_save.data = svdResults.model;
+ni_save.fname = fullfile([save_name_base '_modelpc12.nii.gz']);
+niftiWrite(ni_save,[ni_save.fname])
+% save error
+ni_save = ni;
+ni_save.data = svdResults.error;
+ni_save.fname = fullfile([save_name_base '_modelerrorpc12.nii.gz']);
+niftiWrite(ni_save,[ni_save.fname])
+
+%% Plot 2 components:
+
 L = length(u(:,1));
 Fs = 1./mean(diff(t));
 f = Fs * (0:(L/2))/L;
 
 nr_pc_plot = 2;
-pc_colors = {[0 0 0],[1 .5 0],'g','y'};
-% figure('Position',[0 0 300 400])
-figure('Position',[0 0 130 250])
+pc_colors = {[0 .1 .5],[1 .5 0],'g','y'};
+figure('Position',[0 0 260 270])
 
 for kk = 1:nr_pc_plot
 
@@ -110,44 +157,34 @@ for kk = 1:nr_pc_plot
     p1 = p1(1:floor(L/2+1));
     p1(2:end-1) = 2*p1(2:end-1);
     
-    subplot(2,1,2),hold on
+    subplot(2,2,3),hold on
     plot(f,p1,'Color',pc_colors{kk},'LineWidth',2)
     ylabel('|P(f)|')
     xlabel('frequency (Hz)')
-    
-    
+       
 end
+
 subplot(2,1,1),hold on
-plot(t_sel,sqrt(u(:,1).^2+u(:,2).^2),':','Color',[.5 .5 .5],'LineWidth',1)
+% sum of 2 components squared
+% plot(t_sel,sqrt(u(:,1).^2+u(:,2).^2),':','Color',[.5 .5 .5],'LineWidth',1)
 set(gca,'XTick',[0 1])
-subplot(2,1,2),hold on
-legend({'pc1','pc2'})%,'pc3','pc4'})x
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
-% print('-painters','-r300','-depsc',fullfile(dDir,'figures','svd',['s' int2str(s_nr) '_scan' int2str(scan_nr) '_pc_fft']))
+subplot(2,2,3),hold on
+legend({'pc1','pc2'})%,'pc3','pc4'})
 
-%% Resample the eigenvectors and test whether they span a subspace
-%% Save for later use
+%%% how many components do we want
+subplot(2,2,4)
+plot(all_pred_acc,'k')
+title(['COD (R)'])
+xlabel('nr of components')
+ylim([0 1])
+box off
 
-figure
-subplot(2,1,1),hold on
-plot(u(:,1:3))
-
-% y1 = resample(double(u(:,1)),128,length(t_sel));
-% y2 = resample(double(u(:,2)),128,length(t_sel));
-t_hr = linspace(min(t_sel),max(t_sel),128);
-y1 = interp1(t_sel,double(u(:,1)),t_hr);
-y2 = interp1(t_sel,double(u(:,2)),t_hr);
-y3 = interp1(t_sel,double(u(:,3)),t_hr);
-
-subplot(2,1,2),hold on
-plot([y1' y2' y3'])
-
-save(['./local/s-' int2str(s_nr) '_scan-' int2str(scan_nr) 'pc12'],'y1','y2','y3','t_hr')
-
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
 
 %%
-%% plot a number of components:
+%% check: plot a number of components (spatial/temporal weights)
 %%
 nrc_plot = 7;
 
@@ -162,7 +199,7 @@ for k=1:nrc_plot
     xlim([min(t_sel) max(t_sel)])
     title(['c' int2str(k) ' cumvar ' num2str(var_explained(k),2)])
 
-    whole_brain_v=reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
+    whole_brain_v = reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
 
     subplot(3,nrc_plot,nrc_plot+k)
     imagesc(squeeze(whole_brain_v(:,:,sl_plotz)),[-.03 .03])
@@ -179,46 +216,8 @@ set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',['./figures/2014_12_presentation1/' subj '_' scan '_examples_SVDcurves'])
 
 %%
-%% now see how many components we want
-%%
-nr_c_test = 20;
-all_pred_acc = zeros(nr_c_test,1);
 
-% test data
-a_test = reshape(ppgTSeven.data,[numel(ppgTSeven.data(:,:,:,1)) length(t)]);
-a_test = a_test(:,t>=-.5 & t<=2);
 
-for mm = 1:nr_c_test
-    % prediction:
-    kk = 1:mm;
-    
-%     % squared correlation:
-%     vect = u(:,kk);
-%     vect_w = v(:,kk);
-%     pred = [vect * vect_w']';
-%     all_pred_acc(mm) = corr(a_test(:),pred(:)).^2;
-
-    % COD:
-    pred = [u(:,kk)*diag(s(kk))*v(:,kk)']';
-    all_pred_acc(mm) = calccod(pred(:),a_test(:),1,0,0)./100;
-    
-end
-
-figure
-subplot(2,1,1)
-plot(all_pred_acc)
-title(['COD (R)'])
-xlabel('nr of components')
-ylim([0 1])
-
-[~,nr_c_keep] = max(all_pred_acc);
-subplot(2,1,2)
-plot(t_sel,u(:,[1:nr_c_keep]))
-legend('c1','c2','c3','c4')
-xlabel('time (s)')
-title('components')
-
-% print('-painters','-r300','-dpng',['./figures/test_pca/svd_comp_' subj '_FA' int2str(s_info.scanFA{scan_nr}) '_scan' int2str(scan_nr)])
 
 %% Plot the mean:
 % Note that ppgTS is rescaled according to cod(R)
@@ -228,50 +227,20 @@ meanSig.data = reshape(meanTS,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(
 
 sliceThisDim = 1;
 
-if s_nr == 1
+if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-1,10,-20];
-elseif s_nr == 2
+elseif ss == 21
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-1,10,-20];
-elseif s_nr == 3
+elseif ss == 3
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
-elseif s_nr == 4
+elseif ss == 4
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0,4,38];
 end
 bbOverlayFuncAnat(meanSig,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-
-%% put output in structures:
-% put 2 components weights in a matrix
-out = [];
-for k=1:3
-    out(k).weights = reshape(v(:,k),[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
-end
-
-% %%%%% MODEL WITH 2 COMPONENTS:
-pred = [u(:,1:2)*diag(s(1:2))*v(:,1:2)']';
-svdResults.model = reshape(pred,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3) size(pred,2)]);
-
-%%%%% MODEL ERROR
-% train and test-sets
-train_set = reshape(ppgTSodd.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTSodd.dim(1:3)) size(pred,2)]);
-test_set = reshape(ppgTSeven.data(:,:,:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle),[prod(ppgTSeven.dim(1:3)) size(pred,2)]);
-% test-retest error
-test_train_error = sqrt(sum((test_set - train_set).^2,2));
-% model error
-test_model_error = sqrt(sum((test_set - pred).^2,2));
-% relative RMS error:
-rel_rms_error = test_model_error./test_train_error;
-
-svdResults.error = reshape(rel_rms_error,[size(ppgTSodd.data,1) size(ppgTSodd.data,2) size(ppgTSodd.data,3)]);
-
-% save first component weight:
-% ni_save = ni;
-% ni_save.data = out(1).weights;
-% ni_save.fname = fullfile(dDir,subj,scan,[scanName '_pc1_weights']);
-% niftiWrite(ni_save,[ni_save.fname])
 
 %% Plot one component on anatomy 
 niOverlay = ni;
@@ -279,12 +248,12 @@ w_plot = 1;
 niOverlay.data = out(w_plot).weights;
 sliceThisDim = 3;
 
-if s_nr == 2
+if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
 %     curPos = [-10 50 -21];
     curPos = [-10 -20 -21];
     curPos = [1 -20 -21];
-elseif s_nr == 3
+elseif ss == 2
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [1,4,38];
     curPos = [9,20,-12];
@@ -421,76 +390,8 @@ niIntensity.data(out(1).weights<0 & out(2).weights<0 & ppgR.data>=R_th) = 2;
 bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
 
 
-%% Convert PC2 weight colorscale to timing:
-
-maxPlot = .008;
-% t_select = (t>-0.2 & t<1); % s = 2, slower heartrate
-t_select = (t>-0.2 & t<.6); % s = 3, faster heartrate
-
-%%%% Select voxels:
-% Quick brain mask:
-brain_vect = ni.data(:,:,:,4); brain_vect = brain_vect(:); 
-% Correlation mask:
-ppgR_vect = ppgR.data(:); 
-select_voxels = brain_vect>10 & ppgR_vect>.5;
-
-% Model prediction for selected voxels:
-pred = [u(:,1:2)*diag(s(1:2))*v(select_voxels,1:2)']';
-
-% Make 2D colormap: one to vary color, the other varies intensity
-cm = jet(250); cm = cm(26:225,:);
-cm = cm(end:-1:1,:);
-cm = cm+.4; cm(cm>1)=1;
-gray_vect = .2*ones(200,3);
-cm2D = zeros(100,size(cm,1),3);
-for kk = 1:100
-    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
-end
-
-% Get colors for selected voxels
-intensity_plot = v(select_voxels,1)./maxPlot;    
-intensity_plot(intensity_plot>1) = 1;
-intensity_plot(intensity_plot<-1) = -1;
-color_plot = v(select_voxels,2)./maxPlot;
-color_plot(color_plot>1) = 1;
-color_plot(color_plot<-1) = -1;
-
-% Get timing for selected voxels
-voxel_peakT = NaN(size(pred,1),1);
-temp_t = t(t_select);
-for kk = 1:size(pred,1) % voxel loop
-    if intensity_plot(kk)>0
-        [~,m_ind] = max(pred(kk,t_select));
-        voxel_peakT(kk) = temp_t(m_ind);
-    elseif intensity_plot(kk)<0
-        [~,m_ind] = min(pred(kk,t_select));
-        voxel_peakT(kk) = temp_t(m_ind);   
-    end
-end
-clear temp_t
-
-figure('Position',[0 0 300 450]),hold on
-for kk = 1:size(pred,1)
-    if intensity_plot(kk)>0
-        subplot(2,1,1),hold on
-        c_use = squeeze(cm2D(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
-        plot(voxel_peakT(kk),intensity_plot(kk),'.','Color',c_use,'MarkerSize',20)
-    elseif intensity_plot(kk)<0
-        subplot(2,1,2),hold on
-        c_use = squeeze(cm2D(ceil(-intensity_plot(kk)*99+1),ceil(-color_plot(kk)*99.5)+100,:));
-        plot(voxel_peakT(kk),intensity_plot(kk),'.','Color',c_use,'MarkerSize',20)
-    end
-end
-subplot(2,1,1),hold on
-xlim([min(voxel_peakT)-.05 max(voxel_peakT)+.05 ])
-subplot(2,1,2),hold on
-xlim([min(voxel_peakT)-.05 max(voxel_peakT)+.05 ])
-
-% print('-painters','-r300','-dpng',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
-% print('-painters','-r300','-depsc',[dDir './figures/svd/pc1Amp_pc2Time/ACA_subj' subj '_scan' int2str(scan_nr) '_Color2Time'])
 
 %% Plot shapes for PC1 and PC2 with 2D colorscale
-
 maxPlot = .008;
 t_select = (t>-0.2 & t<1);
 
