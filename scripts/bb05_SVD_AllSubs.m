@@ -41,12 +41,14 @@ end
 t_svd = linspace(-.5,1.5,128);
 
 % plot them:
-figure('Position',[0 0 200 200])
+figure('Position',[0 0 300 250])
 subplot(2,1,1),hold on
-plot(t_svd,squeeze(all_pcs(:,1,:)),'k','LineWidth',2)
-plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',2)
+plot(t_svd,squeeze(all_pcs(:,1,:)),'Color',[0 0 .5],'LineWidth',1)
+plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',1)
 % plot(t_svd,squeeze(all_pcs(:,3,:)),'Color',[1 .5 1],'LineWidth',2)
 title('heartbeat components for 6 subjects')
+xlim([t_svd(1) t_svd(end)])
+set(gca,'XTick',[0 1],'YTick',[-0.2 0 0.2])
 
 % reshape into matrix size subject/scan*2 X time
 all_pcs_temp = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
@@ -55,16 +57,31 @@ all_pcs_temp = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))'
 [u,s,v] = svd(all_pcs_temp);
 % s = diag(s);
 temp = u*s;
-% flip second pc, because it does not match data...
 pc1  = temp(:,1);
 pc2  = temp(:,2);
-disp('flipping second pc for consistency')
 
-subplot(2,1,2),hold on
-plot(t_svd,pc1,'k','LineWidth',2)
+subplot(2,2,3),hold on
+plot(t_svd,pc1,'Color',[0 0 .5],'LineWidth',2)
 plot(t_svd,pc2,'Color',[1 .5 0],'LineWidth',2)
+xlim([t_svd(1) t_svd(end)])
 xlabel('time (heartbeat cycles)')
 title('canonical heartbeat components')
+set(gca,'XTick',[0 1],'YTick',[-0.5 0 0.5])
+
+% fft of pc
+L = length(temp(:,1)); % length
+Fs = 1./mean(diff(t_svd)); % sampling frequency
+f = Fs * (0:(L/2))/L; % frequency
+p1 = abs(fft(temp(:,1:2))/L);
+p1 = p1(1:floor(L/2+1),:); % first half
+p1(2:end-1,:) = 2*p1(2:end-1,:); % 2 X first half except DC
+
+subplot(2,2,4),hold on
+plot(f,p1(:,1),'Color',[0 0 .5],'LineWidth',2)
+plot(f,p1(:,2),'Color',[1 .5 0],'LineWidth',2)
+xlim([0 7])
+ylabel('|P(f)|')
+xlabel('frequency (Hz)')
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
@@ -73,13 +90,12 @@ print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','grou
 % save them:
 save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
-%% Plot canonical PCs in figure:
-
+%% Combinations of PC1 and PC2 with color scale:
 
 pc1_plot = pc1(1:75);
 pc2_plot = pc2(1:75);
 
-figure('Position',[0 0 600 300])
+figure('Position',[0 0 400 250])
 subplot(2,2,1)
 plot(pc1_plot,'k','LineWidth',2)
 axis tight
@@ -125,28 +141,10 @@ print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','grou
 
 %% Save canonical heartbeat responses (across N-1 subjects)
 
-% subjects indices
-s_nr = [1:6];
-% scan nrs, here take the 25 or 20 degree flip angle
-% scan_nr  = [1 1 2];
-% scan nrs, take the 48 degree flip angles
-scan_nr  = [3 3 3 1 1 2];
-
-% load first two principle components for these subjects and scans
-all_pcs = zeros(length(s_nr),3,128);
-for kk = 1:length(s_nr)
-    load(['./local/s-' int2str(s_nr(kk)) '_scan-' int2str(scan_nr(kk)) 'pc12'],'y1','y2','t_hr')
-    all_pcs(kk,1,:) = y1;
-    all_pcs(kk,2,:) = y2;
-%     all_pcs(kk,3,:) = y3;
-end
-
-t_svd = linspace(-.5,1.5,128);
-
 % run across the subjects and leave out subject kkk
-for kk = 1:length(s_nr)
+for kk = 1:length(sub_labels)
     % leave our subj kk
-    this_pcset = all_pcs(setdiff(1:length(s_nr),kk),:,:);
+    this_pcset = all_pcs(setdiff(1:length(sub_labels),kk),:,:);
     % reshape into matrix size subject/scan*2 X time
     Nmin1_pcs = reshape(this_pcset,size(this_pcset,1)*size(this_pcset,2),size(this_pcset,3))';
 
@@ -158,128 +156,142 @@ for kk = 1:length(s_nr)
     pc2  = temp(:,2);
 %     pc3  = temp(:,3);
     
-    save(['./local/canonicalPC_leavout' int2str(s_nr(kk))],'pc1','pc2','t_svd')
+    % save them:
+    save(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{kk}]),'pc1','pc2','t_svd')
 
 end
+
+clear pc1 pc2 u s v temp Nmin1_pcs this_pcset
 
 %% load canonical heartbeat responses and run through data
-%% wave beta weights on canonical PCs in a nifti in T2 space
+%% save beta weights on canonical PCs in a nifti in T1 space
 % clear all
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-% Load canonical heartbeat responses:
-load(['./local/allsubs_pc12'],'pc1','pc2')
+sub_labels = {'1','2','3','4','5'}; 
+ses_labels = {'1','1','1','1','1'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1]};
 
-% Load PPG responses:
-s_nr        = 6;
-scan_nr     = 2;
-s_info      = bb_subs(s_nr);
-subj        = s_info.subj;
-scan        = s_info.scan{scan_nr};
-scanName    = s_info.scanName{scan_nr};
-data_in     = 'PPG';
+for ss = 1:length(sub_labels) % subjects/ses/acq
 
-% Load canonical PCs from other subjects:
-load(['./local/canonicalPC_leavout' int2str(s_nr)],'pc1','pc2','pc3','t_svd')
+    rr = 1;% run_nr
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
+    run_nr = run_nrs{ss}(rr);
 
-% Get the anatomicals:
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
+    % Load canonical PCs from other subjects - these are calculated on odd
+    % heartbeats
+    load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'pc1','pc2','t_svd')
 
-% Functionals:
-ni = niftiRead(fullfile(dDir,subj,scan,[scanName '.nii.gz']));
+    % Get functional for physioGet
+    ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
 
-% Load average of all odd heartbeats:
-ppgTS = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_odd.nii.gz']));
+    % Get PPG triggered curves
+    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
-% Load average of all even heartbeats:
-ppgTSeven = niftiRead(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponse_even.nii.gz']));
+    ppgTSodd = niftiRead([save_name_base '_PPGtrigResponse_odd.nii.gz']); % ppg triggered time series
+    ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg triggered time series
+    ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
+    t = ppgT.t;
 
-%%%% Scale the time-series matrix by the reliability
-% Get odd/even corr/corr (made with bbCod/Correlate2physio):
-ppgRname = fullfile(dDir,subj,scan,[scanName '_cod' data_in '.nii.gz']);
-ppgR = niftiRead(ppgRname); % COD between even and odd heartbeats
-% Set maximum of ppgTS to 1 for each voxel
-ppgTS.data = ppgTS.data ./ repmat(max(abs(ppgTS.data),[],4),[1,1,1,size(ppgTS.data,4)]);
-ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
-% Multiply by correlation size (absolute)
-ppgTS.data = ppgTS.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTS.data,4)]));
-ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
+    % Load coregistration matrix (for the functionals):
+    load([save_name_base '_AcpcXform_new.mat']);
+    acpcXform = acpcXform_new; clear acpcXform_new
 
-% Load timing of heartbeat triggered responses:
-load(fullfile(dDir,subj,scan,[scanName '_' data_in 'trigResponseT']),'t')
+    %%%% COD 
+    ppgRname = [save_name_base '_codPPG.nii.gz'];
+    ppgR = niftiRead(ppgRname); % correlation with PPG
 
-% Load coregistration matrix:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
-acpcXform = acpcXform_new; clear acpcXform_new
+    %%%% Do the SVD
 
-% Times that were included in SVD:
-physio      = physioCreate('nifti',ni);
-ppg_cycle   = 1./physioGet(physio,'PPGrate');
-t_sel = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+    % Set maximum of ppgTS to 1 for each voxel
+    ppgTSodd.data = ppgTSodd.data ./ repmat(max(abs(ppgTSodd.data),[],4),[1,1,1,size(ppgTSodd.data,4)]);
+    ppgTSeven.data = ppgTSeven.data ./ repmat(max(abs(ppgTSeven.data),[],4),[1,1,1,size(ppgTSeven.data,4)]);
+    % Multiply by COD size (absolute)
+    ppgTSodd.data = ppgTSodd.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSodd.data,4)]));
+    ppgTSeven.data = ppgTSeven.data .* abs(repmat(ppgR.data,[1,1,1,size(ppgTSeven.data,4)]));
 
-% get even heartbeat responses that were included in SVD:
-a = reshape(ppgTS.data,[numel(ppgTS.data(:,:,:,1)) length(t)]);
-a = a(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
-test_set = reshape(ppgTSeven.data,[prod(ppgTSeven.dim(1:3)) ppgTSeven.dim(4)]);
-test_set = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+    % Reshape to voxel X time:
+    train_set = reshape(ppgTSodd.data,[numel(ppgTSodd.data(:,:,:,1)) length(t)]);
+    % test data
+    test_set = reshape(ppgTSeven.data,[numel(ppgTSeven.data(:,:,:,1)) length(t)]);
 
-% resample canonical pc1 and pc2 to original timing:
-t_hr = linspace(min(t_sel),max(t_sel),128);
-y1 = interp1(t_hr,pc1,t_sel);
-y2 = interp1(t_hr,pc2,t_sel);
-% y3 = interp1(t_hr,pc3,t_sel);
+    % Select times that were included in SVD: we want -0.5 to 1.5 heartbeat cycle
+    physio      = physioCreate('nifti',ni);
+    ppg_cycle   = 1./physioGet(physio,'PPGrate');
+    train_set   = train_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+    test_set    = test_set(:,t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
+    t_sel       = t(t>=(0-(.5*ppg_cycle)) & t<=1.5*ppg_cycle);
 
-% get beta values on PC1 and PC2 model for every voxel in even response using regression
-disp('get beta weights')
-beta_weights = zeros(size(a,1),2);
-for kk = 1:size(a,1) % voxels
-    if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-%     [B] = regress(a(kk,:)',[y1;y2;y3]');
-    [B] = regress(a(kk,:)',[y1;y2]');
-    beta_weights(kk,:) = B;
+    % resample canonical pc1 and pc2 to original timing:
+    t_hr = linspace(min(t_sel),max(t_sel),128);
+    y1 = interp1(t_hr,pc1,t_sel);
+    y2 = interp1(t_hr,pc2,t_sel);
+
+    % get beta values on PC1 and PC2 model for every voxel in even response using regression
+    disp('get beta weights')
+    beta_weights = zeros(size(train_set,1),2);
+    for kk = 1:size(train_set,1) % voxels
+        if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(train_set,1))]),end
+        [B] = regress(train_set(kk,:)',[y1;y2]');
+        beta_weights(kk,:) = B;
+    end
+    disp('done')
+
+    % test whether model can predict odd responses better than even responses
+    disp('get cod')
+    r_weights = zeros(size(train_set,1),1);
+    relRMS_weights = zeros(size(train_set,1),1);
+    % error even versus odd responses
+    test_train_error = sqrt(sum((test_set - train_set).^2,2));
+    % model
+    model_v = beta_weights(:,1:2)*[y1;y2]; % use 2 pcs
+    % model error
+    test_model_error = sqrt(sum((test_set - model_v).^2,2));
+    % relative RMS error:
+    rel_rms_error = test_model_error./test_train_error;
+
+    for kk = 1:size(train_set,1) % voxels
+        if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(train_set,1))]),end
+        r_weights(kk) = calccod(model_v(kk,:)',train_set(kk,:)',1,0,0)./100;
+    end
+    r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
+    disp('done')
+
+    % save beta weights in a nifti in functional space 
+    % bb08_MNI_PCA writes it to T1 and then to MNI space
+    % this should be corrected, because we now save here in T1 space
+
+    % add beta weights in niftis in functional space
+    ni1 = ni; % PC1
+    ni1.data = ni1.data(:,:,:,1);
+    ni1.data(:) = beta_weights(:,1);
+    ni1.qto_xyz = acpcXform;
+    ni1.qto_ijk = inv(acpcXform);
+    ni1.sto_xyz = acpcXform;
+    ni1.sto_ijk = inv(acpcXform);
+
+    ni2 = ni; % PC2
+    ni2.data = ni2.data(:,:,:,1);
+    ni2.data(:) = beta_weights(:,2);
+    ni2.qto_xyz = acpcXform;
+    ni2.qto_ijk = inv(acpcXform);
+    ni2.sto_xyz = acpcXform;
+    ni2.sto_ijk = inv(acpcXform);
+
+    % name for pc1
+    pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii.gz'];
+    niftiWrite(ni1,pc1_newName)
+    % name for pc2
+    pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii.gz'];
+    niftiWrite(ni2,pc2_newName)
+
 end
-disp('done')
 
-% test whether model can predict odd responses better than even responses
-disp('get cod')
-r_weights = zeros(size(a,1),1);
-relRMS_weights = zeros(size(a,1),1);
-% error even versus odd responses
-test_train_error = sqrt(sum((test_set - a).^2,2));
-% model
-model_v = beta_weights(:,1:2)*[y1;y2]; % use 2 pcs
-% model_v = beta_weights*[y1;y2;y3]; 
-% model error
-test_model_error = sqrt(sum((test_set - model_v).^2,2));
-% relative RMS error:
-rel_rms_error = test_model_error./test_train_error;
-
-for kk = 1:size(a,1) % voxels
-    if mod(kk,10000)==0, disp(['voxel ' int2str(kk) ' of ' int2str(size(a,1))]),end
-    r_weights(kk) = calccod(model_v(kk,:)',a(kk,:)',1,0,0)./100;
-end
-r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
-disp('done')
-
-%% save beta weights in a nifti in functional space 
-% bb08_MNI_PCA writes it to T1 and then to MNI space
-
-% add beta weights in niftis in functional space
-ni1 = ni; % PC1
-ni1.data = ni1.data(:,:,:,1);
-ni1.data(:) = beta_weights(:,1);
-ni2 = ni; % PC2
-ni2.data = ni2.data(:,:,:,1);
-ni2.data(:) = beta_weights(:,2);
-
-% name for pc1
-pc1_newName = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc1.nii.gz']);
-niftiWrite(ni1,pc1_newName)
-% name for pc2
-pc2_newName = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc2.nii.gz']);
-niftiWrite(ni2,pc2_newName)
-
-                          
+%% LEFT OFF HERE - need to update with data above
 %% how good are canonical principle components
 
 % get rid of voxels with zero timeseries and zero model
@@ -299,14 +311,14 @@ set(gcf,'PaperPositionMode','auto')
 % of the data:
 modelBetterThanData = 100*length(find(rel_rms_error(~zero_voxels)<1))./length(rel_rms_error(~zero_voxels))
 
-% s_nr = 1, scan_nr = 3: 58.9601
+% s_nr = 1, bids run 1: 57.1524
 % s_nr = 2, scan_nr = 3: 82.3609
 % s_nr = 3, scan_nr = 3: 46.0046
 % s_nr = 4, scan_nr = 1: 76.5213
 % s_nr = 5, scan_nr = 1: 63.5825
 % s_nr = 6, scan_nr = 2: 69.1344
 
-averageModelVSData = mean([58.9601 82.3609 46.0046 76.5213 63.5825 69.1344]);
+averageModelVSData = mean([57.1524 82.3609 46.0046 76.5213 63.5825 69.1344]);
 
 %% plot 1 voxel to check model versus data
 voxel_nr = find(ppgR.data(:)>.8,1);

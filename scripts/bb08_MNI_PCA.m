@@ -6,6 +6,8 @@
 
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
+%%%% TO CHANGE: pc1 and pc2 are now saved in T1-space, update below
+
 data_in = 'PPG';
 s = 6;
 scan_nr = 2;

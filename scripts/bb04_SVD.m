@@ -200,10 +200,6 @@ xlabel('nr of components')
 ylim([0 1])
 box off
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures',['s' sub_label '_run' int2str(run_nr) '_pc_fft']))
-
 %%
 %% now make some figures for individual subjects if you want:
 %%
