@@ -164,13 +164,13 @@ end
 clear pc1 pc2 u s v temp Nmin1_pcs this_pcset
 
 %% load canonical heartbeat responses and run through data
-%% save beta weights on canonical PCs in a nifti in T1 space
-% clear all
+% saves beta weights on canonical PCs in a nifti in T1 space
+% saves COD (model-->data) and rms error (model VS test-retest) for canonical PC model
 
-sub_labels = {'1','2','3','4','5'}; 
-ses_labels = {'1','1','1','1','1'}; 
-acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1]};
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1],[1]};
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
 
@@ -204,8 +204,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     %%%% COD 
     ppgRname = [save_name_base '_codPPG.nii.gz'];
     ppgR = niftiRead(ppgRname); % correlation with PPG
-
-    %%%% Do the SVD
 
     % Set maximum of ppgTS to 1 for each voxel
     ppgTSodd.data = ppgTSodd.data ./ repmat(max(abs(ppgTSodd.data),[],4),[1,1,1,size(ppgTSodd.data,4)]);
@@ -244,7 +242,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     % test whether model can predict odd responses better than even responses
     disp('get cod')
     r_weights = zeros(size(train_set,1),1);
-    relRMS_weights = zeros(size(train_set,1),1);
     % error even versus odd responses
     test_train_error = sqrt(sum((test_set - train_set).^2,2));
     % model
@@ -261,6 +258,9 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     r_weights(isnan(r_weights)) = 0; % zero out NaN when model prediction is zeros
     disp('done')
 
+    % get rid of zero voxels - zero model;
+    zero_voxels = sum(test_set,2)==0;
+    
     % save beta weights in a nifti in functional space 
     % bb08_MNI_PCA writes it to T1 and then to MNI space
     % this should be corrected, because we now save here in T1 space
@@ -282,43 +282,89 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni2.sto_xyz = acpcXform;
     ni2.sto_ijk = inv(acpcXform);
 
+    ni3 = ni; % r_weights
+    ni3.data = ni3.data(:,:,:,1);
+    ni3.data(:) = r_weights;
+    ni3.qto_xyz = acpcXform;
+    ni3.qto_ijk = inv(acpcXform);
+    ni3.sto_xyz = acpcXform;
+    ni3.sto_ijk = inv(acpcXform);
+
+    ni4 = ni; % rel rms error
+    ni4.data = ni4.data(:,:,:,1);
+    ni4.data(:) = rel_rms_error;
+    ni4.qto_xyz = acpcXform;
+    ni4.qto_ijk = inv(acpcXform);
+    ni4.sto_xyz = acpcXform;
+    ni4.sto_ijk = inv(acpcXform);
+
     % name for pc1
     pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii.gz'];
     niftiWrite(ni1,pc1_newName)
+    
     % name for pc2
     pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii.gz'];
     niftiWrite(ni2,pc2_newName)
 
+    % name for r weights
+    r_newName = [save_name_base '_space-T1w_canoPc12R.nii.gz'];
+    niftiWrite(ni3,r_newName)
+    
+    % name for rel rms error weights
+    relRmse_newName = [save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz'];
+    niftiWrite(ni4,relRmse_newName)
+
+    % zero model
+    ni4.data(:) = zero_voxels;
+    zero_model = [save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz'];
+    niftiWrite(ni4,zero_model)
+
+    clear ni1 ni2 ni3 ni4 ni5
 end
 
-%% LEFT OFF HERE - need to update with data above
-%% how good are canonical principle components
+%% Summary across subjects
 
-% get rid of voxels with zero timeseries and zero model
-zero_voxels = sum(test_set,2)==0;
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-figure('Position',[0 0 200 150]),
-[n,x] = hist(rel_rms_error(~zero_voxels),30);
-bar(x,n,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0])
-xlabel('relative root mean square error')
-ylabel('number of voxels')
-box off
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
-% print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_relRMSE'])
+for ss = 2%:length(sub_labels) % subjects/ses/acq
 
-% the percentage of voxels in which the model is better than the other half
-% of the data:
-modelBetterThanData = 100*length(find(rel_rms_error(~zero_voxels)<1))./length(rel_rms_error(~zero_voxels))
+    rr = 1;% run_nr
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
+    run_nr = run_nrs{ss}(rr);
 
-% s_nr = 1, bids run 1: 57.1524
-% s_nr = 2, scan_nr = 3: 82.3609
-% s_nr = 3, scan_nr = 3: 46.0046
-% s_nr = 4, scan_nr = 1: 76.5213
-% s_nr = 5, scan_nr = 1: 63.5825
-% s_nr = 6, scan_nr = 2: 69.1344
+    % Get base name
+    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
-averageModelVSData = mean([57.1524 82.3609 46.0046 76.5213 63.5825 69.1344]);
+    % load pc1
+    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+    % load pc2
+    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+
+    % load r weights
+    r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
+    
+    % name for rel rms error weights
+    rel_rms_error = niftiRead([save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz']);
+    
+    % zero data and model
+    zero_model = niftiRead([save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz']);
+    
+    rel_rmse = rel_rms_error.data(:);
+    rel_rmse(zero_model.data==1) = [];
+    modelBetterThanData = 100*length(find(rel_rmse<1))./length(rel_rmse);
+
+end
+
+
+% averageModelVSData = mean([57.1524 82.3609 46.0046 76.5213 63.5825 69.1344]);
+
+
 
 %% plot 1 voxel to check model versus data
 voxel_nr = find(ppgR.data(:)>.8,1);
