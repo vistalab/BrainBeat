@@ -59,7 +59,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
 
-        % save standard error of all heartbeats:
+        % save standard deviation of all heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_std;
         ni1.fname = [save_name_base '_PPGtrigResponse_std.nii.gz'];

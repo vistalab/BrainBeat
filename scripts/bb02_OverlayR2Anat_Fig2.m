@@ -97,17 +97,16 @@ end
 % print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_ROIs'])
 % print('-painters','-r300','-dpng',[dDir '/figures/reliable/sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_orient' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim)) '_ROItext'])
 %%
-% load time series and associated time
 
+% load COD
 ppgRname = [save_name_base '_codPPG.nii.gz'];
 
-ppgTSname = [save_name_base '_PPGtrigResponse.nii.gz'];
-ppgTS = niftiRead(ppgTSname); % ppg triggered time series
+% ppg locked time series
+ppgTS = niftiRead([save_name_base '_PPGtrigResponse.nii.gz']); 
+% associated time t
 load([save_name_base '_PPGtrigResponseT.mat'],'t');
-
-% load error of time series and associated time
-ppgTSnameError = [save_name_base '_PPGtrigResponse_std.nii.gz'];
-ppgTSError = niftiRead(ppgTSnameError); % ppg triggered time series
+% load std of time series
+ppgTSstd = niftiRead([save_name_base '_PPGtrigResponse_std.nii.gz']); % ppg triggered time series
 
 bb_roi = bb_subs_rois(ss); % script that lists voxel indices
 
@@ -117,14 +116,14 @@ for roi_ind = 1:8
     voxelLabel = bb_roi(roi_ind).voxelLabel;
     % get the timeseries
     [voxelTs] = bbGetVoxelTimeseries(ppgTS,acpcXform,curPos);
-    [voxelTsStd] = bbGetVoxelTimeseries(ppgTSError,acpcXform,curPos);
+    [voxelTsStd] = bbGetVoxelTimeseries(ppgTSstd,acpcXform,curPos);
 
     % plot the timeseries
 %     figure('Position',[0 0 150 150]),hold on
     figure('Position',[0 0 150 200]),hold on
     plot(t,zeros(size(t)),'Color',[.5 .5 .5])
     plot([0 0],[-2 2],'Color',[.5 .5 .5])
-    upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + 2 standard error
+    upErr = 100*squeeze(voxelTs) + 100*voxelTsStd; % mean + standard deviation
     lowErr = 100*squeeze(voxelTs) - 100*voxelTsStd;
     fill([t t(end:-1:1)],[upErr; lowErr(end:-1:1)],[.5 .5 .5],'EdgeColor',[.5 .5 .5])
     plot(t,100*squeeze(voxelTs),'k','LineWidth',2)

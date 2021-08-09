@@ -16,7 +16,7 @@ function data_colors_rgb = bbData2Colors(data_in)
 % make complex:
 data = complex(data_in(:,1),data_in(:,2));
 
-% convert cmplex data to hsv colors, can be done in different ways:
+% convert complex data to hsv colors, can be done in different ways:
 % rotate the hue
 rot_f =  0;%pi/4; % zero - no rotation
 

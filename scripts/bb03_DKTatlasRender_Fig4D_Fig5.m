@@ -330,7 +330,7 @@ for kk = 1:length(ind_art)
 end
 % plot(mean(art1_amp(:,:,t_int),3),'k')
 % plot(min(art1_amp(:,:,t_int),[],3),'k')
-plot(max(art1_amp(:,:,t_int),[],3) - min(art1_amp(:,:,t_int),[],3),'k')
+plot(max(art1_amp(:,:,t_int),[],3) - min(art1_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
 subplot(3,1,2),hold on
@@ -362,7 +362,7 @@ for kk = 1:length(ind_art)
 end
 % plot(mean(art2_amp(:,:,t_int),3),'k')
 % plot(min(art2_amp(:,:,t_int),[],3),'k')
-plot(max(art2_amp(:,:,t_int),[],3) - min(art2_amp(:,:,t_int),[],3),'k')
+plot(max(art2_amp(:,:,t_int),[],3) - min(art2_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
 subplot(3,1,3),hold on
@@ -396,7 +396,7 @@ for kk = 1:length(ind_art)
 end
 % plot(mean(art3_amp(:,:,t_int),3),'k')
 % plot(min(art3_amp(:,:,t_int),[],3),'k')
-plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'k')
+plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
 % set(gcf,'PaperPositionMode','auto')

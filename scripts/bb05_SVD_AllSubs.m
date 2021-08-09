@@ -92,6 +92,8 @@ save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2'
 
 %% Combinations of PC1 and PC2 with color scale:
 
+load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
+
 pc1_plot = pc1(1:75);
 pc2_plot = pc2(1:75);
 
@@ -131,12 +133,12 @@ for kk = -1:.4:1
 end
 axis square
 axis tight
-axis off
+% axis off
 title('canonical PCs across 5 subjects')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -329,7 +331,10 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-for ss = 2%:length(sub_labels) % subjects/ses/acq
+modelBetterThanData = zeros(length(sub_labels),1);
+out = [];
+
+for ss = 1:length(sub_labels) % subjects/ses/acq
 
     rr = 1;% run_nr
     sub_label = sub_labels{ss};
@@ -355,15 +360,94 @@ for ss = 2%:length(sub_labels) % subjects/ses/acq
     % zero data and model
     zero_model = niftiRead([save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz']);
     
+    % voxels with model->data better than data->data
     rel_rmse = rel_rms_error.data(:);
     rel_rmse(zero_model.data==1) = [];
-    modelBetterThanData = 100*length(find(rel_rmse<1))./length(rel_rmse);
+    modelBetterThanData(ss) = 100*length(find(rel_rmse<1))./length(rel_rmse);
 
+    % fill outputs
+    out(ss).pc1_th = pc1Weight.data(r_weight.data>0.7);
+    out(ss).pc2_th = pc2Weight.data(r_weight.data>0.7);
 end
 
+%% plot for every subject in 1 color
+cm = lines(length(sub_labels));
+figure,hold on
+for ss = 1:length(sub_labels) % subjects/ses/acq
+    subplot(1,6,ss)
+    p1 = scatter(out(ss).pc1_th,out(ss).pc2_th,5,cm(ss,:));
+    set(p1,'MarkerFaceAlpha',.5)
+    set(p1,'MarkerEdgeAlpha',.5)
+end
 
-% averageModelVSData = mean([57.1524 82.3609 46.0046 76.5213 63.5825 69.1344]);
+%% plot with pc1/pc2 blue-red jet latency color map
+% circle size weighted by voxel density using hist3
 
+% Make 2D colormap: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+gray_vect = .2*ones(200,3);
+cm2D = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
+
+figure('Position',[0 0 800 200])
+for ss = 1:length(sub_labels) % subjects/ses/acq
+    X = [out(ss).pc1_th,out(ss).pc2_th];
+    [n,c] = hist3(X,'Ctrs',{-1.5:0.2:1.5 -1.5:0.2:1.5});
+    subplot(1,6,ss),hold on
+    for kk = 1:size(n,1)
+        for ll = 1:size(n,2)
+            thisColorInd = [min(round(100*abs(c{1}(kk))),100) min(round(100+200*(c{2}(ll))),200)];
+            thisColorInd(thisColorInd<1) = 1;
+            if c{1}(kk)<0
+                thisColor = squeeze(cm2D(thisColorInd(1),thisColorInd(2),:));
+            else
+                thisColor = squeeze(cm2D(thisColorInd(1),201-thisColorInd(2),:));
+            end
+            plot(c{1}(kk),c{2}(ll),'.','MarkerSize',1+40*(n(kk,ll)/max(n(:))),...
+                'Color',thisColor)
+            xlim([-1.6 1.6]),ylim([-1.6 1.6])
+            axis square
+            
+        end
+    end
+end
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV1'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV1'))
+
+%%
+%% plot with pc1/pc2 fancy latency color map
+% circle size weighted by voxel density using hist3
+
+figure('Position',[0 0 800 200])
+for ss = 1:length(sub_labels) % subjects/ses/acq
+    X = [out(ss).pc1_th,out(ss).pc2_th];
+
+    [n,c] = hist3(X,'Ctrs',{-1.5:0.2:1.5 -1.5:0.2:1.5});
+    subplot(1,6,ss),hold on
+    for kk = 1:size(n,1)
+        for ll = 1:size(n,2)
+            
+            data_in = [c{1}(kk) c{2}(ll)];
+            data_in(data_in>1) = 1;
+            data_in(data_in<-1) = -1;
+            data_colors_rgb = bbData2Colors(data_in);
+            
+            plot(c{1}(kk),c{2}(ll),'.','MarkerSize',1+40*(n(kk,ll)/max(n(:))),...
+                'Color',data_colors_rgb)
+            xlim([-1.6 1.6]),ylim([-1.6 1.6])
+            axis square
+            
+        end
+    end
+end
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
 
 
 %% plot 1 voxel to check model versus data
@@ -383,141 +467,97 @@ plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
 %% Plot R/Betas back on brain
 %%
 %%
-niSeg = niftiRead(fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']));
-% roiNames = {'GM','WM','Ventricles','CSF','Veno'};
 
-% SPM segmentation
-niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
-brain_vect = niSPM.data(:);
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-% Select voxels with decent reliability:
-select_voxels = brain_vect>0 & r_weights>.7;
- 
-figure
-subplot(2,1,1),hold on
-plot([0 0],[-2 2],'k')
-plot([-2 2],[0 0],'k')
-plot(beta_weights(select_voxels,1),beta_weights(select_voxels,2),'ko')
-% plot3(beta_weights(select_voxels,1),beta_weights(select_voxels,2),beta_weights(select_voxels,3),'ko')
-title('all voxels beta weights PC1 PC2, R>.7')
+ss = 1;
+rr = 1;% run_nr
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
+run_nr = run_nrs{ss}(rr);
 
-% subplot(2,2,3),hold on
-% set_1 = select_voxels & beta_weights(:,1)>=0; % CSF
-% set_2 = select_voxels & beta_weights(:,1)<0 & beta_weights(:,2)>0; % veins
-% set_3 = select_voxels & beta_weights(:,1)<0 & beta_weights(:,2)<0; % arteries
-% plot(beta_weights(set_1,1),beta_weights(set_1,2),'go')
-% plot(beta_weights(set_2,1),beta_weights(set_2,2),'ro')
-% plot(beta_weights(set_3,1),beta_weights(set_3,2),'bo')
-% axis equal
-r_th = .5;
-subplot(2,2,3),hold on
-plot([0 0],[-2 2],'k')
-plot([-2 2],[0 0],'k')
-plot(beta_weights(niSeg.data(:)==5 & r_weights>r_th,1),beta_weights(niSeg.data(:)==5 & r_weights>r_th,2),'b.')
-title('Veno voxels R>.5')
-axis square
+% Get base name of saved data
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
-subplot(2,2,4),hold on
-plot([0 0],[-2 2],'k')
-plot([-2 2],[0 0],'k')
-plot(beta_weights(niSeg.data(:)==3 & r_weights>r_th,1),beta_weights(niSeg.data(:)==3 & r_weights>r_th,2),'g.')
-title('Ventricle voxels R>.5')
-% plot(beta_weights(niSPM.data(:)==2 & r_weights>r_th,1),beta_weights(niSPM.data(:)==2 & r_weights>r_th,2),'ro')
-axis square
+% load pc1
+pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+% load pc2
+pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+% load r weights
+r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
 
-sliceThisDim = 2;
-if s_nr == 1
+% Get anatomy
+t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
+            ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
+
+sliceThisDim = 1;
+if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
-    curPos = [0 26 17]; 
-elseif s_nr == 2
+    curPos = [-4 26 17]; 
+elseif ss == 2
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-1 50 -21]; % for figures 2
 %     curPos = [-10 -20 -21]; % for figures 1
 %     curPos = [-11 34 -71]; % Carotid
 %     curPos = [-2 26 -63]; % Basilar
 %     curPos = [1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
-elseif s_nr == 3
+elseif ss == 3
     imDims = [-90 -120 -100; 90 130 110];
 %     curPos = [0,4,38];
 %     curPos = [0,4,38]; % for figure set
     curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
-elseif s_nr == 4
+elseif ss == 4
     imDims = [-90 -120 -100; 90 130 110];
     curPos = [0 4 35];%[x x 38] % x = 0 nicely captures posterior arteries/veins, x = -10, anterior middle artery
-elseif s_nr == 5
+elseif ss == 5
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [6,18,38];
-elseif s_nr == 6
+elseif ss == 6
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [6,18,38];
 end
 
-ni_r = ni;
-ni_r.data = ni_r.data(:,:,:,1);
-ni_r.data(:) = r_weights;
-ni_r.data(r_weights<.3) = 0;
-ni_r.data(r_weights<0) = 0;
-% bbOverlayDotsAnat(ni_r,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
+% plot beta1 (pc1) and beta2 (pc2) using fancy color circle
+acpcXform = pc1Weight.qto_xyz;
 
-ni_r = ppgR;
-ni_r.data(ni_r.data<0.2) = 0;
-% bbOverlayDotsAnat(ni_r,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
+% plot entire circle
+% bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 
-niColor = [1 0 0;0 0 1; 0 1 0;1 1 0;0 1 1];
-R_th = 0.3;
-niIntensity = ni;
-niIntensity.data = zeros(size(ppgR.data));
-niIntensity.data(ni_r.data<R_th) = 0;
-niIntensity.data(beta_weights(:,1)>0 & r_weights>=R_th) = 3;
-niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)>0 & r_weights>=R_th) = 1;
-niIntensity.data(beta_weights(:,1)<0 & beta_weights(:,2)<0 & r_weights>=R_th) = 2;
+% now only select 7.30-1.30 on a clock
+% do this to test:
+% x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];
+% y = [0:0.1:1 1:-0.1:0 0:-0.1:-1 -1:0.1:0];
+% b = complex(x,y)
+% figure,plot(angle(b*(1-i)))
 
+pc_complex = complex(pc1Weight.data,pc2Weight.data);
+pc_angle = angle(pc_complex*(1-i)); % multiply by (1-i) to rotatio 45 deg
 
-%% plot beta weights in one color
+% plot veins and arteries
+pc1_plot = pc1Weight;
+pc2_plot = pc2Weight;
+pc1_plot.data(pc_angle<0) = 0;
+pc2_plot.data(pc_angle<0) = 0;
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
 
-figure
-sliceThisDim = 3;
-% curPos = [-20 -14 36];%[-1/-9 18 28] % zero
-curPos = [10,18,5];
-bbOverlayDotsAnat_PickColor(niIntensity,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,niColor);
-
-
-%% plot beta1 (pc1) and beta2 (pc2) using fancy color circle
-
-bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
-
-%% plot pc1 beta weights for different tissue types
-% the segmentation is not so good, mixes lot of tissue
-
-% segmentation file:
-segName = fullfile(dDir,subj,scan,[scanName '_combineSegm.nii.gz']);
-niSeg = niftiRead(segName);
-
-r_th = .3;
-clear pc1w pc1w
-
-for kk = 1:5
-    pc1w(kk).beta = ni1.data(niSeg.data==kk & ppgR.data>r_th);
-    pc2w(kk).beta = ni2.data(niSeg.data==kk & ppgR.data>r_th);
-end
-
-roiNames = {'GM','WM','Ventricles','CSF','Veno'};
-figure('Position',[0 0 600 200])
-for kk = 1:5
-    subplot(1,5,kk),hold on
-    histogram(pc1w(kk).beta,[-2.5:.3:2.5],'FaceColor',[.7 .7 .7])
-    plot([0 0],[0 max(histcounts(pc1w(kk).beta,[-2.5:.3:2.5]))+3],'r:','LineWidth',2)
-    xlim([-2.5 2.5])
-    xlabel('pc1')
-    title(roiNames{kk})
-end
-subplot(1,5,1)
-ylabel(['number of voxels R>' num2str(r_th,3)])
-
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
-% print('-painters','-r300','-depsc',[dDir './figures/svd/tissueWeights/PC1_subj' int2str(s_nr) '_scan' int2str(scan_nr) 'R' int2str(r_th*100)])
-
+% plot csf
+pc1_plot = pc1Weight;
+pc2_plot = pc2Weight;
+pc1_plot.data(pc_angle>0) = 0;
+pc2_plot.data(pc_angle>0) = 0;
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
 
 %%
 %% Get functional voxels to plot with rendering
