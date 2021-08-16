@@ -121,9 +121,8 @@ niftiWrite(pc1_mni,pc1_MNI_all);
 %% load all subjects and render MNI
 %%
 
-
-Rthreshold = 0.8;
-select_voxels = find(wfcod.data>=Rthreshold);
+Rthreshold = 0.7;
+select_voxels = find(median(all_mni_cod(:,:,:,1:5),4)>=Rthreshold);
 
 % Get indiced of selected voxels
 [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
@@ -137,7 +136,7 @@ pc1_mean(pc1_mean<-1) = -1;
 pc2_mean(pc2_mean<-1) = -1;
 pc1_mean(pc1_mean>1) = 1;
 pc2_mean(pc2_mean>1) = 1;
-data_colors_rgb = bbData2Colors([pc1_mean(:) pc2_mean(:)]);
+data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
     
 % Get mni coordinates of voxels 
 xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
@@ -155,36 +154,136 @@ gr.faces = cortex.tri;
 gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
 gr = gifti(gr);
 
-    % plot right
-    figure,hold on
-    ieeg_RenderGifti(gr)
+% plot right
+figure,hold on
+fg = ieeg_RenderGifti(gr);
+% add PC2 in color:
+for kk = 1:size(xyz_mni,1)
+    if xyz_mni(kk,1)>-10
+        plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
+    end
+end
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v01'))
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v01'))
+
+% plot left
+figure,hold on
+fg = ieeg_RenderGifti(gl);
+% add PC2 in color:
+for kk = 1:size(xyz_mni,1)
+    if xyz_mni(kk,1)<10
+        plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
+    end
+end
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_v01'))
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v01'))
+
+%%
+%% now try to render/combine all subjects above trheshold
+%%
+
+Rthreshold = 0.8;
+
+% load MNI rendings 
+load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
+gl.vertices = cortex.vert;
+gl.faces = cortex.tri;
+gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+gl = gifti(gl);
+
+load(fullfile(dDir,'derivatives','mni','MNI_cortex_right.mat'))
+gr.vertices = cortex.vert;
+gr.faces = cortex.tri;
+gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+gr = gifti(gr);
+
+
+% plot right
+figure,hold on
+fg = ieeg_RenderGifti(gr);
+
+for ss = 1:5
+    select_voxels = find(all_mni_cod(:,:,:,ss)>=Rthreshold);
+
+    % Get indiced of selected voxels
+    [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
+    ijk_func = [ii jj kk];
+    clear ii jj kk % housekeeping
+
+    % average PC1 and PC2 for color
+    pc1_mean = all_mni_pc1(:,:,:,ss);
+    pc2_mean = all_mni_pc2(:,:,:,ss);
+    pc1_mean(pc1_mean<-1) = -1;
+    pc2_mean(pc2_mean<-1) = -1;
+    pc1_mean(pc1_mean>1) = 1;
+    pc2_mean(pc2_mean>1) = 1;
+    data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
+
+    % Get mni coordinates of voxels 
+    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+
     % add PC2 in color:
     for kk = 1:size(xyz_mni,1)
         if xyz_mni(kk,1)>-10
             plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
         end
     end
-    set(gcf,'PaperPositionMode','auto') 
-    ieeg_viewLight(270,0)
-    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_right_render' pc1_posneg{plot_positive} '_view1_v00'])
-    ieeg_viewLight(90,0)
-    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_right_render' pc1_posneg{plot_positive} '_view2_v00'])
-    
-    % plot left
-    figure,hold on
-    ieeg_RenderGifti(gl)
-    % add PC2 in color:
+end
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v02'))
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v02'))
+
+
+% plot left
+figure,hold on
+fg = ieeg_RenderGifti(gl);
+
+for ss = 1:5
+    select_voxels = find(all_mni_cod(:,:,:,ss)>=Rthreshold);
+
+    % Get indiced of selected voxels
+    [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
+    ijk_func = [ii jj kk];
+    clear ii jj kk % housekeeping
+
+    % average PC1 and PC2 for color
+    pc1_mean = all_mni_pc1(:,:,:,ss);
+    pc2_mean = all_mni_pc2(:,:,:,ss);
+    pc1_mean(pc1_mean<-1) = -1;
+    pc2_mean(pc2_mean<-1) = -1;
+    pc1_mean(pc1_mean>1) = 1;
+    pc2_mean(pc2_mean>1) = 1;
+    data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
+
+    % Get mni coordinates of voxels 
+    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+
     for kk = 1:size(xyz_mni,1)
         if xyz_mni(kk,1)<10
             plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
         end
+        
     end
-    set(gcf,'PaperPositionMode','auto') 
-    ieeg_viewLight(270,0)
-    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_left_render' pc1_posneg{plot_positive} '_view1_v00'])
-    ieeg_viewLight(90,0)
-    print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_left_render' pc1_posneg{plot_positive} '_view2_v00'])
+end
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_v02'))
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v02'))
 
+close all
 
 %%
 %%
