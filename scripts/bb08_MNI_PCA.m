@@ -6,61 +6,33 @@
 
 % dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
-%%%% TO CHANGE: pc1 and pc2 are now saved in T1-space, update below
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-data_in = 'PPG';
-s = 6;
-scan_nr = 2;
-
-s_info = bb_subs(s);
-subj = s_info.subj;
-    
-scan = s_info.scan{scan_nr};
-scanName = s_info.scanName{scan_nr};
-
-% name for pc1 and pc2 beta weights
-pc1_Name = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc1.nii.gz']);
-pc2_Name = fullfile(dDir,subj,scan,[scanName '_' data_in '_pc2.nii.gz']);
-% read
-pc1 = niftiRead(pc1_Name);
-pc2 = niftiRead(pc2_Name);
-
-% load coregistration matrix for the functionals
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
-acpcXform = acpcXform_new; clear acpcXform_new
-
-% save this coregistration matrix in the f_...codPPG.nii
-pc1.qto_xyz = acpcXform;
-pc1.qto_ijk = inv(acpcXform);
-pc1.sto_xyz = acpcXform;
-pc1.sto_ijk = inv(acpcXform);
-
-pc2.qto_xyz = acpcXform;
-pc2.qto_ijk = inv(acpcXform);
-pc2.sto_xyz = acpcXform;
-pc2.sto_ijk = inv(acpcXform);
-
-% name for pc1 & pc2
-pc1_NameSave = fullfile(dDir,subj,scan,['f' scanName '_' data_in '_pc1w.nii']);
-pc2_NameSave = fullfile(dDir,subj,scan,['f' scanName '_' data_in '_pc2w.nii']);
-
-% save pca1 & pc2
-niftiWrite(pc1,pc1_NameSave);
-niftiWrite(pc2,pc2_NameSave);
-
+ss = 6;
+rr = 1;% run_nr
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
+run_nr = run_nrs{ss}(rr);
 
 %%%%%% now we can normalize the PC1 and PC2 beta weight image
-
 spm('Defaults','fmri')
 
 % A) volume where parameters are estimated: anat
 % code will search for y_anat.nii file to use for normalization
-niAnatomy = fullfile(dDir,subj,s_info.anat,['f' s_info.anatName '.nii']);
+niAnatomy = fullfile(dDir,'derivatives','spmSegmentation',['sub-' sub_label],['ses-' ses_label],...
+            ['sub-' sub_label '_ses-' ses_label '_T1w']);
+% niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
 % B) volume you want to normalize, needs to be coregistered with A)
 % code will append a w before this file
-pc1_NameSave = fullfile(dDir,subj,scan,['f' scanName '_' data_in '_pc1w.nii']);
-pc2_NameSave = fullfile(dDir,subj,scan,['f' scanName '_' data_in '_pc2w.nii']);
+pc1_NameSave = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['fsub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_space-T1w_canoPc1Weights.nii']);
+pc2_NameSave = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['fsub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_space-T1w_canoPc2Weights.nii']);
 
 flags.preserve  = 0;
 flags.bb        = [-90 -120 -60; 90 96 130];
@@ -84,38 +56,42 @@ spm_run_norm(job);
 
 %% load all subjects and add in one MNI image 
 
-subj_inds   = [1 2 3 4 5 6];
-scan_inds   = [3 3 3 1 1 2];
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {[1],[1],[1],[1],[1],[1]};
+
 flags.bb    = [-90 -120 -60; 90 96 130];
-all_mni_pc1 = NaN([diff(flags.bb)+1 length(subj_inds)]);
-all_mni_pc2 = NaN([diff(flags.bb)+1 length(subj_inds)]);
-all_mni_cod = NaN([diff(flags.bb)+1 length(subj_inds)]);
+all_mni_pc1 = NaN([diff(flags.bb)+1 length(sub_labels)]);
+all_mni_pc2 = NaN([diff(flags.bb)+1 length(sub_labels)]);
+all_mni_cod = NaN([diff(flags.bb)+1 length(sub_labels)]);
 
 data_in = 'PPG';
-for aa = 1:length(subj_inds)
+for ss = 1:length(sub_labels)
 
-    s = subj_inds(aa);
-    scan_nr = scan_inds(aa);
+    rr = 1;% run_nr
+    sub_label = sub_labels{ss};
+    ses_label = ses_labels{ss};
+    acq_label = acq_labels{ss};
+    run_nr = run_nrs{ss}(rr);
 
-    s_info = bb_subs(s);
-    subj = s_info.subj;
-
-    scan = s_info.scan{scan_nr};
-    scanName = s_info.scanName{scan_nr};
-
-    pc1_mni = niftiRead(fullfile(dDir,subj,scan,['wf' scanName '_' data_in '_pc1w.nii']));
-    pc2_mni = niftiRead(fullfile(dDir,subj,scan,['wf' scanName '_' data_in '_pc2w.nii']));
+    % get PC1 and PC2 
+    pc1_mni = niftiRead(fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['wfsub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_space-T1w_canoPc1Weights.nii']));
+    pc2_mni = niftiRead(fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['wfsub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_space-T1w_canoPc2Weights.nii']));
     
-    all_mni_pc1(:,:,:,aa) = pc1_mni.data;
-    all_mni_pc2(:,:,:,aa) = pc2_mni.data;
+    all_mni_pc1(:,:,:,ss) = pc1_mni.data;
+    all_mni_pc2(:,:,:,ss) = pc2_mni.data;
     
-    % also get COD to set a reliability threshold
-    wfcod = niftiRead(fullfile(dDir,subj,scan, ['wf' scanName '_codPPG.nii']));
-
-    all_mni_cod(:,:,:,aa) = wfcod.data;
+    % get COD to set a reliability threshold
+    wfcod = niftiRead(fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['wfsub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_codPPG.nii']));
+        
+    all_mni_cod(:,:,:,ss) = wfcod.data;
 end
 
-%% 
+%% did not do this step yet
 
 % name for pc1 & pc2
 pc1_MNI_all = './local/allMNI_pc1w.nii.gz';
@@ -144,53 +120,40 @@ niftiWrite(pc1_mni,pc1_MNI_all);
 %%
 %% load all subjects and render MNI
 %%
-% working on this
-
-Nthreshold = 4;
-pc1_posneg = {'pc1pos','pc1neg'};
-
-for plot_positive = 1:2 % 1 = positive, 2 = negative, 
-
-    if plot_positive==1
-        select_voxels = find(pc1_mni.data>=Nthreshold);
-    elseif plot_positive==2
-        select_voxels = find(pc1_mni.data<=-Nthreshold);
-    end
-
-    % Get indiced of selected voxels
-    [ii,jj,kk] = ind2sub(size(pc1_mni.data),select_voxels);
-    ijk_func = [ii jj kk];
-    clear ii jj kk % housekeeping
-
-    % average PC 2 for color
-    pc2_mean = mean(all_mni_pc2,4);
-    ijk_color = pc2_mean(select_voxels);
-    ijk_colorInd = (ijk_color-min(ijk_color));
-    ijk_colorInd = 1+round(99*ijk_colorInd/max(ijk_colorInd));
-
-    if plot_positive==1
-        cm = jet(100);
-        cm = cm(end:-1:1,:);
-    elseif plot_positive==2
-        cm = jet(100);
-    end
-
-    % Get mni coordinates of voxels 
-    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
 
 
-    % load MNI rendings 
-    load(fullfile(dDir,'MNI_cortex_left.mat'))
-    gl.vertices = cortex.vert;
-    gl.faces = cortex.tri;
-    gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-    gl = gifti(gl);
+Rthreshold = 0.8;
+select_voxels = find(wfcod.data>=Rthreshold);
 
-    load(fullfile(dDir,'MNI_cortex_right.mat'))
-    gr.vertices = cortex.vert;
-    gr.faces = cortex.tri;
-    gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-    gr = gifti(gr);
+% Get indiced of selected voxels
+[ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
+ijk_func = [ii jj kk];
+clear ii jj kk % housekeeping
+
+% average PC1 and PC2 for color
+pc1_mean = mean(all_mni_pc1,4);
+pc2_mean = mean(all_mni_pc2,4);
+pc1_mean(pc1_mean<-1) = -1;
+pc2_mean(pc2_mean<-1) = -1;
+pc1_mean(pc1_mean>1) = 1;
+pc2_mean(pc2_mean>1) = 1;
+data_colors_rgb = bbData2Colors([pc1_mean(:) pc2_mean(:)]);
+    
+% Get mni coordinates of voxels 
+xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+
+% load MNI rendings 
+load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
+gl.vertices = cortex.vert;
+gl.faces = cortex.tri;
+gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+gl = gifti(gl);
+
+load(fullfile(dDir,'derivatives','mni','MNI_cortex_right.mat'))
+gr.vertices = cortex.vert;
+gr.faces = cortex.tri;
+gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
+gr = gifti(gr);
 
     % plot right
     figure,hold on
@@ -198,7 +161,7 @@ for plot_positive = 1:2 % 1 = positive, 2 = negative,
     % add PC2 in color:
     for kk = 1:size(xyz_mni,1)
         if xyz_mni(kk,1)>-10
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',cm(ijk_colorInd(kk),:))
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
         end
     end
     set(gcf,'PaperPositionMode','auto') 
@@ -213,7 +176,7 @@ for plot_positive = 1:2 % 1 = positive, 2 = negative,
     % add PC2 in color:
     for kk = 1:size(xyz_mni,1)
         if xyz_mni(kk,1)<10
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',cm(ijk_colorInd(kk),:))
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
         end
     end
     set(gcf,'PaperPositionMode','auto') 
@@ -222,7 +185,6 @@ for plot_positive = 1:2 % 1 = positive, 2 = negative,
     ieeg_viewLight(90,0)
     print('-painters','-r300','-dpng',[dDir '/figures/reliable/mni_all_left_render' pc1_posneg{plot_positive} '_view2_v00'])
 
-end
 
 %%
 %%

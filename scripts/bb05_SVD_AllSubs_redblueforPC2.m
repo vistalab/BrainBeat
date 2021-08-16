@@ -107,27 +107,38 @@ plot(pc2_plot,'k','LineWidth',2)
 axis tight
 axis off
 
-% Make 2D fancy colormap
-[x,y] = meshgrid(-1:.4:1,-1:.4:1);
-data_in = [x(:) y(:)];
-data_colors_rgb = bbData2Colors(data_in);
+% Make 2D colormap: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+gray_vect = .2*ones(200,3);
+cm2D = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
 
 subplot(1,2,2),hold on
-for kk = 1:size(data_in,1)
-    x = data_in(kk,1);
-    y = data_in(kk,2);
-    plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),...
-        'Color',data_colors_rgb(kk,:),...
-        'LineWidth',2)
+for kk = -1:.4:1
+    for ll = -1:.4:1
+        if kk<0
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1_plot + ll*pc2_plot),...
+                'Color',cm2D(round(-kk*100),round((-ll+1)*99+1),:),...
+                'LineWidth',2)
+        elseif kk>0
+            plot([kk:.3/74:kk+.3],ll+.3*(kk*pc1_plot + ll*pc2_plot),...
+                'Color',cm2D(round(kk*100),round((ll+1)*99+1),:),...
+                'LineWidth',2)
+        end
+    end
 end
 axis square
 axis tight
 % axis off
 title('canonical PCs across 5 subjects')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -369,6 +380,45 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     set(p1,'MarkerEdgeAlpha',.5)
 end
 
+%% plot with pc1/pc2 blue-red jet latency color map
+% circle size weighted by voxel density using hist3
+
+% Make 2D colormap: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+gray_vect = .2*ones(200,3);
+cm2D = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
+
+figure('Position',[0 0 800 200])
+for ss = 1:length(sub_labels) % subjects/ses/acq
+    X = [out(ss).pc1_th,out(ss).pc2_th];
+    [n,c] = hist3(X,'Ctrs',{-1.5:0.2:1.5 -1.5:0.2:1.5});
+    subplot(1,6,ss),hold on
+    for kk = 1:size(n,1)
+        for ll = 1:size(n,2)
+            thisColorInd = [min(round(100*abs(c{1}(kk))),100) min(round(100+200*(c{2}(ll))),200)];
+            thisColorInd(thisColorInd<1) = 1;
+            if c{1}(kk)<0
+                thisColor = squeeze(cm2D(thisColorInd(1),thisColorInd(2),:));
+            else
+                thisColor = squeeze(cm2D(thisColorInd(1),201-thisColorInd(2),:));
+            end
+            plot(c{1}(kk),c{2}(ll),'.','MarkerSize',1+40*(n(kk,ll)/max(n(:))),...
+                'Color',thisColor)
+            xlim([-1.6 1.6]),ylim([-1.6 1.6])
+            axis square
+            
+        end
+    end
+end
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV1'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV1'))
+
 %%
 %% plot with pc1/pc2 fancy latency color map
 % circle size weighted by voxel density using hist3
@@ -395,9 +445,9 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         end
     end
 end
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
 
 
 %% plot 1 voxel to check model versus data
@@ -423,7 +473,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-ss = 5;
+ss = 1;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -451,20 +501,26 @@ if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-4 26 17]; 
 elseif ss == 2
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-1 50 -21]; 
+    imDims = [-90 -120 -120; 90 130 90];
+    curPos = [-1 50 -21]; % for figures 2
+%     curPos = [-10 -20 -21]; % for figures 1
+%     curPos = [-11 34 -71]; % Carotid
+%     curPos = [-2 26 -63]; % Basilar
+%     curPos = [1 26 -21]; % SliceThisDim 1 Anterior Cerebral Artery, used in example
 elseif ss == 3
     imDims = [-90 -120 -100; 90 130 110];
-    curPos = [-2 26 -63]; 
+%     curPos = [0,4,38];
+%     curPos = [0,4,38]; % for figure set
+    curPos = [1 26 -63]; % x = 1 SliceThisDim 1 for Anterior Cerebral Artery
 elseif ss == 4
-    imDims = [-90 -120 -50; 90 130 120];
-    curPos = [0 4 35];
+    imDims = [-90 -120 -100; 90 130 110];
+    curPos = [0 4 35];%[x x 38] % x = 0 nicely captures posterior arteries/veins, x = -10, anterior middle artery
 elseif ss == 5
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [-2,18,38];
+    curPos = [6,18,38];
 elseif ss == 6
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [-4,18,38];
+    curPos = [6,18,38];
 end
 
 % plot beta1 (pc1) and beta2 (pc2) using fancy color circle
@@ -472,39 +528,36 @@ acpcXform = pc1Weight.qto_xyz;
 
 % plot entire circle
 bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
 
-% % now only select 7.30-1.30 on a clock
-% % do this to test:
-% % x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];
-% % y = [0:0.1:1 1:-0.1:0 0:-0.1:-1 -1:0.1:0];
-% % b = complex(x,y)
-% % figure,plot(angle(b*(1-i)))
-% 
-% pc_complex = complex(pc1Weight.data,pc2Weight.data);
-% pc_angle = angle(pc_complex*(1-i)); % multiply by (1-i) to rotatio 45 deg
-% 
-% % plot veins and arteries
-% pc1_plot = pc1Weight;
-% pc2_plot = pc2Weight;
-% pc1_plot.data(pc_angle<0) = 0;
-% pc2_plot.data(pc_angle<0) = 0;
-% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
-% 
-% % plot csf
-% pc1_plot = pc1Weight;
-% pc2_plot = pc2Weight;
-% pc1_plot.data(pc_angle>0) = 0;
-% pc2_plot.data(pc_angle>0) = 0;
-% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
+% now only select 7.30-1.30 on a clock
+% do this to test:
+% x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];
+% y = [0:0.1:1 1:-0.1:0 0:-0.1:-1 -1:0.1:0];
+% b = complex(x,y)
+% figure,plot(angle(b*(1-i)))
+
+pc_complex = complex(pc1Weight.data,pc2Weight.data);
+pc_angle = angle(pc_complex*(1-i)); % multiply by (1-i) to rotatio 45 deg
+
+% plot veins and arteries
+pc1_plot = pc1Weight;
+pc2_plot = pc2Weight;
+pc1_plot.data(pc_angle<0) = 0;
+pc2_plot.data(pc_angle<0) = 0;
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12veins']))
+
+% plot csf
+pc1_plot = pc1Weight;
+pc2_plot = pc2Weight;
+pc1_plot.data(pc_angle>0) = 0;
+pc2_plot.data(pc_angle>0) = 0;
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_example_pc12csf']))
 
 %%
 %% Get functional voxels to plot with rendering
