@@ -27,7 +27,7 @@ acq_label     = 'resting_2';
 % st = scitran('cni');
 
 % Or use Flywheel MATLAB SDK. fw = flywheel.Flywheel(apikey)
-% addpath('~/Documents/MATLAB/'); fw = setup_flywheel;
+javaaddpath('~/MATLAB/flywheel-sdk/api/rest-client.jar');
 if exist('fw', 'var') && isa(fw, 'flywheel.Flywheel')
     userInfo = fw.getCurrentUser;
     if ~isempty(userInfo)
@@ -42,8 +42,7 @@ else
     userInfo = fw.getCurrentUser;
     fprintf('Logged into Flywheel as %s\n', userInfo.id);
 end
-
-datadir = fullfile(bbPath,'local');
+localdir = fullfile(bbPath,'local');
 
 %% Download files from Flywheel using scitran
 
@@ -62,12 +61,20 @@ for f=1:numel(thisAcq.files)
         niFile = thisAcq.files{f};
     end
 end
+
+nii = strsplit(niFile.name, '.');
+datadir = fullfile(localdir,nii{1});
+if ~exist(datadir, 'dir')
+    mkdir(datadir);
+end
+
 % Download and unzip the physio files
 gephysioFile = fullfile(datadir, gephysioZip.name);
 gephysioZip.download(gephysioFile);
 physiofiles = unzip(gephysioFile, datadir);
 niFile.download(fullfile(datadir, niFile.name));
 rsfmri = niftiread(fullfile(datadir, niFile.name));
+rsfmri_info = niftiinfo(fullfile(datadir, niFile.name));
 
 % set physio data filenames and sampling rates
 param.ppg.dt  = 10;       % PPG data samples at 10ms
@@ -156,28 +163,85 @@ rsfmri_reg = physioDetrend(rsfmri, dummy_cycles);
 
 %% find the fmri volume closest to each ppg trigger
 
-sl = 20;
-x = 60;
-y = 39;
-roi = [x,y,sl];
-
-timeWindow = 50;  % in ms
+[y,x,z] = meshgrid(1:size(rsfmri_reg,1),1:size(rsfmri,2),1:size(rsfmri,3));  % x,y coordinates are swapped in meshgrid
+roi = [reshape(x,[],1),reshape(y,[],1),reshape(z,[],1)];
 hbeats = param.ppg.trig.data_filt;
 
-[avgGatedSignal,interpWindows,gatedSignal,gatedTime] = physioResponse(hbeats, rsfmri_reg, 'roi',roi,'timeWindow',timeWindow);
+[gatedSignal,gatedTime] = physioResponse(hbeats, rsfmri_reg, 'roi',roi);
 
-figure; plot(interpWindows, avgGatedSignal,'-x');
-hold on; plot(gatedTime, gatedSignal,'x')
+%% average the ppg response over a certain time window
+timeWindow = 50;  % in ms
+timeResolution = 10;
+[avgGatedSignal,interpTimes] = physioResponseAvg(gatedSignal, gatedTime, 'timeWindow',timeWindow,'timeResolution',timeResolution);
 
-%% Write out simple summary of the data
-% average heart beat / respiration rate in Hz
-for p = 1:numel(physioType)
-    dtrig = diff(param.(physioType{p}).trig.data_filt);
-    param.(physioType{p}).trig.average_rate = 1000 / mean(dtrig(abs(dtrig - mean(dtrig)) < 3 * std(dtrig))); 
+
+%% plot signal from an example voxel
+% x1=60; y1=39; z1=20;
+% idx = sub2ind(size(rsfmri,1:3), x1,y1,z1);
+% figure;  plot(interpTimes, squeeze(avgGatedSignal(idx,:)),'-x');
+% hold on; plot(squeeze(gatedTime(idx,:)), squeeze(gatedSignal(idx,:)),'x');
+
+%% compute average response in ROIs defined in DKT atlas
+dkt_table = readtable(fullfile(bbPath,'colormaps/dkt_areas.tsv'),'FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dkt_table_surface = readtable(fullfile(bbPath,'colormaps/dkt_areas_surface.tsv'),'FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dkt_atlas = niftiread(fullfile(datadir,'aparc.DKTatlas+aseg_resampled.nii.gz'));
+roiNames = dkt_table.label;
+roiCodes = dkt_table.label_nr;
+
+% reshape DKT atlas to a vector across the spatial dimensions
+dkt_atlas_v = reshape(dkt_atlas,[],1);
+avgROISig = zeros(length(roiNames), size(avgGatedSignal,2));
+rsfmri_v = reshape(rsfmri,[],size(rsfmri,4));
+% compute the average in each ROI
+for kk = 1:length(roiNames)
+    avgROISig(kk,:) = mean(avgGatedSignal(dkt_atlas_v==roiCodes(kk),:),1); 
+    avgROIraw(kk) = mean(rsfmri_v(dkt_atlas_v==roiCodes(kk),dummy_cycles+1),1);
 end
 
-fid = fopen(fullfile(datadir, 'physio.json'), 'w');
-fprintf(fid, jsonencode(param, 'PrettyPrint', true));
-fclose(fid);
+%% look at some ROIs with high signal variation
+figure; hold on;
+for kk = 1:size(avgROISig,1)
+    % variation = max(avgROISig(kk,:))-min(avgROISig(kk,:)); 
+    variation = (max(avgROISig(kk,:))-min(avgROISig(kk,:)))/avgROIraw(kk); 
+    if variation > 0.010 && variation < 0.011
+        fprintf('ROI %d %s, value %d\n',kk, roiNames{kk}, roiCodes(kk)); 
+        plot(avgROISig(kk,:),'DisplayName',sprintf('%s', roiNames{kk}));
+    end
+end
+legend show; legend('FontSize',16);
+
+
+%%
+[u,s,d] = svd(avgROISig');
+
+
+%% Save output
+% reshapde the outputs to 4D 
+avgGatedSignal = reshape(avgGatedSignal,[size(rsfmri,1:3),size(avgGatedSignal,2)]);
+gatedSignal    = reshape(gatedSignal,   [size(rsfmri,1:3),size(gatedSignal,2)]);
+gatedTime      = reshape(gatedTime,     [size(rsfmri,1:3),size(gatedTime,2)]);
+% save avgGatedSignal into 4D NIFTI
+ni_info = rsfmri_info;
+ni_info.Datatype = 'double';
+% avgGatedSignal
+ni_info.ImageSize = size(avgGatedSignal);
+niftiwrite(avgGatedSignal, fullfile(datadir,'avgGatedSignal'), ni_info);
+% gatedSignal
+ni_info.ImageSize = size(gatedSignal);
+niftiwrite(gatedSignal, fullfile(datadir,'gatedSignal'), ni_info);
+% gatedTime
+ni_info.ImageSize = size(gatedTime);
+niftiwrite(gatedTime, fullfile(datadir,'gatedTime'), ni_info);
+
+
+% % average heart beat / respiration rate in Hz
+% for p = 1:numel(physioType)
+%     dtrig = diff(param.(physioType{p}).trig.data_filt);
+%     param.(physioType{p}).trig.average_rate = 1000 / mean(dtrig(abs(dtrig - mean(dtrig)) < 3 * std(dtrig))); 
+% end
+% 
+% fid = fopen(fullfile(datadir, 'physio.json'), 'w');
+% fprintf(fid, jsonencode(param, 'PrettyPrint', true));
+% fclose(fid);
 
 %% END

@@ -2,5 +2,5 @@
 *.swp
 *.m~
 local/*
-.DS_Store
+*/.DS_Store
 
