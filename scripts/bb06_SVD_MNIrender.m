@@ -107,22 +107,15 @@ pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1; % -1 to everything pc1<0
 pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
 niftiWrite(pc1_mni,pc1_MNI_all);
 
-
-%% LEFT OFF HERE, not writing PC2 yet
-% pc2_mni.data = all_mni_pc2;
-% niftiWrite(pc2_mni,pc2_MNI_all);
-% 
-% cod_mni = pc1_mni;
-% cod_mni.data = all_mni_cod;
-% niftiWrite(cod_mni,cod_MNI_all);
-
-
 %%
 %% load all subjects and render MNI
 %%
+%% these renderings take a few minutes (10-15 mins) 
 
 Rthreshold = 0.7;
-select_voxels = find(median(all_mni_cod(:,:,:,1:5),4)>=Rthreshold);
+these_areas = all_mni_cod>=Rthreshold;
+these_areas = sum(these_areas,4);
+select_voxels = find(these_areas>=3); % voxel>0.5 in more than 3 subjects
 
 % Get indiced of selected voxels
 [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
@@ -130,8 +123,8 @@ ijk_func = [ii jj kk];
 clear ii jj kk % housekeeping
 
 % average PC1 and PC2 for color
-pc1_mean = mean(all_mni_pc1,4);
-pc2_mean = mean(all_mni_pc2,4);
+pc1_mean = 2*mean(all_mni_pc1,4); % multiply by 2 to clarify colors
+pc2_mean = 2*mean(all_mni_pc2,4); % multiply by 2 to clarify colors
 pc1_mean(pc1_mean<-1) = -1;
 pc2_mean(pc2_mean<-1) = -1;
 pc1_mean(pc1_mean>1) = 1;
@@ -154,7 +147,7 @@ gr.faces = cortex.tri;
 gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
 gr = gifti(gr);
 
-% plot right
+%% plot right
 figure,hold on
 fg = ieeg_RenderGifti(gr);
 % add PC2 in color:
@@ -166,11 +159,12 @@ end
 set(fg,'FaceAlpha',.5)
 set(gcf,'PaperPositionMode','auto') 
 ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v01'))
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v01'))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v02'))
 
-% plot left
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v02'))
+
+%% plot left
 figure,hold on
 fg = ieeg_RenderGifti(gl);
 % add PC2 in color:
@@ -182,144 +176,9 @@ end
 set(fg,'FaceAlpha',.5)
 set(gcf,'PaperPositionMode','auto') 
 ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_v01'))
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v01'))
-
-%%
-%% now try to render/combine all subjects above trheshold
-%%
-
-Rthreshold = 0.8;
-
-% load MNI rendings 
-load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
-gl.vertices = cortex.vert;
-gl.faces = cortex.tri;
-gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-gl = gifti(gl);
-
-load(fullfile(dDir,'derivatives','mni','MNI_cortex_right.mat'))
-gr.vertices = cortex.vert;
-gr.faces = cortex.tri;
-gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-gr = gifti(gr);
-
-
-% plot right
-figure,hold on
-fg = ieeg_RenderGifti(gr);
-
-for ss = 1:5
-    select_voxels = find(all_mni_cod(:,:,:,ss)>=Rthreshold);
-
-    % Get indiced of selected voxels
-    [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
-    ijk_func = [ii jj kk];
-    clear ii jj kk % housekeeping
-
-    % average PC1 and PC2 for color
-    pc1_mean = all_mni_pc1(:,:,:,ss);
-    pc2_mean = all_mni_pc2(:,:,:,ss);
-    pc1_mean(pc1_mean<-1) = -1;
-    pc2_mean(pc2_mean<-1) = -1;
-    pc1_mean(pc1_mean>1) = 1;
-    pc2_mean(pc2_mean>1) = 1;
-    data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
-
-    % Get mni coordinates of voxels 
-    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
-
-    % add PC2 in color:
-    for kk = 1:size(xyz_mni,1)
-        if xyz_mni(kk,1)>-10
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-        end
-    end
-end
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v02'))
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v02'))
-
-
-% plot left
-figure,hold on
-fg = ieeg_RenderGifti(gl);
-
-for ss = 1:5
-    select_voxels = find(all_mni_cod(:,:,:,ss)>=Rthreshold);
-
-    % Get indiced of selected voxels
-    [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
-    ijk_func = [ii jj kk];
-    clear ii jj kk % housekeeping
-
-    % average PC1 and PC2 for color
-    pc1_mean = all_mni_pc1(:,:,:,ss);
-    pc2_mean = all_mni_pc2(:,:,:,ss);
-    pc1_mean(pc1_mean<-1) = -1;
-    pc2_mean(pc2_mean<-1) = -1;
-    pc1_mean(pc1_mean>1) = 1;
-    pc2_mean(pc2_mean>1) = 1;
-    data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
-
-    % Get mni coordinates of voxels 
-    xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
-
-    for kk = 1:size(xyz_mni,1)
-        if xyz_mni(kk,1)<10
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-        end
-        
-    end
-end
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_v02'))
 ieeg_viewLight(90,0)
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v02'))
-
-close all
-
-%%
-%%
-%%
-
-%% test
-% addpath to MyCrust270110
-% p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni; all_mni(4).xyz_mni; all_mni(5).xyz_mni; all_mni(6).xyz_mni];
-p = [all_mni(1).xyz_mni; all_mni(2).xyz_mni; all_mni(3).xyz_mni];
-
-
-%% Run  program
-[t]=MyRobustCrust(p);
-
-
-%% plot the points cloud
-figure(1);
-set(gcf,'position',[0,0,1280,800]);
-subplot(1,2,1)
-hold on
-axis equal
-title('Points Cloud','fontsize',14)
-plot3(p(:,1),p(:,2),p(:,3),'g.')
-axis vis3d
-view(3)
-
-
-%% plot the output triangulation
-figure(1)
-subplot(1,2,2)
-hold on
-title('Output Triangulation','fontsize',14)
-axis equal
-trisurf(t,p(:,1),p(:,2),p(:,3),'facecolor','c','edgecolor','b')%plot della superficie
-axis vis3d
-view(3)
 
 
 

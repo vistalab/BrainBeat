@@ -412,7 +412,7 @@ plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
 % print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
 
 %%
-%% FIGURES & RENDERINGS
+%% FIGURES & RENDERINGS in individual subjects
 %%
 %% Plot R/Betas back on brain
 %%
@@ -423,7 +423,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-ss = 5;
+ss = 6;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -438,7 +438,7 @@ save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['se
 pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
 % load pc2
 pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
-% load r weights
+% load r weights (how much explained by canonical PC1-2)
 r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
 
 % Get anatomy
@@ -474,8 +474,8 @@ acpcXform = pc1Weight.qto_xyz;
 bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
-
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
+% 
 % % now only select 7.30-1.30 on a clock
 % % do this to test:
 % % x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];
@@ -509,31 +509,41 @@ print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','grou
 %%
 %% Get functional voxels to plot with rendering
 
-Rthreshold = .3;
+Rthreshold = .5;
 
-% SPM segmentation
-niSPM = niftiRead(fullfile(dDir,subj,scan,[scanName '_spmSeg.nii.gz']));
-brainMask = niSPM.data>0;
+% get a segmentation to create a brain, CSF and vessels mask:
+% niSegm2 has labels 1:5 with names {'GM','WM','Ventricles','CSF','Veno'};
+niSegm2 = niftiRead([save_name_base '_combineSegm.nii.gz']);
+brainMask = niSegm2.data>0;
+
+% load PPG-RCOD
+ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
 
 % Use mask:
 select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
-% No mask:
-% select_voxels = find(ppgR.data>=Rthreshold);
 
 % Get indiced of selected voxels
-[ii,jj,kk]=ind2sub(size(ppgR.data),select_voxels);
-ijk_func=[ii jj kk];
+[ii,jj,kk] = ind2sub(size(ppgR.data),select_voxels);
+ijk_func = [ii jj kk];
 clear ii jj kk % housekeeping
 
-% Get xyz coordinates of voxels 
+% Get xyz coordinates of voxels in single subject space
 xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
 
 % PC1/PC2 weights for voxels to plot:
-pc12_render = [ni1.data(select_voxels) ni2.data(select_voxels)];
+pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
 
-% Select hemisphere
+% Render right hemisphere
+hemi_load = 'r';
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+gifti_name = fullfile(dDir,'derivatives','surfaces',['sub-' sub_label],['ses-' ses_label],['T1w_' hemi_load 'h_white_render.gii']);
+g = gifti(gifti_name);
+
+% get coordinates within only this hemipshere
 % xyz_select = xyz_anat(:,1)<10;
-if s_nr==3
+if ss==2 || ss==3
     x_plot = -15; % midline off in this subject, should have acpc oriented...
 else
     x_plot = -10;
@@ -544,6 +554,95 @@ yy_plot = xyz_anat(xyz_select,2);
 zz_plot = xyz_anat(xyz_select,3);
 
 pc12_render_sel = pc12_render(xyz_select,:);
+
+maxPlot = 0.5;
+intensity_plot = pc12_render_sel./maxPlot;    
+intensity_plot(intensity_plot>1) = 1;
+intensity_plot(intensity_plot<-1) = -1;
+data_colors_rgb = bbData2Colors([intensity_plot(:,1) intensity_plot(:,2)]);
+
+figure
+brainHandle = bbRenderGifti(g); hold on
+for kk = 1:size(intensity_plot,1)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',data_colors_rgb(kk,:))
+end
+% brainHandle.FaceAlpha = .5; % Make the brain transparent
+title(['R>' num2str(Rthreshold,3)])
+
+bbViewLight(90,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewLat']))
+
+bbViewLight(270,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewMed']))
+
+% Render left hemisphere
+hemi_load = 'l';
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+gifti_name = fullfile(dDir,'derivatives','surfaces',['sub-' sub_label],['ses-' ses_label],['T1w_' hemi_load 'h_white_render.gii']);
+g = gifti(gifti_name);
+
+% get coordinates within only this hemipshere
+if ss==2 || ss==3
+    x_plot = 5; % midline off in this subject, should have acpc oriented...
+else
+    x_plot = 10;
+end
+xyz_select = xyz_anat(:,1)<x_plot;
+xx_plot = xyz_anat(xyz_select,1);
+yy_plot = xyz_anat(xyz_select,2);
+zz_plot = xyz_anat(xyz_select,3);
+
+pc12_render_sel = pc12_render(xyz_select,:);
+
+maxPlot = 0.5;
+intensity_plot = pc12_render_sel./maxPlot;    
+intensity_plot(intensity_plot>1) = 1;
+intensity_plot(intensity_plot<-1) = -1;
+data_colors_rgb = bbData2Colors([intensity_plot(:,1) intensity_plot(:,2)]);
+
+figure
+brainHandle = bbRenderGifti(g); hold on
+for kk = 1:size(intensity_plot,1)
+    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',data_colors_rgb(kk,:))
+end
+% brainHandle.FaceAlpha = .5; % Make the brain transparent
+title(['R>' num2str(Rthreshold,3)])
+
+bbViewLight(90,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewMed']))
+
+bbViewLight(270,0)
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewLat']))
+
+
+
+%%
+%%
+%%
+%%
+%% only plot upper left/lower righ quadrant
+%%
+pc_complex = complex(intensity_plot(:,1),intensity_plot(:,2));
+pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-i) to rotatio 45 deg
+figure
+brainHandle = bbRenderGifti(g); hold on
+for kk = 1:size(intensity_plot,1)
+    if pc_angle(kk)<0
+        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',data_colors_rgb(kk,:))
+    end
+end
+title(['R>' num2str(Rthreshold,3)])
+
+
+%%
+%% plot with 2D red/blue colormap
+%%
 
 % Set maximum for dot colors:
 maxPlot = .5;
@@ -566,13 +665,6 @@ color_plot = pc12_render_sel(:,2)./maxPlot;
 color_plot(color_plot>1) = 1;
 color_plot(color_plot<-1) = -1;
 
-%% Plot PC1 (veins/arteries) and PC2 (CSF) on wm render
-hemi_load = 'r';
-gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_white_render.gii']);
-% gifti_name = fullfile(dDir,subj,s_info.anat,['T1w_' hemi_load 'h_render.gii']);
-g = gifti(gifti_name);
-
-%%
 figure
 brainHandle = bbRenderGifti(g); hold on
 % brainHandle.FaceAlpha = .5; % Make the brain transparent
@@ -588,17 +680,15 @@ title(['R>' num2str(Rthreshold,3)])
 
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_lat']))
-
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_lat']))
 
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_med']))
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1neg_rh_med']))
 
-
-% Plot positive PC1 (CSF)
+%% Plot positive PC1 (CSF)
 figure
-brainHandle=bbRenderGifti(g); hold on
+brainHandle = bbRenderGifti(g); hold on
 
 for kk = 1:size(intensity_plot,1)
     if intensity_plot(kk)>0
@@ -611,9 +701,9 @@ title(['R>' num2str(Rthreshold,3)])
 
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_lat']))
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_lat']))
 
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_med']))
+% print('-painters','-r300','-dpng',fullfile(dDir,'figures','renderCanonSvd',['sub-' int2str(s_nr) '_scan-' int2str(scan_nr) '_PC1pos_rh_med']))
 
