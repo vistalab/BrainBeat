@@ -33,8 +33,15 @@ function [] = bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sli
 
 if isempty(varargin)
     maxPlot = max(ni1.data(:));
+    pointSize = 12;
 else
-    maxPlot = varargin{1};
+    if length(varargin)==1
+        maxPlot = varargin{1};
+        pointSize = 12;
+    elseif length(varargin)==2
+        maxPlot = varargin{1};
+        pointSize = varargin{2};
+    end
 end
 
 % functionals to ACPC space
@@ -54,56 +61,56 @@ imgVol2 = imgVol2/maxPlot;% rescale: and set max from -1:1
 imgVol2(imgVol2>1) = 1; % clip larger vals
 imgVol2(imgVol2<-1) = -1; % clip smaller vals
 % get the slice from the Color
-[imgSlice1,x1,y1,z1]=dtiGetSlice(img2std, imgVol1, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+[imgSlice1,x1,y1,z1] = dtiGetSlice(img2std, imgVol1, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 % get the slice from the Intensity
-[imgSlice2]=dtiGetSlice(img2std, imgVol2, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+[imgSlice2] = dtiGetSlice(img2std, imgVol2, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
-    x1=x1(1,:)';
-    y1=y1(:,1);
+    x1 = x1(1,:)';
+    y1 = y1(:,1);
 elseif sliceThisDim == 2
-    x1=x1(:,1);
-    y1=y1(1,:)';
+    x1 = x1(:,1);
+    y1 = y1(1,:)';
 end
-z1=z1(1,:)';
+z1 = z1(1,:)';
 
 % Anatomy to ACPC
 imgVol = niAnatomy.data;
 img2std = niAnatomy.qto_xyz;
-sliceNum =curPos(sliceThisDim);
+sliceNum = curPos(sliceThisDim);
 interpType = 'n';
 mmPerVox = [1 1 1];
-[imgSlice,x,y,z]=dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
+[imgSlice,x,y,z] = dtiGetSlice(img2std, imgVol, sliceThisDim, sliceNum,imDims,interpType, mmPerVox);
 if sliceThisDim == 1 || sliceThisDim == 3
-    x=x(1,:)';
-    y=y(:,1);
+    x = x(1,:)';
+    y = y(:,1);
 elseif sliceThisDim == 2
-    x=x(:,1);
-    y=y(1,:)';
+    x = x(:,1);
+    y = y(1,:)';
 end
-z=z(1,:)';
+z = z(1,:)';
 
 % for x and y for plotting:
 if sliceThisDim==1
-    x1=z1; x=z;
+    x1 = z1; x = z;
     % flip x and y
-    x1_t=x1;
-    x1=y1;
-    y1=x1_t;
-    x_t=x;
-    x=y;
-    y=x_t;
+    x1_t = x1;
+    x1 = y1;
+    y1 = x1_t;
+    x_t = x;
+    x = y;
+    y = x_t;
     
     % and for the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice2=imrotate(imgSlice2,90);
-    imgSlice=imrotate(imgSlice,90);
+    imgSlice1 = imrotate(imgSlice1,90);
+    imgSlice2 = imrotate(imgSlice2,90);
+    imgSlice = imrotate(imgSlice,90);
 elseif sliceThisDim==2
-    y1=z1; y=z;
+    y1 = z1; y = z;
     
     % rotate the images
-    imgSlice1=imrotate(imgSlice1,90);
-    imgSlice2=imrotate(imgSlice2,90);
-    imgSlice=imrotate(imgSlice,90);
+    imgSlice1 = imrotate(imgSlice1,90);
+    imgSlice2 = imrotate(imgSlice2,90);
+    imgSlice = imrotate(imgSlice,90);
     
 elseif sliceThisDim==3
     % x and y stay the same
@@ -134,7 +141,7 @@ for k = 1:size(imgSlice1,1)
         
         data_colors_rgb = bbData2Colors([v1,v2]);
                 
-        plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',12)
+        plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',pointSize)
     end
 end
 %% to plot colorscale

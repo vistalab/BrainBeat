@@ -423,7 +423,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-ss = 6;
+ss = 5;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -446,7 +446,7 @@ t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
             ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
 niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
-sliceThisDim = 1;
+sliceThisDim = 3;
 if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-4 26 17]; 
@@ -461,7 +461,7 @@ elseif ss == 4
     curPos = [0 4 35];
 elseif ss == 5
     imDims = [-90 -120 -100; 90 130 120];
-    curPos = [-2,18,38];
+    curPos = [-2,18,38]; % [-2,18,38]
 elseif ss == 6
     imDims = [-90 -120 -100; 90 130 120];
     curPos = [-4,18,38];
@@ -473,9 +473,8 @@ acpcXform = pc1Weight.qto_xyz;
 % plot entire circle
 bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleSag']))
-% 
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleAxial38']))
+
 % % now only select 7.30-1.30 on a clock
 % % do this to test:
 % % x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];

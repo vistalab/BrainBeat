@@ -108,14 +108,14 @@ pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
 niftiWrite(pc1_mni,pc1_MNI_all);
 
 %%
-%% load all subjects and render MNI
+%% load all subjects and slice view and render MNI
 %%
-%% these renderings take a few minutes (10-15 mins) 
+%% Renderings take a few minutes (10-15 mins) 
 
 Rthreshold = 0.7;
 these_areas = all_mni_cod>=Rthreshold;
 these_areas = sum(these_areas,4);
-select_voxels = find(these_areas>=3); % voxel>0.5 in more than 3 subjects
+select_voxels = find(these_areas>=3); % voxel>Rthreshold in more than 3 subjects
 
 % Get indiced of selected voxels
 [ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
@@ -131,10 +131,41 @@ pc1_mean(pc1_mean>1) = 1;
 pc2_mean(pc2_mean>1) = 1;
 data_colors_rgb = bbData2Colors([pc1_mean(select_voxels) pc2_mean(select_voxels)]);
     
-% Get mni coordinates of voxels 
+% Get mni coordinates of voxels
 xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
 
-% load MNI rendings 
+% Slice view of beta1 (pc1) and beta2 (pc2) using fancy color circle
+niAnatomy = niftiRead(fullfile(dDir,'derivatives','mni','rsingle_subj_T1.nii'));
+imDims = [-90 -120 -120; 90 130 90];
+pc1_plot = pc1_mni;
+pc2_plot = pc1_mni;
+pc1_plot.data = pc1_mean;
+pc2_plot.data = pc2_mean;
+acpcXform = pc1_mni.qto_xyz;
+
+% plot Saggital figure
+sliceThisDim = 1;
+curPos = [1 -4 17]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_v2']))
+
+%%
+% Plot Axial
+sliceThisDim = 3;
+curPos = [1 -4 17]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_v2']))
+
+% Plot Coronal
+sliceThisDim = 2;
+curPos = [1 -4 17]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,6);
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v3']))
+curPos = [1 -44 17]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
+
+%% % load MNI cortical surfaces 
 load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
 gl.vertices = cortex.vert;
 gl.faces = cortex.tri;
