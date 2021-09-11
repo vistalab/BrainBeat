@@ -32,12 +32,12 @@ end
 
 % Which type of data are we getting?
 respFlag = false; ppgFlag = false;
-if     strcmp(param(1:4),'resp'), respFlag = true; param=param(5:end); 
+if     strcmp(param(1:4),'resp'), respFlag = true; param = param(5:end); 
     obj = phy.resp;
-    dataType='resp';
+    dataType = 'resp';
 elseif strcmp(param(1:3),'ppg'),  ppgFlag = true;  param = param(4:end);
     obj = phy.ppg;
-    dataType='ppg';
+    dataType = 'ppg';
 end
 
 
@@ -85,7 +85,7 @@ switch param
     case 'nsamples'
         val = length(obj.data);
 
-    case 'rate' % peaks per second
+    case 'rate' % PPGrate/RESPrate - peaks per second
         objPeaks = physioGet(phy,[dataType ' peaks']);
         totalTime = length(obj.data)./physioGet(phy,[dataType ' srate']); % in secs
         val = length(objPeaks) / totalTime; 

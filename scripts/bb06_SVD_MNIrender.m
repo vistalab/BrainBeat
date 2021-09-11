@@ -146,24 +146,23 @@ acpcXform = pc1_mni.qto_xyz;
 % plot Saggital figure
 sliceThisDim = 1;
 curPos = [1 -4 17]; 
-bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_v2']))
+% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_v2']))
 
-%%
 % Plot Axial
 sliceThisDim = 3;
 curPos = [1 -4 17]; 
-bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_v2']))
+% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_v2']))
 
 % Plot Coronal
 sliceThisDim = 2;
 curPos = [1 -4 17]; 
-bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,6);
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v3']))
+% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,6);
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v3']))
 curPos = [1 -44 17]; 
-bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
+% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
 
 %% % load MNI cortical surfaces 
 load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
@@ -212,4 +211,49 @@ ieeg_viewLight(90,0)
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v02'))
 
 
+
+%%
+%% test only plotting positive/negative
+%%
+
+pc_complex = complex(pc1_mean(select_voxels),pc2_mean(select_voxels));
+pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-i) to rotatio 45 deg
+
+%% plot right
+figure,hold on
+fg = ieeg_RenderGifti(gr);
+% add PC2 in color:
+for kk = 1:size(xyz_mni,1)
+    if xyz_mni(kk,1)>-10
+        if pc_angle(kk)<0
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
+        end
+    end
+end
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_vPos'))
+
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_vPos'))
+
+%% plot left
+figure,hold on
+fg = ieeg_RenderGifti(gl);
+% add PC2 in color:
+for kk = 1:size(xyz_mni,1)
+    if xyz_mni(kk,1)<10
+        if pc_angle(kk)<0
+            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
+        end
+    end
+end
+
+set(fg,'FaceAlpha',.5)
+set(gcf,'PaperPositionMode','auto') 
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_vPos'))
+ieeg_viewLight(90,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_vPos'))
 

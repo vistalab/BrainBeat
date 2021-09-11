@@ -126,8 +126,8 @@ axis tight
 title('canonical PCs across 5 subjects')
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -446,7 +446,7 @@ t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
             ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
 niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
-sliceThisDim = 3;
+sliceThisDim = 1;
 if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-4 26 17]; 
@@ -619,13 +619,52 @@ bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewLat']))
 
+%% Plot predicted responses for this subject
+% get model
+load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
+pc1_plot = pc1;
+pc2_plot = pc2;
+% get heartrate to have interpretable timing in seconds again
+ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+physio      = physioCreate('nifti',ni);
+ppg_cycle   = 1./physioGet(physio,'PPGrate');
+
+% make time actual time in seconds
+tt = t_svd*ppg_cycle;
+% rotate to split into two groups
+pc_complex = complex(pc12_render_sel(:,1),pc12_render_sel(:,2));
+% pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-1i) to rotate 45 deg
+pc_angle = angle(pc_complex*(1-4i)); % multiply by (1-4i) to rotate further
+
+figure('Position',[0 0 180 200])
+for kk = 1:size(pc12_render_sel,1)
+    if pc_angle(kk)<0
+        subplot(2,1,1),hold on
+        x = pc12_render_sel(kk,1);
+        y = pc12_render_sel(kk,2);
+        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
+    else
+        subplot(2,1,2),hold on
+        x = pc12_render_sel(kk,1);
+        y = pc12_render_sel(kk,2);
+        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
+    end
+end
+set(gca,'FontName','Ariel')
+subplot(2,1,1),xlim([tt(1) tt(end)])
+subplot(2,1,2),xlim([tt(1) tt(end)])
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
 
 
 %%
 %%
 %%
 %%
-%% only plot upper left/lower righ quadrant
+%% only plot upper left/lower right quadrant
 %%
 pc_complex = complex(intensity_plot(:,1),intensity_plot(:,2));
 pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-i) to rotatio 45 deg
