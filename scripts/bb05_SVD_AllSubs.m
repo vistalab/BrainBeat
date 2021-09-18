@@ -330,7 +330,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ses_label = ses_labels{ss};
     acq_label = acq_labels{ss};
     run_nr = run_nrs{ss}(rr);
-
+        
     % Get base name
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
         ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
@@ -357,6 +357,12 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     % fill outputs
     out(ss).pc1_th = pc1Weight.data(r_weight.data>0.7);
     out(ss).pc2_th = pc2Weight.data(r_weight.data>0.7);
+    
+    % get heartrate to have interpretable timing in seconds again
+    ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+    physio      = physioCreate('nifti',ni);
+    out(ss).heartrate   = 60*physioGet(physio,'PPGrate'); %BpM
 end
 
 %% plot for every subject in 1 color
@@ -373,6 +379,7 @@ end
 %% plot with pc1/pc2 fancy latency color map
 % circle size weighted by voxel density using hist3
 
+% print heartrate
 figure('Position',[0 0 800 200])
 for ss = 1:length(sub_labels) % subjects/ses/acq
     X = [out(ss).pc1_th,out(ss).pc2_th];
@@ -394,7 +401,9 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
             
         end
     end
+    disp(['sub ' int2str(ss) ' heartrate ' int2str(out(ss).heartrate) ' bpm'])
 end
+
 % set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
 % print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
@@ -423,7 +432,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-ss = 5;
+ss = 1;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -446,7 +455,6 @@ t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
             ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
 niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
-sliceThisDim = 1;
 if ss == 1
     imDims = [-90 -120 -120; 90 130 90];
     curPos = [-4 26 17]; 
@@ -471,6 +479,7 @@ end
 acpcXform = pc1Weight.qto_xyz;
 
 % plot entire circle
+sliceThisDim = 1;
 bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_exampleAxial38']))
@@ -480,7 +489,7 @@ set(gcf,'PaperPositionMode','auto')
 % % x = [1:-0.1:0 0:-0.1:-1 -1:0.1:0 0:0.1:1];
 % % y = [0:0.1:1 1:-0.1:0 0:-0.1:-1 -1:0.1:0];
 % % b = complex(x,y)
-% % figure,plot(angle(b*(1-i)))
+% % figure,plot(angle(b*(pi/4-pi/4*1i)))
 % 
 % pc_complex = complex(pc1Weight.data,pc2Weight.data);
 % pc_angle = angle(pc_complex*(1-i)); % multiply by (1-i) to rotatio 45 deg
@@ -520,6 +529,8 @@ ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
 
 % Use mask:
 select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
+% PC1/PC2 weights for voxels to plot:
+pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
 
 % Get indiced of selected voxels
 [ii,jj,kk] = ind2sub(size(ppgR.data),select_voxels);
@@ -529,10 +540,8 @@ clear ii jj kk % housekeeping
 % Get xyz coordinates of voxels in single subject space
 xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
 
-% PC1/PC2 weights for voxels to plot:
-pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
 
-% Render right hemisphere
+%%%%%%%%%%%% Render right hemisphere
 hemi_load = 'r';
 save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
     ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
@@ -576,7 +585,7 @@ bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewMed']))
 
-% Render left hemisphere
+%%%%%%%%%%%%% Render left hemisphere
 hemi_load = 'l';
 save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
     ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
@@ -619,9 +628,35 @@ bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewLat']))
 
-%% Plot predicted responses for this subject
+%% Plot predicted responses for all subjects as function of time(s)
+% this can be used as a colorscale to go with renderings
+
+Rthreshold = .5;
+
+% get a segmentation to create a brain, CSF and vessels mask:
+% niSegm2 has labels 1:5 with names {'GM','WM','Ventricles','CSF','Veno'};
+niSegm2 = niftiRead([save_name_base '_combineSegm.nii.gz']);
+brainMask = niSegm2.data>0;
+
+% load PPG-RCOD
+ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
+
+% Use mask:
+select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
+% PC1/PC2 weights for voxels to plot:
+pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
+
+maxPlot = 0.5;
+intensity_plot = pc12_render./maxPlot;    
+intensity_plot(intensity_plot>1) = 1;
+intensity_plot(intensity_plot<-1) = -1;
+data_colors_rgb = bbData2Colors([intensity_plot(:,1) intensity_plot(:,2)]);
+
 % get model
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
+% get model timing
+load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'t_svd')
+
 pc1_plot = pc1;
 pc2_plot = pc2;
 % get heartrate to have interpretable timing in seconds again
@@ -633,27 +668,26 @@ ppg_cycle   = 1./physioGet(physio,'PPGrate');
 % make time actual time in seconds
 tt = t_svd*ppg_cycle;
 % rotate to split into two groups
-pc_complex = complex(pc12_render_sel(:,1),pc12_render_sel(:,2));
-% pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-1i) to rotate 45 deg
-pc_angle = angle(pc_complex*(1-4i)); % multiply by (1-4i) to rotate further
+pc_complex = complex(pc12_render(:,1),pc12_render(:,2));
+pc_angle = angle(pc_complex*(pi/10-1i)); % multiply by (1-i) to rotate 45 deg, pi/10-1i rotates a little further
 
 figure('Position',[0 0 180 200])
-for kk = 1:size(pc12_render_sel,1)
+for kk = 1:size(pc12_render,1)
     if pc_angle(kk)<0
         subplot(2,1,1),hold on
-        x = pc12_render_sel(kk,1);
-        y = pc12_render_sel(kk,2);
+        x = pc12_render(kk,1);
+        y = pc12_render(kk,2);
         plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
     else
         subplot(2,1,2),hold on
-        x = pc12_render_sel(kk,1);
-        y = pc12_render_sel(kk,2);
+        x = pc12_render(kk,1);
+        y = pc12_render(kk,2);
         plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
     end
 end
 set(gca,'FontName','Ariel')
-subplot(2,1,1),xlim([tt(1) tt(end)])
-subplot(2,1,2),xlim([tt(1) tt(end)])
+subplot(2,1,1),xlim([-0.5 1.8])
+subplot(2,1,2),xlim([-0.5 1.8])
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))

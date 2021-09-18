@@ -1,7 +1,7 @@
 function [response_matrix1,t,response_matrix_odd1,response_matrix_even1,response_matrix_std1,...
     response_matrix2,response_matrix_odd2,response_matrix_even2,response_matrix_std2] = ...
         bbResponse2physioME(ni1,ni2,slices,varargin)
-
+%
 % function to get brain response after the peak of a heartbeat
 % meant to deal with multi echo (ME) data
 %
@@ -71,10 +71,11 @@ response_matrix_std2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(sli
 response_matrix_odd2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
 response_matrix_even2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
 
-
 for s = 1:length(slices)
+    
     disp(['slice ' int2str(s) ' of ' int2str(length(slices))])
     sli = slices(s);
+    
     % get the log for this slice, so we can solve the linear form
     d1 = log(squeeze(ni1.data(:,:,sli,1:end)));
     d2 = log(squeeze(ni2.data(:,:,sli,1:end)));
@@ -82,6 +83,7 @@ for s = 1:length(slices)
     % get echo times
     te1 = bbGet(ni1,'te');
     te2 = bbGet(ni2,'te');
+    
     % calculate T2*
     rr = (d2 - d1)/(te2 - te1);
     t2s = -1./rr;
@@ -90,19 +92,15 @@ for s = 1:length(slices)
     lns0 = d1 - (d2 - d1)*(te1/(te2 - te1));
     s0 = exp(lns0);
 
-    % plot to check for subject 3, scan 4-5
-%     figure
-%     subplot(2,1,1), hold on
-%     plot(squeeze(d1(27,50,:)),'b')
-%     plot(squeeze(d2(27,50,:)),'g')
-%     plot(ppg_onsets*srate,8.5,'r.')    
-%     subplot(2,1,2), hold on, ylabel('zscore')
-%     plot(zscore(squeeze(s0(27,50,:))),'k')
-%     plot(zscore(squeeze(t2s(27,50,:))),'m')
-%     plot(ppg_onsets*srate,0,'r.')
+%     % plot to check for subject 4, multi echo run 1
+%     if s==20
+%         fn_MakeSuppFigME(d1,d2,s0,rr,t2s,srate,ppg_onsets)
+%     end
 
+    % demean and express in percent modulation (?)
     
-    % demean and express in percent modulation 
+    %%% todo: it seems like only S0 would need detrending...
+    
     d1_norm = reshape(s0,[size(s0,1) * size(s0,2), size(s0,3)]);
     d2_norm = reshape(t2s,[size(t2s,1) * size(t2s,2), size(t2s,3)]);
     points_use = 4:size(d1_norm,2); % do not use the first couple of scans

@@ -93,19 +93,19 @@ end
 
 %% did not do this step yet
 
-% name for pc1 & pc2
-pc1_MNI_all = './local/allMNI_pc1w.nii.gz';
-pc2_MNI_all = './local/allMNI_pc2w.nii.gz';
-cod_MNI_all = './local/allMNI_cod.nii.gz';
-
-% save pc1 beta weights, threshold by cod, and add across subjects
-pc1_mni.data = all_mni_pc1;
-cod_th = 0.1;
-pc1_mni.data(all_mni_cod<cod_th) = 0;
-pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1>0) = 1; % 1 to everything pc1>0
-pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1; % -1 to everything pc1<0
-pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
-niftiWrite(pc1_mni,pc1_MNI_all);
+% % name for pc1 & pc2
+% pc1_MNI_all = './local/allMNI_pc1w.nii.gz';
+% pc2_MNI_all = './local/allMNI_pc2w.nii.gz';
+% cod_MNI_all = './local/allMNI_cod.nii.gz';
+% 
+% % save pc1 beta weights, threshold by cod, and add across subjects
+% pc1_mni.data = all_mni_pc1;
+% cod_th = 0.1;
+% pc1_mni.data(all_mni_cod<cod_th) = 0;
+% pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1>0) = 1; % 1 to everything pc1>0
+% pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1; % -1 to everything pc1<0
+% pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
+% niftiWrite(pc1_mni,pc1_MNI_all);
 
 %%
 %% load all subjects and slice view and render MNI
@@ -157,9 +157,9 @@ curPos = [1 -4 17];
 
 % Plot Coronal
 sliceThisDim = 2;
-curPos = [1 -4 17]; 
-% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,6);
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v3']))
+curPos = [1 12 17]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
 curPos = [1 -44 17]; 
 % bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
