@@ -1,4 +1,4 @@
-function [] = fn_MakeSuppFigME(d1,d2,s0,rr,t2s,srate,ppg_onsets)
+function [] = fn_MakeSuppFigME(d1,d2,lns0,rr,t2s,srate,ppg_onsets)
 
 %% Make sure we plot TE/T2s as well, this is the slope we are calculating.
 
@@ -27,8 +27,8 @@ plot(ppg_onsets,mean(d2(27,50,:)),'k.')
 xlim(x_l),ylim([8 9])
 
 subplot(5,2,6), hold on
-plot(tt,log(squeeze(s0(27,50,:))),'r')
-plot(ppg_onsets,mean(log(s0(27,50,:))),'k.')
+plot(tt,squeeze(lns0(27,50,:)),'r')
+plot(ppg_onsets,mean(lns0(27,50,:)),'k.')
 ylabel('Ln(S_0)')
 xlim(x_l)
 

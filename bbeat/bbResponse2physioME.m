@@ -18,6 +18,8 @@ function [response_matrix1,t,response_matrix_odd1,response_matrix_even1,response
 %     response_matrix2,response_matrix_odd2,response_matrix_even2,response_matrix_std2] = ...
 %     bbResponse2physioME(ni,slices)
 %
+% Returns Log(S0) and RR or T2*?
+%
 % DHermes, Copyright Vistasoft Team 2014
 
 if ~exist('slices','var') % do whole brain
@@ -88,20 +90,16 @@ for s = 1:length(slices)
     rr = (d2 - d1)/(te2 - te1);
     t2s = -1./rr;
     
-    % calculate S0
+    % calculate log S0, exponentiate later?
     lns0 = d1 - (d2 - d1)*(te1/(te2 - te1));
-    s0 = exp(lns0);
-
-%     % plot to check for subject 4, multi echo run 1
-%     if s==20
-%         fn_MakeSuppFigME(d1,d2,s0,rr,t2s,srate,ppg_onsets)
-%     end
-
-    % demean and express in percent modulation (?)
     
-    %%% todo: it seems like only S0 would need detrending...
-    
-    d1_norm = reshape(s0,[size(s0,1) * size(s0,2), size(s0,3)]);
+    % plot to check for subject 4, multi echo run 1
+    if s==20
+        fn_MakeSuppFigME(d1,d2,lns0,rr,t2s,srate,ppg_onsets)
+    end
+
+    % detrend now
+    d1_norm = reshape(lns0,[size(lns0,1) * size(lns0,2), size(lns0,3)]);
     d2_norm = reshape(t2s,[size(t2s,1) * size(t2s,2), size(t2s,3)]);
     points_use = 4:size(d1_norm,2); % do not use the first couple of scans
     for kk = 1:size(d1_norm,1)
@@ -110,21 +108,22 @@ for s = 1:length(slices)
         
         % S0
         y = d1_norm(kk,points_use);       
-        % detrend
-        p = polyfit(x,y,1);    
-        % percent modulation
-        mean_factor = mean(d1_norm(kk,points_use)); % mean
-        d1_norm(kk,:) = (d1_norm(kk,:) - (p(1)*[1:size(d1_norm,2)] + p(2)))./mean_factor;
+        % fit line
+        p = polyfit(x,y,1);           
+        % linear detrend only, keep mean
+        d1_norm(kk,:) = d1_norm(kk,:) - (p(1)*[1:size(d1_norm,2)]);
 
         % T2*
         y = d2_norm(kk,points_use);       
         % detrend
         p = polyfit(x,y,1);    
-        % percent modulation
-        mean_factor = mean(d2_norm(kk,points_use)); % mean
-        d2_norm(kk,:) = (d2_norm(kk,:) - (p(1)*[1:size(d2_norm,2)] + p(2)))./mean_factor;
-
+        % linear detrend only, keep mean
+        d2_norm(kk,:) = d2_norm(kk,:) - (p(1)*[1:size(d2_norm,2)]);
     end
+    
+%     % we could exponentiate to get S0
+%     d1_norm = exp(d1_norm);
+    
     d1 = reshape(d1_norm,[size(d1,1), size(d1,2), size(d1,3)]);
     d2 = reshape(d2_norm,[size(d2,1), size(d2,2), size(d2,3)]);
     clear d1_norm d2_norm
