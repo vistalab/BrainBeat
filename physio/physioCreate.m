@@ -74,7 +74,16 @@ if ~isempty(varargin)
         else
             warning('WARNING: RESP physio file %s or its json sidecar does not exist',resp_name)
         end
-        
+
+        % check whether ECG physio data exist
+        ecg_exist = 0;
+        ecg2_name = [extractBefore(p.filename,'_bold.nii') '_recording-ECG2_physio.tsv.gz'];
+        ecg2_name_json = [extractBefore(p.filename,'_bold.nii') '_recording-ECG2_physio.json'];
+        ecg3_name = [extractBefore(p.filename,'_bold.nii') '_recording-ECG3_physio.tsv.gz'];
+        ecg3_name_json = [extractBefore(p.filename,'_bold.nii') '_recording-ECG3_physio.json'];
+        if exist(ecg2_name,'file') && exist(ecg2_name_json,'file') 
+            ecg_exist = 1;
+        end        
         
         if ppg_exist==1
             % add PPG data in the physio_output
@@ -112,6 +121,31 @@ if ~isempty(varargin)
             physio_output.resp.scan_onset = zeros(size(physio_output.resp.data));
             for mm = 1:round(ni.dim(4))
                 physio_output.resp.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.resp.srate+1))=1;
+            end
+        end
+        
+         if ecg_exist==1
+            % add PPG data in the physio_output
+            physio_output.ecg2.rawdata = bids.util.tsvread(ecg2_name);
+            physio_output.ecg3.rawdata = bids.util.tsvread(ecg3_name);
+
+            % for the sampling frequency srate we have to read the json sidecar
+            ecg_jsondata = bids.util.jsondecode(ecg2_name_json);
+            physio_output.ecg2.srate = ecg_jsondata.SamplingFrequency;
+            physio_output.ecg3.srate = ecg_jsondata.SamplingFrequency;
+            physio_output.ecg2.name = 'ECG2';
+            physio_output.ecg3.name = 'ECG3';
+
+            % time-lock PPG data to the scan, and include a parameter for scan-onset
+            % chop of the beginning
+            physio_output.ecg2.data = physio_output.ecg2.rawdata(end-round(scan_duration*physio_output.ecg2.srate)+1:end);
+            physio_output.ecg3.data = physio_output.ecg3.rawdata(end-round(scan_duration*physio_output.ecg3.srate)+1:end);
+            % add scan onset:
+            physio_output.ecg2.scan_onset = zeros(size(physio_output.ecg2.data));
+            physio_output.ecg3.scan_onset = zeros(size(physio_output.ecg3.data));
+            for mm = 1:round(ni.dim(4))
+                physio_output.ecg2.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ecg2.srate+1)) = 1;
+                physio_output.ecg3.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ecg3.srate+1)) = 1;
             end
         end
         

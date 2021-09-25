@@ -71,17 +71,21 @@ for ss = 1:length(sub_labels)
     % put the data in a matrix Voxel X Time
     respMat_lnS0 = reshape(ppgResplnS0.data,[size(ppgResplnS0.data,1) * size(ppgResplnS0.data,2) * size(ppgResplnS0.data,3)],size(ppgResplnS0.data,4));
     respMat_t2s = reshape(ppgRespT2s.data,[size(ppgRespT2s.data,1) * size(ppgRespT2s.data,2) * size(ppgRespT2s.data,3)],size(ppgRespT2s.data,4));
-
+    
+    % get outliers in T2s and exclude those:
+    t2s_outliers = sum(isoutlier(respMat_t2s,'median',1),2)>0;
+    
     avResp_lnS0 = zeros(size(ppgResplnS0.data,4),length(roiNames));
     avResp_t2s = zeros(size(ppgRespT2s.data,4),length(roiNames));
     for kk = 1:length(roiNames)
-        avResp_lnS0(:,kk) = mean(respMat_lnS0(ismember(segmVect,roiCodes(kk)),:),1);
-        avResp_t2s(:,kk) = mean(respMat_t2s(ismember(segmVect,roiCodes(kk)),:),1);
+        avResp_lnS0(:,kk) = mean(respMat_lnS0(ismember(segmVect,roiCodes(kk)) & ~t2s_outliers,:),1);
+        avResp_t2s(:,kk) = mean(respMat_t2s(ismember(segmVect,roiCodes(kk)) & ~t2s_outliers,:),1);
     end
     
-    % get venogram response
-    avRespVeno_lnS0 = mean(respMat_lnS0(ismember(segm2Vect,5),:),1)';
-    avRespVeno_t2s = mean(respMat_t2s(ismember(segm2Vect,5),:),1)';
+    % get venogram response - remove rows with outliers in median
+    avRespVeno_lnS0 = mean(respMat_lnS0(ismember(segm2Vect,5) & ~t2s_outliers,:),1)';
+    avRespVeno_t2s = mean(respMat_t2s(ismember(segm2Vect,5) & ~t2s_outliers,:),1)';
+    % avRespVeno_t2s = mean(rmoutliers(respMat_t2s(ismember(segm2Vect,5),:),1),1)';
 
     % resample avResp log s0 to ppg cycle
     avResp_sel_lnS0 = avResp_lnS0(ppgT.t>=(0-(.5*ppg_cycle)) & ppgT.t<=1.5*ppg_cycle,:);
@@ -105,7 +109,8 @@ for ss = 1:length(sub_labels)
     ppgCurve_hr(:,ss) = interp1(ppgt_sel,ppgCurve_sel,t_temp);
     
     clear t_sel ppgt_sel t_temp % t_sel and ppgt_sel are subject specific
-    clear avResp_sel avRespVeno_sel ppgCurve_sel avRespVeno avResp ...
+    clear avResp_sel_lnS0 avResp_sel_t2s avRespVeno_sel_lnS0 avRespVeno_sel_t2s...
+        ppgCurve_sel avRespVeno_lnS0 avRespVeno_t2s avResp_lnS0 avResp_t2s...
         ppgCurveT ppgCurve ppg_cycle ppg_onsets % all other subject specific vars
 end
 
@@ -120,23 +125,21 @@ figure('Position',[0 0 300 400])
 
 subplot(4,2,1),hold on
 this_area = 1; % caudal anterior cingulate 1 
-% title(roiNames{this_area});
 thisSignal = avResp_hr_lns0(:,this_area,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(thisSignal),'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,2,2),hold on
-this_area = 1; % caudal anterior cingulate 1 
 thisSignal = avResp_hr_t2s(:,this_area,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(thisSignal),'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
-
+% title(roiNames{this_area});
 
 subplot(4,2,3),hold on
 % title('Lateral ventricles')
@@ -144,16 +147,16 @@ subplot(4,2,3),hold on
 thisSignal = (squeeze(avResp_hr_lns0(:,74,:))+squeeze(avResp_hr_lns0(:,89,:)))/2;
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(thisSignal));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,2,4),hold on
 thisSignal = (squeeze(avResp_hr_t2s(:,74,:))+squeeze(avResp_hr_t2s(:,89,:)))/2;
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(thisSignal));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 
@@ -162,8 +165,8 @@ subplot(4,2,5),hold on
 thisSignal = avRespVeno_hr_lns0(:,1,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(thisSignal),'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 subplot(4,2,6),hold on
@@ -171,8 +174,8 @@ subplot(4,2,6),hold on
 thisSignal = avRespVeno_hr_t2s(:,1,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_hr,squeeze(thisSignal),'Color',[.5 .5 .5],'LineWidth',1)
+% fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 %%

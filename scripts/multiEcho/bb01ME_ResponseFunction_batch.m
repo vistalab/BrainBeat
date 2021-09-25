@@ -19,7 +19,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 sub_labels = {'4','5','1'}; 
 ses_labels = {'1','1','2'}; 
 acq_labels = {'ME','ME','ME'};
-run_nrs = {[1],[1],[1]}; % there are 2, 2, 3 runs for these subjects/sessions
+run_nrs = {[1],[2],[2]}; % there are a total of 2, 2, 3 runs for these subjects/sessions
 
 for ss = 1%:length(sub_labels) % subjects/ses/acq
     
@@ -30,7 +30,7 @@ for ss = 1%:length(sub_labels) % subjects/ses/acq
     for rr = 1:length(run_nrs{ss}) % runs        
         run_nr = run_nrs{ss}(rr);
         
-        disp(['Calculating response2PPG sub-' int2str(ss) ' run-' int2str(rr)])
+        disp(['Calculating response2PPG sub-' sub_labels{ss} ' run-' int2str(run_nrs{ss}(rr))])
         
         save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
         save_name_base = ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)];

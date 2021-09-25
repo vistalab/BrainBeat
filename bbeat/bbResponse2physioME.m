@@ -82,9 +82,9 @@ for s = 1:length(slices)
     d1 = log(squeeze(ni1.data(:,:,sli,1:end)));
     d2 = log(squeeze(ni2.data(:,:,sli,1:end)));
 
-    % get echo times
-    te1 = bbGet(ni1,'te');
-    te2 = bbGet(ni2,'te');
+    % get echo times in units of seconds
+    te1 = 0.001*bbGet(ni1,'te');
+    te2 = 0.001*bbGet(ni2,'te');
     
     % calculate T2*
     rr = (d2 - d1)/(te2 - te1);
@@ -93,10 +93,10 @@ for s = 1:length(slices)
     % calculate log S0, exponentiate later?
     lns0 = d1 - (d2 - d1)*(te1/(te2 - te1));
     
-    % plot to check for subject 4, multi echo run 1
-    if s==20
-        fn_MakeSuppFigME(d1,d2,lns0,rr,t2s,srate,ppg_onsets)
-    end
+%     % plot to check for subject 4, multi echo run 1
+%     if s==20
+%         fn_MakeSuppFigME(d1,d2,lns0,rr,t2s,srate,ppg_onsets)
+%     end
 
     % detrend now
     d1_norm = reshape(lns0,[size(lns0,1) * size(lns0,2), size(lns0,3)]);

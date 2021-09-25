@@ -1,8 +1,8 @@
 % Implements equations from Bianciardi et al., 2015
 % Play with parameters: 
-% 1) test our Stanfor scan parameters with different flip angles
+% 1) test our Stanford scan parameters with different flip angles
 
-% since whole brain--> Ernst angle equations would be better
+% since whole brain --> Ernst angle equations would be better
 
 %%
 

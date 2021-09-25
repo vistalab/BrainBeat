@@ -14,7 +14,7 @@ xlim(x_l)
 subplot(5,2,3), hold on
 plot(tt,squeeze(d2(27,50,:)),'g')
 plot(ppg_onsets,mean(d2(27,50,:)),'k.')    
-ylabel('Ln(S_T_E_1)'),xlabel('time(s)')
+ylabel('Ln(S_T_E_2)'),xlabel('time(s)')
 xlim(x_l)
 
 subplot(5,2,[2 4]), hold on
@@ -44,8 +44,8 @@ xlim(x_l)
 xlabel('time(s)')
 
 figName = fullfile(bbPath,'local','ME_ExampleFig');
-
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',figName)
-print('-painters','-r300','-depsc',figName)
+% 
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',figName)
+% print('-painters','-r300','-depsc',figName)
 
