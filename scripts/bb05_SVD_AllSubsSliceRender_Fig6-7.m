@@ -11,7 +11,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-ss = 6;
+ss = 5;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -220,21 +220,15 @@ brainMask = niSegm2.data>0;
 % load PPG-RCOD
 ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
 
-% Use mask:
-select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
-% PC1/PC2 weights for voxels to plot:
-pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
-
-maxPlot = 0.5;
-intensity_plot = pc12_render./maxPlot;    
-intensity_plot(intensity_plot>1) = 1;
-intensity_plot(intensity_plot<-1) = -1;
-data_colors_rgb = bbData2Colors([intensity_plot(:,1) intensity_plot(:,2)]);
-
 % get model
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 % get model timing
 load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'t_svd')
+
+% Use mask:
+select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
+% PC1/PC2 weights for voxels to plot:
+pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
 
 pc1_plot = pc1;
 pc2_plot = pc2;
@@ -250,9 +244,38 @@ tt = t_svd*ppg_cycle;
 pc_complex = complex(pc12_render(:,1),pc12_render(:,2));
 pc_angle = angle(pc_complex*(pi/10-1i)); % multiply by (1-i) to rotate 45 deg, pi/10-1i rotates a little further
 
-%% plot model of arteries, veins, ventricles
+%{
+% plot colorscale of all voxels rendered
+maxPlot = 0.5;
+intensity_plot = pc12_render./maxPlot;    
+intensity_plot(intensity_plot>1) = 1;
+intensity_plot(intensity_plot<-1) = -1;
+data_colors_rgb = bbData2Colors([intensity_plot(:,1) intensity_plot(:,2)]);
 
-Rthreshold = .5;
+figure('Position',[0 0 180 200])
+for kk = 1:size(pc12_render,1)
+    if pc_angle(kk)<0
+        subplot(2,1,1),hold on
+        x = pc12_render(kk,1);
+        y = pc12_render(kk,2);
+        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
+    else
+        subplot(2,1,2),hold on
+        x = pc12_render(kk,1);
+        y = pc12_render(kk,2);
+        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
+    end
+end
+set(gca,'FontName','Ariel')
+subplot(2,1,1),xlim([-0.5 1.8])
+subplot(2,1,2),xlim([-0.5 1.8])
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
+%}
+
+%% plot model of arteries, veins, ventricles
 
 % load segmentation
 niSegm = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
@@ -261,6 +284,7 @@ dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimit
 roiNames = dkt_table.label;
 roiCodes = dkt_table.label_nr;
 
+Rthreshold = 0.5;
 aca_dkt = dkt_table_surface.DKT_nr(dkt_table_surface.ind_arterial == 1001);
 aca_codes = roiCodes(ismember(dkt_table.DKT_nr,aca_dkt)); % find matching volume index from dkt_table
 aca_voxels = ismember(niSegm.data,aca_codes);
@@ -273,35 +297,34 @@ pca_dkt = dkt_table_surface.DKT_nr(dkt_table_surface.ind_arterial == 3001);
 pca_codes = roiCodes(ismember(dkt_table.DKT_nr,pca_dkt)); % find matching volume index from dkt_table
 pca_voxels = ismember(niSegm.data,pca_codes);
 
-% pc12_plot = [pc1Weight.data(aca_voxels) pc2Weight.data(aca_voxels)];
 maxPlot = 0.5;
 intensity_plot = [pc1Weight.data(:) pc2Weight.data(:)]./maxPlot;
 intensity_plot(intensity_plot>1) = 1;
 intensity_plot(intensity_plot<-1) = -1;
 
-figure('Position',[0 0 180 200]),hold on
+figure('Position',[0 0 150 100]),hold on
 % subplot(3,1,1),hold on
-plot_these_voxels = find(aca_voxels(:)==1 & ppgR.data(:)>=Rthreshold);
+plot_these_voxels = find(aca_voxels(:)==1 & ppgR.data(:)>=Rthreshold & pc1Weight.data(:)<0);
 mean_plot = mean(intensity_plot(plot_these_voxels,1))*pc1_plot + mean(intensity_plot(plot_these_voxels,2))*pc2_plot;
 data_colors_rgb = bbData2Colors([mean(intensity_plot(plot_these_voxels,1)) mean(intensity_plot(plot_these_voxels,2))]);
 plot(tt,mean_plot,'Color',data_colors_rgb,'LineWidth',1)
-plot_these_voxels = find(mca_voxels(:)==1 & ppgR.data(:)>=Rthreshold);
+plot_these_voxels = find(mca_voxels(:)==1 & ppgR.data(:)>=Rthreshold & pc1Weight.data(:)<0);
 mean_plot = mean(intensity_plot(plot_these_voxels,1))*pc1_plot + mean(intensity_plot(plot_these_voxels,2))*pc2_plot;
 data_colors_rgb = bbData2Colors([mean(intensity_plot(plot_these_voxels,1)) mean(intensity_plot(plot_these_voxels,2))]);
 plot(tt,mean_plot,'Color',data_colors_rgb,'LineWidth',1)
-plot_these_voxels = find(pca_voxels(:)==1 & ppgR.data(:)>=Rthreshold);
+plot_these_voxels = find(pca_voxels(:)==1 & ppgR.data(:)>=Rthreshold & pc1Weight.data(:)<0);
 mean_plot = mean(intensity_plot(plot_these_voxels,1))*pc1_plot + mean(intensity_plot(plot_these_voxels,2))*pc2_plot;
 data_colors_rgb = bbData2Colors([mean(intensity_plot(plot_these_voxels,1)) mean(intensity_plot(plot_these_voxels,2))]);
 plot(tt,mean_plot,'Color',data_colors_rgb,'LineWidth',1)
     
 % subplot(3,1,2),hold on
-plot_these_voxels = find((niSegm.data(:)==4 | niSegm.data(:)==43 ) & ppgR.data(:)>=Rthreshold);
+plot_these_voxels = find((niSegm.data(:)==4 | niSegm.data(:)==43 ) & ppgR.data(:)>=Rthreshold & pc1Weight.data(:)>0);
 mean_plot = mean(intensity_plot(plot_these_voxels,1))*pc1_plot + mean(intensity_plot(plot_these_voxels,2))*pc2_plot;
 data_colors_rgb = bbData2Colors([mean(intensity_plot(plot_these_voxels,1)) mean(intensity_plot(plot_these_voxels,2))]);
 plot(tt,mean_plot,'Color',data_colors_rgb,'LineWidth',1)
 
 % subplot(3,1,3),hold on
-plot_these_voxels = find(niSegm2.data(:)==5 & ppgR.data(:)>=Rthreshold);
+plot_these_voxels = find(niSegm2.data(:)==5 & ppgR.data(:)>=Rthreshold & pc1Weight.data(:)<0);
 mean_plot = mean(intensity_plot(plot_these_voxels,1))*pc1_plot + mean(intensity_plot(plot_these_voxels,2))*pc2_plot;
 data_colors_rgb = bbData2Colors([mean(intensity_plot(plot_these_voxels,1)) mean(intensity_plot(plot_these_voxels,2))]);
 plot(tt,mean_plot,':','Color',data_colors_rgb,'LineWidth',1)
@@ -327,34 +350,8 @@ plot([1 1],[-0.05 0.05],'Color',[0 0 0])
 plot([1.5 1.5],[-0.05 0.05],'Color',[0 0 0])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedRespRois']))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedRespRois'])) 
-
-
-%% %% plot colorscale of all voxels rendered
-figure('Position',[0 0 180 200])
-for kk = 1:size(pc12_render,1)
-    if pc_angle(kk)<0
-        subplot(2,1,1),hold on
-        x = pc12_render(kk,1);
-        y = pc12_render(kk,2);
-        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
-    else
-        subplot(2,1,2),hold on
-        x = pc12_render(kk,1);
-        y = pc12_render(kk,2);
-        plot(tt,x*pc1_plot + y*pc2_plot,'Color',data_colors_rgb(kk,:),'LineWidth',1)
-    end
-end
-set(gca,'FontName','Ariel')
-subplot(2,1,1),xlim([-0.5 1.8])
-subplot(2,1,2),xlim([-0.5 1.8])
-
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))
-
-
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedRespRoisR' int2str(Rthreshold*100)]))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_predictedRespRoisR' int2str(Rthreshold*100)])) 
 
 
 
@@ -379,6 +376,50 @@ title(['R>' num2str(Rthreshold,3)])
 %%
 %% plot with 2D red/blue colormap
 %%
+
+Rthreshold = 0.5;
+
+% get a segmentation to create a brain, CSF and vessels mask:
+% niSegm2 has labels 1:5 with names {'GM','WM','Ventricles','CSF','Veno'};
+niSegm2 = niftiRead([save_name_base '_combineSegm.nii.gz']);
+brainMask = niSegm2.data>0;
+
+% load PPG-RCOD
+ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
+
+% Use mask:
+select_voxels = find(ppgR.data>=Rthreshold & brainMask>0);
+% PC1/PC2 weights for voxels to plot:
+pc12_render = [pc1Weight.data(select_voxels) pc2Weight.data(select_voxels)];
+
+% Get indiced of selected voxels
+[ii,jj,kk] = ind2sub(size(ppgR.data),select_voxels);
+ijk_func = [ii jj kk];
+clear ii jj kk % housekeeping
+
+% Get xyz coordinates of voxels in single subject space
+xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
+
+%%%%%%%%%%%%% Render left hemisphere
+hemi_load = 'l';
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+
+gifti_name = fullfile(dDir,'derivatives','surfaces',['sub-' sub_label],['ses-' ses_label],['T1w_' hemi_load 'h_white_render.gii']);
+g = gifti(gifti_name);
+
+% get coordinates within only this hemipshere
+if ss==2 || ss==3
+    x_plot = 5; % midline off in this subject, should have acpc oriented...
+else
+    x_plot = 10;
+end
+xyz_select = xyz_anat(:,1)<x_plot;
+xx_plot = xyz_anat(xyz_select,1);
+yy_plot = xyz_anat(xyz_select,2);
+zz_plot = xyz_anat(xyz_select,3);
+
+pc12_render_sel = pc12_render(xyz_select,:);
 
 % Set maximum for dot colors:
 maxPlot = .5;
