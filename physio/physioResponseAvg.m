@@ -9,7 +9,6 @@ function [avgGatedSignal, interpWindows] = physioResponseAvg(gatedSignal, gatedT
 %    gatedTimes     - original cardiac delay time
 %
 % Optional key/val pairs
-%    TR             - in ms, default = 2000
 %    timeWindow     - in ms, how we temporally average the gated signal, default = 50
 %    timeResolution - in ms, time resolution of the interpolated gated times, default = 10
 %
@@ -27,19 +26,17 @@ function [avgGatedSignal, interpWindows] = physioResponseAvg(gatedSignal, gatedT
 p = inputParser;
 p.addRequired('gatedSignal',@ismatrix);
 p.addRequired('gatedTime',@isnumeric);
-p.addParameter('TR',2000,@(x)(isnumeric(x) && (x == round(x))));
-p.addParameter('timeWindow',50,@(x)(isnumeric(x) && (x == round(x))));
+p.addParameter('timeAvgWindow',50,@(x)(isnumeric(x) && (x == round(x))));
 p.addParameter('timeResolution',10,@(x)(isnumeric(x) && (x == round(x))));
 
 parse(p, gatedSignal, gatedTime, varargin{:});
 
-TR           = p.Results.TR;
-timeWindow   = p.Results.timeWindow;
-deltaT       = p.Results.timeResolution;  % ms, resoluion of the time grid to interpolate
+timeAvgWindow = p.Results.timeAvgWindow;
+deltaT        = p.Results.timeResolution;  % ms, resoluion of the time grid to interpolate
 
-% The user may want the signal without the averaging
-interpTimes = 0:deltaT:(TR-timeWindow);  % deltaT is the time steps
-interpWindows = interpTimes + timeWindow/2;  % center of the time grids
+totalWindow = max(max(gatedTime));
+interpTimes = 0:deltaT:(totalWindow-timeAvgWindow);  % deltaT is the time steps
+interpWindows = interpTimes + timeAvgWindow/2;  % center of the time grids
 
 % reshape gatedSignal into a 2D matrix in order to iterate over all voxels 
 nVoxels = size(gatedSignal,1);
@@ -50,7 +47,7 @@ for vv = 1:nVoxels
    
     % Calculate mean of the gated signal over the time windows
     for tt = 1:length(interpTimes)
-        signalInWindow = gatedSignal(vv,(interpTimes(tt) <= gatedTime(vv,:) & gatedTime(vv,:) < interpTimes(tt) + timeWindow));
+        signalInWindow = gatedSignal(vv,(interpTimes(tt) <= gatedTime(vv,:) & gatedTime(vv,:) < interpTimes(tt) + timeAvgWindow));
         avgGatedSignal(vv,tt) = mean(signalInWindow);
     end
     

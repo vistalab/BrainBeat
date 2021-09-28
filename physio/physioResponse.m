@@ -1,4 +1,4 @@
-function [gatedSignal, gatedTimes] = physioResponse(hbeats, tseries, varargin)
+function [gatedSignal, gatedTimes, gatedSignalNormalized, gatedTimesNormalized] = physioResponse(hbeats, tseries, varargin)
 % Gate rs time series to heart beats to look for response
 %
 % Synopsis
@@ -17,7 +17,9 @@ function [gatedSignal, gatedTimes] = physioResponse(hbeats, tseries, varargin)
 %
 % Outputs
 %    gatedSignal    - original cardiac gated signal 
-%    gatedTimes     - original cardiac delay time
+%    gatedTimes     - original cardiac gated signal delay time
+%    gatedSignalNormalized - cardiac gated signal normalized to 1s heart beat
+%    gatedTimesNormalized  - cardiac gated signal delay time normalized to 1s heart beat
 %
 % See also
 %   physioGet/Set/Create/Detrend
@@ -66,6 +68,7 @@ nBeats   = numel(hbeats);
 % Create a vector of (gatedTime, T2*) for all voxels
 gatedTimes  = zeros(nPoints,nBeats);
 gatedSignal = zeros(nPoints,nBeats);
+gatedTimesNormalized = zeros(nPoints,nBeats-1);
 
 % Relate the row/col to the NIfTI format and make sure row/col is right
 % Confirmed x is row, y is col in NIfTI. Matlab imagesc plots the figure with X/Y
@@ -99,10 +102,16 @@ for rr = 1:nPoints
             gatedTimes(rr,trig) = NaN;
             gatedSignal(rr,trig) = NaN;
         end
+        % Normalize each heart beat to 1s and find the delay of each fmri volume
+        if trig < nBeats
+            gatedTimesNormalized(rr,trig) = gatedTimes(rr,trig)/(hbeats(trig+1) - hbeats(trig)) * 1000;
+        end
         
     end
         
 end
+
+gatedSignalNormalized = gatedSignal(:,1:end-1);
 
 end
 
