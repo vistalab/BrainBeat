@@ -7,6 +7,8 @@ function [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(ni,niAnatomy,acpcXfo
 %   acpcXform: transformation matrix from nifti ijk to anatomy mm
 %
 %   varargin{1} = maximum value of the overlay.
+%   varargin{2} = make a figure or not.
+%   varargin{3} = threshold for minimum.
 %
 % Outputs:
 % imgSlice: anatomical slide

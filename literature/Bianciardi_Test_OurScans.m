@@ -67,7 +67,6 @@ for FA_ind = 1:length(FA_all)
         Mxy3(tt,FA_ind) = G * sin(FA) * M0 *...
             exp(-TE/T2s);
 
-        
     end
 end
 

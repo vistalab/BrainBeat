@@ -13,10 +13,10 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 %% Preprocess the data: PPG time series and correlation
 
-sub_labels = {'5','3'}; 
-ses_labels = {'1','1'}; 
-acq_labels = {'4mmFA48','4mmFA48'};
-run_nrs = {[2],[2]};
+sub_labels = {'1'}; 
+ses_labels = {'2'}; 
+acq_labels = {'4mmFA48'};
+run_nrs = {[2]};
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
     sub_label = sub_labels{ss};

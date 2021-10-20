@@ -34,13 +34,20 @@ function [] = bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sli
 if isempty(varargin)
     maxPlot = max(ni1.data(:));
     pointSize = 12;
+    dotTh = NaN;
 else
     if length(varargin)==1
         maxPlot = varargin{1};
         pointSize = 12;
+        dotTh = NaN;
     elseif length(varargin)==2
         maxPlot = varargin{1};
         pointSize = varargin{2};
+        dotTh = NaN;
+    elseif length(varargin)==3
+        maxPlot = varargin{1};
+        pointSize = varargin{2};
+        dotTh = varargin{3};
     end
 end
 
@@ -139,9 +146,15 @@ for k = 1:size(imgSlice1,1)
         v1 = imgSlice1(k,m);
         v2 = imgSlice2(k,m);
         
-        data_colors_rgb = bbData2Colors([v1,v2]);
-                
-        plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',pointSize)
+        if isnan(dotTh) % just plot everything
+            data_colors_rgb = bbData2Colors([v1,v2]);
+            plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',pointSize)
+        else
+            if abs(v1)>dotTh || abs(v2)>dotTh
+                data_colors_rgb = bbData2Colors([v1,v2]);
+                plot(m_y+1,k_x+1,'.','Color',data_colors_rgb,'MarkerSize',pointSize)
+            end
+        end
     end
 end
 %% to plot colorscale

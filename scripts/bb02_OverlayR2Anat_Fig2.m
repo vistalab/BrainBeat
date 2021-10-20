@@ -49,7 +49,7 @@ ppgR = niftiRead(ppgRname); % correlation with PPG
 %% Subject 1 Sagittal slices T1 + COD
 curPos = [-10,1,-20]; 
 sliceThisDim = 1; 
-imDims=[-90 -120 -120; 90 130 90];
+imDims = [-90 -120 -120; 90 130 90];
 overlayPlot = ppgR;
 cod_th = 0.8;
 

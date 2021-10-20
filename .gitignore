@@ -5,8 +5,8 @@ data/*
 
 .DS_Store
 
-.ps
-.png
-.eps
+*.ps
+*.png
+*.eps
 
 ~$*

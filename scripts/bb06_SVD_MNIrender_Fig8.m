@@ -151,16 +151,18 @@ curPos = [1 -4 17];
 
 % Plot Axial
 sliceThisDim = 3;
-curPos = [1 -4 17]; 
-% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_v2']))
+% curPos = [1 -4 17]; % did this for paper
+curPos = [1 -4 -7]; 
+bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,4,.2);
+set(gca,'CLim',[0 1])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_v2']))
 
-% Plot Coronal
-sliceThisDim = 2;
-curPos = [1 12 17]; 
-bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
-curPos = [1 -44 17]; 
+% % Plot Coronal
+% sliceThisDim = 2;
+% curPos = [1 12 17]; 
+% bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
+% curPos = [1 -44 17]; 
 % bbOverlayDotsAnat_FancyColorCircle(pc1_plot,pc2_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7,5);
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_v2']))
 
