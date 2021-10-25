@@ -12,8 +12,8 @@ function [] = bbOverlayDotsAnat_FancyColorCircle(ni1,ni2,niAnatomy,acpcXform,sli
 %   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
 %
 % This example scales the dots to the maximum specifed in maxPlot:
-%   maxPlot = .1;
-%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
+%   maxPlot = .1; pointSize = 12; dotTh = .5
+%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot,pointSize.dotTh)
 %
 % Dora Hermes, 2017 
 

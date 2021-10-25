@@ -18,9 +18,6 @@ for kk = 1:length(theseDelta)
     predY(:,kk) = y1(t_shift>-0.2*ppg_cycle & t_shift<1.2*ppg_cycle);
 end
 clear t_shift
-% check: figure,plot(fitT,predY),hold on, plot(t_sel,y1,'k')
-
-
 
 fitMe = train_set(651,t_sel>=-0.2 & t_sel<=1.2*ppg_cycle);
 
@@ -39,7 +36,6 @@ subplot(1,2,2),hold on
 
 plot(theseDelta,predY'*fitMe')
 xlabel('delta t')
-
 
 % plot best fitting curve back on
 subplot(2,2,1),hold on
@@ -60,7 +56,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-for ss = 1:length(sub_labels) % subjects/ses/acq
+for ss = 1%:length(sub_labels) % subjects/ses/acq
 
     rr = 1;% run_nr
     sub_label = sub_labels{ss};
@@ -116,54 +112,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     t_hr = linspace(min(t_sel),max(t_sel),128); % temp variable for resampling to t_sel
     y1 = interp1(t_hr,pc1,t_sel); 
     y2 = interp1(t_hr,pc2,t_sel); clear t_hr
-    
-    %%% now we do our new thing where we vary Gain and Delta time
-    theseDelta = t_sel(t_sel>-0.25*ppg_cycle & t_sel<.25*ppg_cycle);
-    fitT = t_sel(t_sel>-0.2*ppg_cycle & t_sel<1.2*ppg_cycle);% length to fit
-    predY = zeros(length(fitT),length(theseDelta)); % time x deltas
-    
-    for kk = 1:length(theseDelta)
-        t_shift = t_sel+(theseDelta(kk));
-        predY(:,kk) = y1(t_shift>-0.2*ppg_cycle & t_shift<1.2*ppg_cycle);
-    end
-    clear t_shift
-    % check: figure,plot(fitT,predY),hold on, plot(t_sel,y1,'k')
-    
-    
-
-    
-    %%%% left of here, temp code
-    
-        fitMe = train_set(651,t_sel>=-0.2 & t_sel<=1.2*ppg_cycle);
-
-        figure
-        subplot(2,2,1),hold on
-        plot(fitT,fitMe,'r','LineWidth',2)
-        xlim([-0.5 2])
-
-        subplot(2,2,3),hold on
-        plot(fitT,predY)
-        hold on
-        plot(t_sel,y1,'k','LineWidth',2)
-        xlim([-0.5 2])
-
-        subplot(1,2,2),hold on
-
-        plot(theseDelta,predY'*fitMe')
-        xlabel('delta t')
-
-
-        % plot best fitting curve back on
-        subplot(2,2,1),hold on
-        [m_val,d_ind] = max(abs(predY'*fitMe'));
-
-        if m_val>0
-            plot(fitT,predY(:,d_ind),'k:')
-        elseif m_val<0
-            plot(fitT,-predY(:,d_ind),'k:')
-        end
-        
-    %%%% left of here, temp code
 
     % get beta values on PC1 and PC2 model for every voxel in even response using regression
     disp('get beta weights')
@@ -234,26 +182,26 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni4.sto_xyz = acpcXform;
     ni4.sto_ijk = inv(acpcXform);
 
-    % name for pc1
-    pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii.gz'];
-    niftiWrite(ni1,pc1_newName)
-    
-    % name for pc2
-    pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii.gz'];
-    niftiWrite(ni2,pc2_newName)
-
-    % name for r weights
-    r_newName = [save_name_base '_space-T1w_canoPc12R.nii.gz'];
-    niftiWrite(ni3,r_newName)
-    
-    % name for rel rms error weights
-    relRmse_newName = [save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz'];
-    niftiWrite(ni4,relRmse_newName)
-
-    % zero model
-    ni4.data(:) = zero_voxels;
-    zero_model = [save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz'];
-    niftiWrite(ni4,zero_model)
+%     % name for pc1
+%     pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii.gz'];
+%     niftiWrite(ni1,pc1_newName)
+%     
+%     % name for pc2
+%     pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii.gz'];
+%     niftiWrite(ni2,pc2_newName)
+% 
+%     % name for r weights
+%     r_newName = [save_name_base '_space-T1w_canoPc12R.nii.gz'];
+%     niftiWrite(ni3,r_newName)
+%     
+%     % name for rel rms error weights
+%     relRmse_newName = [save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz'];
+%     niftiWrite(ni4,relRmse_newName)
+% 
+%     % zero model
+%     ni4.data(:) = zero_voxels;
+%     zero_model = [save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz'];
+%     niftiWrite(ni4,zero_model)
 
     clear ni1 ni2 ni3 ni4 ni5
 end
