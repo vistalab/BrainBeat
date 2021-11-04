@@ -124,45 +124,47 @@ for ss = 1:length(sub_labels)
     all_mni_cod(:,:,:,ss) = wfcod.data;
 end
 
-%% did not do this step yet
-
-% % name for pc1 & pc2
-% pc1_MNI_all = './local/allMNI_pc1w.nii.gz';
-% pc2_MNI_all = './local/allMNI_pc2w.nii.gz';
-% cod_MNI_all = './local/allMNI_cod.nii.gz';
-% 
-% % save pc1 beta weights, threshold by cod, and add across subjects
-% pc1_mni.data = all_mni_pc1;
-% cod_th = 0.1;
-% pc1_mni.data(all_mni_cod<cod_th) = 0;
-% pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1>0) = 1; % 1 to everything pc1>0
-% pc1_mni.data(all_mni_cod>=cod_th & all_mni_pc1<0) = -1; % -1 to everything pc1<0
-% pc1_mni.data = sum(pc1_mni.data,4); % sum across subjects
-% niftiWrite(pc1_mni,pc1_MNI_all);
 
 %%
-%% load all subjects and slice view and render MNI
+%% Slice view group R
 %%
-%% Renderings take a few minutes (10-15 mins) 
-
-Rthreshold = 0.5;
-these_areas = all_mni_cod>=Rthreshold;
-these_areas = sum(these_areas,4);
-select_voxels = find(these_areas>=3); % voxel>Rthreshold in more than 3 subjects
-
-% Get indiced of selected voxels
-[ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
-ijk_func = [ii jj kk];
-clear ii jj kk % housekeeping
-
-% Get mni coordinates of voxels
-xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
 
 % Slice view of beta1 (pc1) and beta2 (pc2) using fancy color circle
 niAnatomy = niftiRead(fullfile(dDir,'derivatives','mni','rsingle_subj_T1.nii'));
 imDims = [-90 -120 -70; 90 100 90];
+curPos = [1 12 4]; 
 
 % Onset for color, cod for intensity
+cod_mean = mean(all_mni_cod,4); 
+cod_mean(cod_mean<.3) = 0; 
+
+load loc_colormap
+% cm = parula(100);
+
+cod_plot = pc1_mni;
+cod_plot.data = cod_mean;
+
+set(gca,'CLim',[0 1])
+
+% plot Saggital figure
+sliceThisDim = 1;
+figure
+bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vCOD']))
+
+% Plot Axial
+sliceThisDim = 3;
+figure
+bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vCOD']))
+
+% Plot Coronal
+sliceThisDim = 2;
+figure
+bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vCOD']))
+
+%% Negative peaks: onset for color, cod for intensity
 onset_mean = mean(all_mni_onset,4); 
 slope_mean = mean(all_mni_slope,4); 
 cod_mean = mean(all_mni_cod,4); 
@@ -181,23 +183,23 @@ curPos = [1 12 4];
 
 % plot Saggital figure
 sliceThisDim = 1;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,2);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vneg2']))
 
 % Plot Axial
 sliceThisDim = 3;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,2);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vneg2']))
 
 % Plot Coronal
 sliceThisDim = 2;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,2);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vneg2']))
 
-%% Onset for color, cod for intensity
+%% Positive peaks: onset for color, cod for intensity
 onset_mean = mean(all_mni_onset,4); 
 slope_mean = mean(all_mni_slope,4); 
 cod_mean = mean(all_mni_cod,4); 
@@ -216,27 +218,43 @@ curPos = [1 12 4];
 
 % plot Saggital figure
 sliceThisDim = 1;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,3);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 % Plot Axial
 sliceThisDim = 3;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,3);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 % Plot Coronal
 sliceThisDim = 2;
-bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .5],4,.3,3);
+bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 
+
+%% 
+%%
+%% Renderings code not implemented yet - takes take a few minutes for each
 %%
 %%
-%%
-%%
+
+Rthreshold = 0.5;
+these_areas = all_mni_cod>=Rthreshold;
+these_areas = sum(these_areas,4);
+select_voxels = find(these_areas>=3); % voxel>Rthreshold in more than 3 subjects
+
+% Get indiced of selected voxels
+[ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
+ijk_func = [ii jj kk];
+clear ii jj kk % housekeeping
+
+% Get mni coordinates of voxels
+xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
+
 
 %% % load MNI cortical surfaces 
 load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))

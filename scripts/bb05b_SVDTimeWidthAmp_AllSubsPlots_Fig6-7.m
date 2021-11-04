@@ -11,7 +11,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-for ss = 5%1:6;
+for ss = 1%1:6;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -157,6 +157,8 @@ for kk = 1:size(intensity_plot,1)
 end
 title(['R>' num2str(Rthreshold,3)])
 bbViewLight(90,0)
+end
+%%
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosMed_time']))
 bbViewLight(270,0)

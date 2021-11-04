@@ -1,4 +1,4 @@
-function [] = bbOverlayDotsAnat_PickColor(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm)
+function [] = bbOverlayDotsAnat_PickColor(ni,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm,maxPlot)
 % function to plot a functional and overlay with the anatomy
 
 % Inputs: 
@@ -9,13 +9,9 @@ function [] = bbOverlayDotsAnat_PickColor(ni,niAnatomy,acpcXform,sliceThisDim,im
 % Examples:
 %
 % This example scales the dots to the maximum from the image:
-%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
+%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm)
 %
-% This example scales the dots to the maximum specifed in maxPlot:
-%   maxPlot = .1;
-%   bbOverlayDotsAnat(niOverlay,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,maxPlot)
-
-%%%% now overlay r-map with anatomy
+% %%% now overlay r-map with anatomy
 
 % % then use dtiGetSlice to get the same slice from 2 sets
 % sliceThisDim = 2;
@@ -102,13 +98,15 @@ subplot(1,5,1:4)
 % Plot background:
 imagesc(x,y,imgSlice/max(imgSlice(:)));
 colormap gray
-set(gca,'CLim',[0 .3])
+set(gca,'CLim',[0 1])
 hold on
 axis image
 
+imgSlice1 = round(length(cm)*(imgSlice1./maxPlot));
+
 % Plot dots on image
-for k=1:size(imgSlice1,1)
-    for m=1:size(imgSlice1,2)
+for k = 1:size(imgSlice1,1)
+    for m = 1:size(imgSlice1,2)
         % get plotting location
         k_x = y1(k);
         m_y = x1(m);
@@ -116,7 +114,7 @@ for k=1:size(imgSlice1,1)
         val_plot = imgSlice1(k,m);
         
         if val_plot>0
-            c_use=cm(round(val_plot),:); % fot plotting plus and min
+            c_use = cm(val_plot,:); % fot plotting plus and min
             plot(m_y+1,k_x+1,'.','Color',c_use,'MarkerSize',8)
         end        
     end
@@ -131,3 +129,4 @@ text(1.5,0,'min')
 axis off
 drawnow
 
+subplot(1,5,1:4)
