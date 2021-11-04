@@ -11,7 +11,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-for ss = 1:6;
+for ss = 5%1:6;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -67,23 +67,22 @@ acpcXform = svd_slope.qto_xyz;
 % show sagittal
 sliceThisDim = 1;
 
-% negative responses
-svd_peakt_plot =  svd_peakt; % time for color 
-svd_intensity_plot = ppgR; % R for intensity
-svd_intensity_plot.data(svd_slope.data>0) = 0; % remove positive
-bbOverlayDotsAnat_Color2D(svd_peakt_plot,svd_intensity_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .1],12,0.00001)
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_Neg_View' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
+% % negative responses
+% svd_peakt_plot =  svd_peakt; % time for color 
+% svd_intensity_plot = ppgR; % R for intensity
+% svd_intensity_plot.data(svd_slope.data>0) = 0; % remove positive
+% bbOverlayDotsAnat_Color2D(svd_peakt_plot,svd_intensity_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .1],12,0.00001)
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_Neg_View' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
+% 
+% % positive responses
+% svd_peakt_plot =  svd_peakt; % time for color 
+% svd_intensity_plot = ppgR; % R for intensity
+% svd_intensity_plot.data(svd_slope.data<0) = 0; % remove negative
+% bbOverlayDotsAnat_Color2D(svd_peakt_plot,svd_intensity_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .1],12,0.00001)
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_Pos_View' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
 
-% positive responses
-svd_peakt_plot =  svd_peakt; % time for color 
-svd_intensity_plot = ppgR; % R for intensity
-svd_intensity_plot.data(svd_slope.data<0) = 0; % remove negative
-bbOverlayDotsAnat_Color2D(svd_peakt_plot,svd_intensity_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .1],12,0.00001)
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_Pos_View' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))]))
-
-%
 % Get functional voxels to plot with rendering
 
 Rthreshold = .5;
@@ -125,7 +124,7 @@ ColorInt_render_sel = ColorInt_render(xyz_select,:); % Time, R and Slope
 
 % Set maximum for dot colors:
 maxPlotC = 50;
-maxPlotI = .5;
+maxPlotI = .8;
 
 % Get colors for selected voxels
 color_plot = ColorInt_render_sel(:,1)./maxPlotC;
@@ -135,14 +134,15 @@ intensity_plot = ColorInt_render_sel(:,2)./maxPlotI;
 intensity_plot(intensity_plot>1) = 1;
 intensity_plot(intensity_plot<-1) = -1;
 
-% Make 2D colormap: one to vary color, the other varies intensity
-cm = jet(250); cm = cm(26:225,:);
-cm = cm(end:-1:1,:);
-cm = cm+.4; cm(cm>1)=1;
+% Make 2D colormaps for blood and csf: one to vary color, the other varies intensity
+cm_csf = customcolormap([0 .45 .55 1], [.7 1 .6;.5 1 .9;.6 .1 .6;1 .9 .8], 200);
+cm_blood = customcolormap([0 .45 .55 1], [.4 1 1;.4 .4 1; 1 .4 .4;1 1 .4], 200);
 gray_vect = .2*ones(200,3);
-cm2D = zeros(100,size(cm,1),3);
+cm2D_csf = zeros(100,size(cm_csf,1),3);
+cm2D_blood = zeros(100,size(cm_blood,1),3);
 for kk = 1:100
-    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+    cm2D_csf(kk,:,:) = cm_csf*kk/100 + gray_vect*(100-kk)/100;
+    cm2D_blood(kk,:,:) = cm_blood*kk/100 + gray_vect*(100-kk)/100;
 end
 
 % plot positive responses
@@ -151,7 +151,7 @@ brainHandle = bbRenderGifti(g); hold on
 % brainHandle.FaceAlpha = .5; % Make the brain transparent
 for kk = 1:size(intensity_plot,1)
     if ColorInt_render_sel(kk,3)>0 % slope for pos/neg
-        c_use = squeeze(cm2D(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
+        c_use = squeeze(cm2D_csf(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
         plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
     end
 end
@@ -169,7 +169,7 @@ figure
 brainHandle = bbRenderGifti(g); hold on
 for kk = 1:size(intensity_plot,1)
     if ColorInt_render_sel(kk,3)<0 % slope for pos/neg
-        c_use = squeeze(cm2D(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
+        c_use = squeeze(cm2D_blood(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
         plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
     end
 end
@@ -182,8 +182,8 @@ set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegLat_time']))
 
 
-end
 
+end
 
 %%
 %%
@@ -278,7 +278,7 @@ pca_dkt = dkt_table_surface.DKT_nr(dkt_table_surface.ind_arterial == 3001);
 pca_codes = roiCodes(ismember(dkt_table.DKT_nr,pca_dkt)); % find matching volume index from dkt_table
 pca_voxels = ismember(niSegm.data,pca_codes);
 
-maxPlot = 0.5;
+maxPlot = 1;
 intensity_plot = [pc1Weight.data(:) pc2Weight.data(:)]./maxPlot;
 intensity_plot(intensity_plot>1) = 1;
 intensity_plot(intensity_plot<-1) = -1;

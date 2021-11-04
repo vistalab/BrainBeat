@@ -29,7 +29,7 @@ for kk = 1:length(sub_labels)
     
     % load cardiac gated timeseries
     ppgResp = niftiRead(fullfile(dDir,'sourcedata','slowFMRI',sub_label,'brainbeats','cardiac_gated_analysis',...
-        ['avgGatedSignalNormalized.nii.gz']));
+        ['avgGatedSignalNormalizedPercentage.nii.gz']));
 
     % load times
     t = load(fullfile(dDir,'sourcedata','slowFMRI',sub_label,'brainbeats','cardiac_gated_analysis',...
@@ -45,7 +45,7 @@ for kk = 1:length(sub_labels)
     respMat = reshape(ppgResp.data,[size(ppgResp.data,1) * size(ppgResp.data,2) * size(ppgResp.data,3)],size(ppgResp.data,4));
 
     for ll = 1:length(roiNames)
-        avResp_all(:,ll,kk) = mean(respMat(ismember(segmVect,roiCodes(ll)),:),1);
+        avResp_all(:,ll,kk) = median(respMat(ismember(segmVect,roiCodes(ll)),:),1);
     end
     
 end
@@ -62,12 +62,12 @@ n_subs = size(avResp_all,3);
 figure('Position',[0 0 150 280])
 
 subplot(2,1,1),hold on
-this_area = 31; % insula
+this_area = 62; % insula
 % title(roiNames{this_area});
 up_ci = mean(avResp_all(:,this_area,:),3) + 2*std(avResp_all(:,this_area,:),[],3)/sqrt(n_subs);
 low_ci = mean(avResp_all(:,this_area,:),3) - 2*std(avResp_all(:,this_area,:),[],3)/sqrt(n_subs);
-fill([t_match t_match(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot(t_match,100*squeeze(avResp_all(:,this_area,:)),'Color',[.5 .5 .5],'LineWidth',1)
+fill([t_match t_match(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+plot(t_match,squeeze(avResp_all(:,this_area,:)),'Color',[.5 .5 .5],'LineWidth',1)
 xlim([-0.5 1.5])
 
 subplot(2,1,2),hold on
@@ -75,14 +75,14 @@ subplot(2,1,2),hold on
 thisSignal = (squeeze(avResp_all(:,74,:))+squeeze(avResp_all(:,89,:)))/2;
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_match t_match(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+fill([t_match t_match(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
 % average left and lateral ventricles 74 89
-plot(t_match,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+plot(t_match,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([-0.5 1.5])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_FlowfMRIventricle'])
-print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_FlowfMRIventricle'])
+print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_slowfMRIventricle'])
+print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_slowfMRIventricle'])
 
 
 %%
@@ -148,7 +148,7 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_match,100*mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_match,mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
 xlim([-.5 1.5])
 
@@ -161,7 +161,7 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_match,100*mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_match,mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
 xlim([-.5 1.5])
 
@@ -174,7 +174,7 @@ for kk = 1:length(ind_art)
     these_colors = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    plot(t_match,100*mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
+    plot(t_match,mean(avResp_all(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
 xlim([-.5 1.5])
 xlabel('heartbeat cycle')
@@ -200,7 +200,7 @@ for kk = 1:length(ind_art)
     these_colors1(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art1_amp(kk,:,:) = 100*squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
+    art1_amp(kk,:,:) = squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -223,7 +223,7 @@ for kk = 1:length(ind_art)
     these_colors2(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art2_amp(kk,:,:) = 100*squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
+    art2_amp(kk,:,:) = squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -245,7 +245,7 @@ for kk = 1:length(ind_art)
     these_colors3(kk,:) = [dkt_table_surface.r1(dkt_surface_index(1)) dkt_table_surface.g1(dkt_surface_index(1)) dkt_table_surface.b1(dkt_surface_index(1))];
     % find matching volume index from dkt_table
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
-    art3_amp(kk,:,:) = 100*squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
+    art3_amp(kk,:,:) = squeeze(mean(avResp_all(:,these_responses,:),2))'; % average across multiple areas 
 end
 
 for kk = 1:length(ind_art) 
@@ -256,7 +256,7 @@ end
 plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig5C_ArteryAvgs_bar'])
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5C_ArteryAvgs_bar'])
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig5C_ArteryAvgs_bar_slowfMRI'])
+print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig5C_ArteryAvgs_bar_slowfMRI'])
 

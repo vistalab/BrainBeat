@@ -2,9 +2,17 @@ function [] = bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,
 % function to plot a functional and overlay with the anatomy
 
 % Inputs: 
-%   ni: functional scan
-%   niAnatomy: anatomical scan
-%   acpcXform: transformation matrix from nifti ijk to anatomy mm
+%     ni: functional scan
+%     niAnatomy: anatomical scan
+%     acpcXform: transformation matrix from nifti ijk to anatomy mm
+%     sliceThisDim
+%     imDims
+%     curPos
+% Optional inputs (varargin)
+%     maxPlotC: default max(niColor.data(:))
+%     maxPlotI: default max(niIntensity.data(:))
+%     dotTh: default NaN
+%     colormap index: default 1 (red/blue), also option is 2 and 3
 % 
 % Examples:
 %
@@ -31,26 +39,59 @@ function [] = bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,
 %     curPos = [1,4,38];
 % end
 
+% make 2D colormaps: one to vary color, the other varies intensity
+cm = jet(250); cm = cm(26:225,:);
+cm = cm(end:-1:1,:);
+cm = cm+.4; cm(cm>1)=1;
+cm_csf = customcolormap([0 .45 .55 1], [.7 1 .6;.5 1 .9;.6 .1 .6;1 .9 .8], 200);
+cm_blood = customcolormap([0 .45 .55 1], [.4 1 1;.4 .4 1; 1 .4 .4;1 1 .4], 200);
+gray_vect = .2*ones(200,3);
+cm2D_csf = zeros(100,size(cm_csf,1),3);
+cm2D_blood = zeros(100,size(cm_blood,1),3);
+cm2D_basic = zeros(100,size(cm,1),3);
+for kk = 1:100
+    cm2D_csf(kk,:,:) = cm_csf*kk/100 + gray_vect*(100-kk)/100;
+    cm2D_blood(kk,:,:) = cm_blood*kk/100 + gray_vect*(100-kk)/100;
+    cm2D_basic(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
+end
+
 if isempty(varargin)
     maxPlotC = max(niColor.data(:));
     maxPlotI = max(niIntensity.data(:));
+    pointSize = 4;
     dotTh = NaN;
+    cm2D = cm2D_basic;
 else
     if length(varargin)==1
         maxPlotC = varargin{1}(1);
         maxPlotI = varargin{1}(2);   
         pointSize = 12;
         dotTh = NaN;
+        cm2D = cm2D_basic;
     elseif length(varargin)==2
         maxPlotC = varargin{1}(1);
         maxPlotI = varargin{1}(2);   
         pointSize = varargin{2};
         dotTh = NaN;
+        cm2D = cm2D_basic;
     elseif length(varargin)==3
         maxPlotC = varargin{1}(1);
         maxPlotI = varargin{1}(2);   
         pointSize = varargin{2};
         dotTh = varargin{3};
+        cm2D = cm2D_basic;
+    elseif length(varargin)==4
+        maxPlotC = varargin{1}(1);
+        maxPlotI = varargin{1}(2);   
+        pointSize = varargin{2};
+        dotTh = varargin{3};
+        if varargin{4}==1
+            cm2D = cm2D_basic;
+        elseif varargin{4}==2
+            cm2D = cm2D_blood;
+        elseif varargin{4}==3
+            cm2D = cm2D_csf;
+        end
     end
 end
 
@@ -128,16 +169,6 @@ end
 
 % now plot stuff:
 figure('Position',[0 0 600 500])
-
-% make 2D colormap: one to vary color, the other varies intensity
-cm = jet(250); cm = cm(26:225,:);
-cm = cm(end:-1:1,:);
-cm = cm+.4; cm(cm>1)=1;
-gray_vect = .2*ones(200,3);
-cm2D = zeros(100,size(cm,1),3);
-for kk = 1:100
-    cm2D(kk,:,:) = cm*kk/100 + gray_vect*(100-kk)/100;
-end
     
 colormap gray 
 
