@@ -11,7 +11,7 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
-for ss = 1%1:6;
+for ss = 1:6;
 rr = 1;% run_nr
 sub_label = sub_labels{ss};
 ses_label = ses_labels{ss};
@@ -124,15 +124,13 @@ ColorInt_render_sel = ColorInt_render(xyz_select,:); % Time, R and Slope
 
 % Set maximum for dot colors:
 maxPlotC = 50;
-maxPlotI = .8;
+maxPlotI = Rthreshold; % always plot at max color
 
 % Get colors for selected voxels
 color_plot = ColorInt_render_sel(:,1)./maxPlotC;
 color_plot(color_plot>1) = 1;
 color_plot(color_plot<-1) = -1;
-intensity_plot = ColorInt_render_sel(:,2)./maxPlotI;    
-intensity_plot(intensity_plot>1) = 1;
-intensity_plot(intensity_plot<-1) = -1;
+intensity_plot = ColorInt_render_sel(:,2);%./maxPlotI; 
 
 % Make 2D colormaps for blood and csf: one to vary color, the other varies intensity
 cm_csf = customcolormap([0 .45 .55 1], [.7 1 .6;.5 1 .9;.6 .1 .6;1 .9 .8], 200);
@@ -151,19 +149,18 @@ brainHandle = bbRenderGifti(g); hold on
 % brainHandle.FaceAlpha = .5; % Make the brain transparent
 for kk = 1:size(intensity_plot,1)
     if ColorInt_render_sel(kk,3)>0 % slope for pos/neg
-        c_use = squeeze(cm2D_csf(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
-        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
+        c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
+        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
     end
 end
 title(['R>' num2str(Rthreshold,3)])
 bbViewLight(90,0)
-end
-%%
+
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosMed_time']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosMed_time']))
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosLat_time']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosLat_time']))
 
 
 % plot negative responses
@@ -171,21 +168,20 @@ figure
 brainHandle = bbRenderGifti(g); hold on
 for kk = 1:size(intensity_plot,1)
     if ColorInt_render_sel(kk,3)<0 % slope for pos/neg
-        c_use = squeeze(cm2D_blood(ceil(intensity_plot(kk)*99+1),ceil(color_plot(kk)*99.5)+100,:));
-        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',20,'Color',c_use)
+        c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
+        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
     end
 end
 title(['R>' num2str(Rthreshold,3)])
 bbViewLight(90,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegMed_time']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegMed_time']))
 bbViewLight(270,0)
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegLat_time']))
-
-
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegLat_time']))
 
 end
+
 
 %%
 %%

@@ -13,7 +13,8 @@ TE = 0.0116;
 % [WM GM CSF arterial_blood veinous_blood]
 % T2s_all = [0.021 0.015 2 .049 0.015]; % T2s from Weiskopf 2013 Frontiers in Neuroscience, with Viesmann
 T2s_all = [0.021 0.015 .300 .049 0.015]; % T2s from Weiskopf 2013 Frontiers in Neuroscience, with Viesmann
-TR = 0.250;
+% TR = 0.250;
+TR = 0.050;
 
 V = 0:0.01:11; % cm/s
 Vc = 0.4/TR; % cm/s ST/TR (ST = slice thickness) speed at which there is complete inflow of new spins
