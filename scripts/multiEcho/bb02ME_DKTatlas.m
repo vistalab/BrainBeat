@@ -121,7 +121,7 @@ end
 
 n_subs = size(avResp_hr_lns0,3);
 
-figure('Position',[0 0 300 400])
+figure('Position',[0 0 600 400])
 
 subplot(4,2,1),hold on
 this_area = 1; % caudal anterior cingulate 1 
@@ -129,25 +129,29 @@ thisSignal = avResp_hr_lns0(:,this_area,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
 % fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+% plot(t_hr,(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
+title(roiNames{this_area});
 
 subplot(4,2,2),hold on
 thisSignal = avResp_hr_t2s(:,this_area,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
 % fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+% plot(t_hr,(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
-% title(roiNames{this_area});
+
 
 subplot(4,2,3),hold on
-% title('Lateral ventricles')
+title('Lateral ventricles')
 % average left and lateral ventricles 74 89
 thisSignal = (squeeze(avResp_hr_lns0(:,74,:))+squeeze(avResp_hr_lns0(:,89,:)))/2;
 up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
 low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
 % fill([t_hr t_hr(end:-1:1)],[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+% plot(t_hr,(thisSignal));%,'Color',[.5 .5 .5],'LineWidth',1)
 plot(t_hr,zscore(thisSignal));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
@@ -161,7 +165,7 @@ xlim([t_hr(1) t_hr(end)])
 
 
 subplot(4,2,5),hold on
-% title('Veins')
+title('Veins')
 thisSignal = avRespVeno_hr_lns0(:,1,:);
 up_ci = mean(thisSignal,3) + 2*std(thisSignal,[],3)/sqrt(n_subs);
 low_ci = mean(thisSignal,3) - 2*std(thisSignal,[],3)/sqrt(n_subs);
@@ -179,15 +183,16 @@ plot(t_hr,zscore(squeeze(thisSignal)));%,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
 %%
-subplot(4,1,4),hold on
-% title('PPG')
-thisSignal = ppgCurve_hr;
-thisSignal(isnan(thisSignal)) = 0;
-thisSignal = zscore(squeeze(thisSignal));
-up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
-low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
-fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
-plot([0 0],[-1 3],'Color',[.7 .7 .7])
-plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
-xlim([t_hr(1) t_hr(end)])
-
+for ll = 7:8
+    subplot(4,2,ll),hold on
+    % title('PPG')
+    thisSignal = ppgCurve_hr;
+    thisSignal(isnan(thisSignal)) = 0;
+    thisSignal = zscore(squeeze(thisSignal));
+    up_ci = mean(thisSignal,2) + 2*std(thisSignal,[],2)/sqrt(n_subs);
+    low_ci = mean(thisSignal,2) - 2*std(thisSignal,[],2)/sqrt(n_subs);
+    fill([t_hr t_hr(end:-1:1)],100*[up_ci; low_ci(end:-1:1)],[0 0 0],'EdgeColor',[0 0 0])
+    plot([0 0],[-1 3],'Color',[.7 .7 .7])
+    plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
+    xlim([t_hr(1) t_hr(end)])
+end
