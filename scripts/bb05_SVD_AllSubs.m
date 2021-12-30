@@ -18,6 +18,7 @@ acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1]};
 
 all_pcs = zeros(length(sub_labels),2,128);
+all_varExplained = zeros(length(sub_labels),20);
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
 
@@ -36,19 +37,26 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
 
     all_pcs(ss,1,:) = y1;
     all_pcs(ss,2,:) = y2;
+%     all_pcs(ss,3,:) = y3;
+
+    all_varExplained(ss,:) = var_explained(1:20); % just look at explained var from first 20 
 end
 
 t_svd = linspace(-.5,1.5,128);
 
 % plot them:
 figure('Position',[0 0 300 250])
-subplot(2,1,1),hold on
+subplot(2,2,1),hold on
 plot(t_svd,squeeze(all_pcs(:,1,:)),'Color',[0 0 .5],'LineWidth',1)
 plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',1)
-% plot(t_svd,squeeze(all_pcs(:,3,:)),'Color',[1 .5 1],'LineWidth',2)
+% plot(t_svd,squeeze(all_pcs(:,3,:)),'Color',[0 .7 .1],'LineWidth',1)
 title('heartbeat components for 6 subjects')
 xlim([t_svd(1) t_svd(end)])
 set(gca,'XTick',[0 1],'YTick',[-0.2 0 0.2])
+
+subplot(2,2,2),hold on
+plot(all_varExplained')
+ylim([0 1])
 
 % reshape into matrix size subject/scan*2 X time
 all_pcs_temp = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
@@ -83,12 +91,12 @@ xlim([0 7])
 ylabel('|P(f)|')
 xlabel('frequency (Hz)')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-
-% save them:
-save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+% 
+% % save them:
+% save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
 %% Combinations of PC1 and PC2 with color scale:
 
@@ -139,13 +147,12 @@ for kk = 1:length(sub_labels)
     % reshape into matrix size subject/scan*2 X time
     Nmin1_pcs = reshape(this_pcset,size(this_pcset,1)*size(this_pcset,2),size(this_pcset,3))';
 
-    % do the pca on the first two pca's
+    % do the svd on pc1 and pc2
     [u,s,v] = svd(Nmin1_pcs);
     % s = diag(s);
     temp = u*s;
     pc1  = temp(:,1);
     pc2  = temp(:,2);
-%     pc3  = temp(:,3);
     
     % save them:
     save(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{kk}]),'pc1','pc2','t_svd')

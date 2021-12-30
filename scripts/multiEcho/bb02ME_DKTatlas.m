@@ -15,7 +15,7 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 sub_labels = {'4','5','1'}; 
 ses_labels = {'1','1','2'}; 
 acq_labels = {'ME','ME','ME'};
-run_nrs = {[1],[1],[1]}; % there are 2, 2, 3 runs for these subjects/sessions
+run_nrs = {[2],[2],[2]}; % there are 2, 2, 3 runs for these subjects/sessions
 
 dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});

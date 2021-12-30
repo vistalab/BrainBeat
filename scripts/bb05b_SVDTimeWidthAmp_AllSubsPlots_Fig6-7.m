@@ -121,12 +121,13 @@ for ss = 1:6;
     else
         x_plot = 10;
     end
-    xyz_select = xyz_anat(:,1)<x_plot;
+    xyz_select = xyz_anat(:,1)<x_plot; % only left hemisphere
     xx_plot = xyz_anat(xyz_select,1);
     yy_plot = xyz_anat(xyz_select,2);
     zz_plot = xyz_anat(xyz_select,3);
 
-    ColorInt_render_sel = ColorInt_render(xyz_select,:); % Time, R, Slope, PC1, PC2
+    % Time, R, Slope, PC1, PC2, xyz_select gets left hemisphere
+    ColorInt_render_sel = ColorInt_render(xyz_select,:); 
 
     % Set maximum for dot colors:
     maxPlotC = 50;
@@ -228,13 +229,7 @@ end
 %%
 %%
 %%
-%% Plot predicted responses for all subjects as function of time(s)
-% this can be used as a colorscale to go with renderings
-
-
-
-%%
-%% left off here
+%% Rest is old code:
 %%
 %% plot model of arteries, veins, ventricles
 

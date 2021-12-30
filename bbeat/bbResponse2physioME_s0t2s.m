@@ -1,6 +1,6 @@
-function [response_matrix1,t,response_matrix_odd1,response_matrix_even1,response_matrix_std1,...
-    response_matrix2,response_matrix_odd2,response_matrix_even2,response_matrix_std2] = ...
-        bbResponse2physioME(ni1,ni2,slices,varargin)
+function [response_matrixS0,t,response_matrix_oddS0,response_matrix_evenS0,response_matrix_stdS0,...
+    response_matrixT2s,response_matrix_oddT2s,response_matrix_evenT2s,response_matrix_stdT2s] = ...
+        bbResponse2physioME_s0t2s(ni1,ni2,slices,varargin)
 %
 % function to get brain response after the peak of a heartbeat
 % meant to deal with multi echo (ME) data
@@ -62,16 +62,16 @@ t_vox = min(timing(:)):step_size:(max(timing(:)+step_size)); % maximal timing ac
 ppg_onsets = ppg_onsets((ppg_onsets-epoch_pre)>1); % get rid of early ones, and the first scans
 ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of late ones
 
-% initiate output matrices to fill for s0 and T2*
-response_matrix1 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_std1 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_odd1 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_even1 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+% initiate output matrices to fill for TE1, TE2, S0 and T2*
+response_matrixS0 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_stdS0 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_oddS0 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_evenS0 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
 
-response_matrix2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_std2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_odd2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
-response_matrix_even2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrixT2s = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_stdT2s = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_oddT2s = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
+response_matrix_evenT2s = single(zeros(size(ni1.data,1),size(ni1.data,2),length(slices),length(t)));
 
 for s = 1:length(slices)
     
@@ -99,34 +99,35 @@ for s = 1:length(slices)
 %     end
 
     % detrend now
-    d1_norm = reshape(lns0,[size(lns0,1) * size(lns0,2), size(lns0,3)]);
-    d2_norm = reshape(t2s,[size(t2s,1) * size(t2s,2), size(t2s,3)]);
-    points_use = 4:size(d1_norm,2); % do not use the first couple of scans
-    for kk = 1:size(d1_norm,1)
+    lns0_norm = reshape(lns0,[size(lns0,1) * size(lns0,2), size(lns0,3)]);
+    t2s_norm = reshape(t2s,[size(t2s,1) * size(t2s,2), size(t2s,3)]);
+    points_use = 4:size(lns0_norm,2); % do not use the first couple of scans
+    for kk = 1:size(lns0_norm,1)
         % do not use first scans:
         x = points_use;
         
         % S0
-        y = d1_norm(kk,points_use);       
+        y = lns0_norm(kk,points_use);       
         % fit line
         p = polyfit(x,y,1);           
         % linear detrend only, keep mean
-        d1_norm(kk,:) = d1_norm(kk,:) - (p(1)*[1:size(d1_norm,2)]);
+        lns0_norm(kk,:) = lns0_norm(kk,:) - (p(1)*[1:size(lns0_norm,2)]);
 
         % T2*
-        y = d2_norm(kk,points_use);       
+        y = t2s_norm(kk,points_use);       
         % detrend
         p = polyfit(x,y,1);    
         % linear detrend only, keep mean
-        d2_norm(kk,:) = d2_norm(kk,:) - (p(1)*[1:size(d2_norm,2)]);
+        t2s_norm(kk,:) = t2s_norm(kk,:) - (p(1)*[1:size(t2s_norm,2)]);
+        
     end
     
 %     % we could exponentiate to get S0
 %     d1_norm = exp(d1_norm);
     
-    d1 = reshape(d1_norm,[size(d1,1), size(d1,2), size(d1,3)]);
-    d2 = reshape(d2_norm,[size(d2,1), size(d2,2), size(d2,3)]);
-    clear d1_norm d2_norm
+    d1 = reshape(lns0_norm,[size(d1,1), size(d1,2), size(d1,3)]);
+    d2 = reshape(t2s_norm,[size(d2,1), size(d2,2), size(d2,3)]);
+    clear lns0_norm t2s_norm
 
     % create a set of NaNs at the upsampled time rate 
     d1_up = single(NaN(size(d1,1),size(d1,2),length(t_vox))); % initiate with NaNs
@@ -141,29 +142,28 @@ for s = 1:length(slices)
     d2_up(:,:,ismember(round(t_vox,3),round(t_sli,3))) = d2;
 
     % temporary response matrix for 1 slice: voxel X voxel X time X PPGonset
-    temp_response_matrix1 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(t),length(ppg_onsets)));
-    temp_response_matrix2 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(t),length(ppg_onsets)));
+    temp_response_matrixS0 = single(zeros(size(ni1.data,1),size(ni1.data,2),length(t),length(ppg_onsets)));
+    temp_response_matrixT2s = single(zeros(size(ni1.data,1),size(ni1.data,2),length(t),length(ppg_onsets)));
     % run through all ppg onsets
     for kk = 1:length(ppg_onsets)
         [~,ppg_find] = min(abs(t_vox-ppg_onsets(kk)));
-        temp_response_matrix1(:,:,:,kk) = d1_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
-        temp_response_matrix2(:,:,:,kk) = d2_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
+        temp_response_matrixS0(:,:,:,kk) = d1_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
+        temp_response_matrixT2s(:,:,:,kk) = d2_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
     
     clear d_up d
     
     % output S0:
-    response_matrix1(:,:,s,:) = nanmean(temp_response_matrix1,4);
-    response_matrix_std1(:,:,s,:) = nanstd(temp_response_matrix1,[],4);
-    response_matrix_odd1(:,:,s,:) = nanmean(temp_response_matrix1(:,:,:,1:2:end),4);
-    response_matrix_even1(:,:,s,:) = nanmean(temp_response_matrix1(:,:,:,2:2:end),4);
+    response_matrixS0(:,:,s,:) = nanmean(temp_response_matrixS0,4);
+    response_matrix_stdS0(:,:,s,:) = nanstd(temp_response_matrixS0,[],4);
+    response_matrix_oddS0(:,:,s,:) = nanmean(temp_response_matrixS0(:,:,:,1:2:end),4);
+    response_matrix_evenS0(:,:,s,:) = nanmean(temp_response_matrixS0(:,:,:,2:2:end),4);
     
     % output T2s:
-    response_matrix2(:,:,s,:) = nanmean(temp_response_matrix2,4);
-    response_matrix_std2(:,:,s,:) = nanstd(temp_response_matrix2,[],4);
-    response_matrix_odd2(:,:,s,:) = nanmean(temp_response_matrix2(:,:,:,1:2:end),4);
-    response_matrix_even2(:,:,s,:) = nanmean(temp_response_matrix2(:,:,:,2:2:end),4);
-    
+    response_matrixT2s(:,:,s,:) = nanmean(temp_response_matrixT2s,4);
+    response_matrix_stdT2s(:,:,s,:) = nanstd(temp_response_matrixT2s,[],4);
+    response_matrix_oddT2s(:,:,s,:) = nanmean(temp_response_matrixT2s(:,:,:,1:2:end),4);
+    response_matrix_evenT2s(:,:,s,:) = nanmean(temp_response_matrixT2s(:,:,:,2:2:end),4);
 
     clear temp_response_matrix
 end

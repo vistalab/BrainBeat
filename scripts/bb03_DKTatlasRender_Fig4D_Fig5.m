@@ -85,7 +85,7 @@ for ss = 1:length(sub_labels)
     avRespVeno = mean(respMat(ismember(segm2Vect,5),:),1)';
 
     % resample avResp to ppg cycle
-    ppg_cycle   = 1./physioGet(physio,'PPGrate');
+    ppg_cycle = 1./physioGet(physio,'PPGrate');
     avResp_sel = avResp(ppgT.t>=(0-(.5*ppg_cycle)) & ppgT.t<=1.5*ppg_cycle,:);
     avRespVeno_sel = avRespVeno(ppgT.t>=(0-(.5*ppg_cycle)) & ppgT.t<=1.5*ppg_cycle,:);
     t_sel = ppgT.t(ppgT.t>=(0-(.5*ppg_cycle)) & ppgT.t<=1.5*ppg_cycle);

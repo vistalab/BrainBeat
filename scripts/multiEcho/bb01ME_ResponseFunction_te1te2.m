@@ -19,9 +19,9 @@ dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 sub_labels = {'4','5','1'}; 
 ses_labels = {'1','1','2'}; 
 acq_labels = {'ME','ME','ME'};
-run_nrs = {[1],[2],[2]}; % there are a total of 2, 2, 3 runs for these subjects/sessions
+run_nrs = {[2],[2],[2]}; % there are a total of 2, 2, 3 runs for these subjects/sessions
 
-for ss = 1%:length(sub_labels) % subjects/ses/acq
+for ss = 2:3%:length(sub_labels) % subjects/ses/acq
     
     sub_label = sub_labels{ss};
     ses_label = ses_labels{ss};
@@ -46,50 +46,50 @@ for ss = 1%:length(sub_labels) % subjects/ses/acq
         niTE2 = niftiRead(fmri2_BIDSname);
 
         % compute the PPG triggered response matrix for the whole brain and save as a nifti:
-        [response_matrixS0,t,response_matrix_oddS0,response_matrix_evenS0,response_matrix_stdS0,...
-            response_matrixT2s,response_matrix_oddT2s,response_matrix_evenT2s,response_matrix_stdT2s] ...
-            = bbResponse2physioME(niTE1,niTE2);
-
+        [response_matrixTE1,t,response_matrix_oddTE1,response_matrix_evenTE1,response_matrix_stdTE1,...
+        response_matrixTE2,response_matrix_oddTE2,response_matrix_evenTE2,response_matrix_stdTE2] =...
+            bbResponse2physioME_te1te2(niTE1,niTE2);
+    
         % safe time T:
-        save(fullfile(save_dir,[save_name_base '_PPGtrigResponseT']),'t')
+        save(fullfile(save_dir,[save_name_base '_PPGtrigResponseTE12']),'t')
 
         % save average of all heartbeats:
-        ni1 = niTE1; ni1.data = response_matrixS0;
-        ni1.fname = [save_name_base '_PPGtrigResponse_lnS0.nii.gz'];
+        ni1 = niTE1; ni1.data = response_matrixTE1;
+        ni1.fname = [save_name_base '_PPGtrigResponse_TE1.nii.gz'];
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
-        ni2 = niTE2; ni2.data = response_matrixT2s;
-        ni2.fname = [save_name_base '_PPGtrigResponse_T2s.nii.gz'];
+        ni2 = niTE2; ni2.data = response_matrixTE2;
+        ni2.fname = [save_name_base '_PPGtrigResponse_TE2.nii.gz'];
         niftiWrite(ni2,fullfile(save_dir,ni2.fname))
         clear ni2
 
         % save standard error of all heartbeats:
-        ni1 = niTE1; ni1.data = response_matrix_stdS0;
-        ni1.fname = [save_name_base '_PPGtrigResponse_std_lnS0.nii.gz'];
+        ni1 = niTE1; ni1.data = response_matrix_stdTE1;
+        ni1.fname = [save_name_base '_PPGtrigResponse_std_TE1.nii.gz'];
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
-        ni2 = niTE2; ni2.data = response_matrix_stdT2s;
-        ni2.fname = [save_name_base '_PPGtrigResponse_std_T2s.nii.gz'];
+        ni2 = niTE2; ni2.data = response_matrix_stdTE2;
+        ni2.fname = [save_name_base '_PPGtrigResponse_std_TE2.nii.gz'];
         niftiWrite(ni2,fullfile(save_dir,ni2.fname))
         clear ni2
         
         % save average of all odd heartbeats:
-        ni1 = niTE1; ni1.data = response_matrix_oddS0;
-        ni1.fname = [save_name_base '_PPGtrigResponse_odd_lnS0.nii.gz'];
+        ni1 = niTE1; ni1.data = response_matrix_oddTE1;
+        ni1.fname = [save_name_base '_PPGtrigResponse_odd_TE1.nii.gz'];
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
-        ni2 = niTE2; ni2.data = response_matrix_oddT2s;
-        ni2.fname = [save_name_base '_PPGtrigResponse_odd_T2s.nii.gz'];
+        ni2 = niTE2; ni2.data = response_matrix_oddTE2;
+        ni2.fname = [save_name_base '_PPGtrigResponse_odd_TE2.nii.gz'];
         niftiWrite(ni2,fullfile(save_dir,ni2.fname))
         clear ni2
         
         % save average of all even heartbeats:
-        ni1 = niTE1; ni1.data = response_matrix_evenS0;
-        ni1.fname = [save_name_base '_PPGtrigResponse_even_lnS0.nii.gz'];
+        ni1 = niTE1; ni1.data = response_matrix_evenTE1;
+        ni1.fname = [save_name_base '_PPGtrigResponse_even_TE1.nii.gz'];
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
-        ni2 = niTE2; ni2.data = response_matrix_evenT2s;
-        ni2.fname = [save_name_base '_PPGtrigResponse_even_T2s.nii.gz'];
+        ni2 = niTE2; ni2.data = response_matrix_evenTE2;
+        ni2.fname = [save_name_base '_PPGtrigResponse_even_TE2.nii.gz'];
         niftiWrite(ni2,fullfile(save_dir,ni2.fname))
         clear ni2
     end
