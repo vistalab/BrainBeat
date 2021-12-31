@@ -99,7 +99,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     end
     peak_t_perc = round(100*peak_t); %ranging -50:+50
 
-    % calculate FWHM - error, negative for arteries
+    % calculate FWHM 
     peak_FWHM = NaN(size(these_slopes));
     for kk = 1:size(model_v,1)
         clear t_ind

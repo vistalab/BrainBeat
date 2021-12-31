@@ -1,6 +1,8 @@
 
-% 1: We take the principle components, resampled to the heartrate for all
-% subjects.
+% 0: We did the SVD in bb05_SVD.m for all individual subjects, here we
+%   test across subjects.
+% 1: We take the individual subject principle components, resampled to the
+% heartrate for all subjects.
 % 2: Do a PCA to see how they replicate across subjects.
 % 3: Run through the data to test how well each voxel is predicted by a
 % combination of these two components.
@@ -34,49 +36,50 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
 
     % load first two principle components for these subjects and scans
     load([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
-
+    % var explained is in training set, all_pred_acc is in testing set
+    
     all_pcs(ss,1,:) = y1;
     all_pcs(ss,2,:) = y2;
-%     all_pcs(ss,3,:) = y3;
+    all_pcs(ss,3,:) = y3;
 
-    all_varExplained(ss,:) = var_explained(1:20); % just look at explained var from first 20 
+    all_varExplained(ss,:) = all_pred_acc(1:20); % just look at explained var from first 20 
 end
 
 t_svd = linspace(-.5,1.5,128);
 
-% plot them:
-figure('Position',[0 0 300 250])
-subplot(2,2,1),hold on
-plot(t_svd,squeeze(all_pcs(:,1,:)),'Color',[0 0 .5],'LineWidth',1)
-plot(t_svd,squeeze(all_pcs(:,2,:)),'Color',[1 .5 0],'LineWidth',1)
-% plot(t_svd,squeeze(all_pcs(:,3,:)),'Color',[0 .7 .1],'LineWidth',1)
-title('heartbeat components for 6 subjects')
-xlim([t_svd(1) t_svd(end)])
-set(gca,'XTick',[0 1],'YTick',[-0.2 0 0.2])
-
-subplot(2,2,2),hold on
-plot(all_varExplained')
-ylim([0 1])
-
 % reshape into matrix size subject/scan*2 X time
 all_pcs_temp = reshape(all_pcs,size(all_pcs,1)*size(all_pcs,2),size(all_pcs,3))';
 
-% do the pca on the first two pca's
+% calculate the canonical PCs on the first two PCs
 [u,s,v] = svd(all_pcs_temp);
-% s = diag(s);
 temp = u*s;
 pc1  = temp(:,1);
 pc2  = temp(:,2);
 
+% plot individual subject PCs:
+figure('Position',[0 0 300 250])
+subplot(2,2,1),hold on
+plot(t_svd,squeeze(all_pcs(:,1,:)),'-','LineWidth',1)
+plot(t_svd,squeeze(all_pcs(:,2,:)),'--','LineWidth',1)
+title('PCs for 5 subjects')
+xlim([t_svd(1) t_svd(end)])
+set(gca,'XTick',[0 1],'YTick',[-0.2 0 0.2]),ylim([-.4 .5])
+
+% plot individual subject PCs explained variance in test set
 subplot(2,2,3),hold on
-plot(t_svd,pc1,'Color',[0 0 .5],'LineWidth',2)
-plot(t_svd,pc2,'Color',[1 .5 0],'LineWidth',2)
+plot(all_varExplained','LineWidth',1)
+xlim([0 20]),ylim([0 1]),set(gca,'XTick',[0:2:20],'YTick',[0 .25 .5 .75 1])
+
+% plot canonical PCs
+subplot(2,2,2),hold on
+plot(t_svd,pc1,'k','LineWidth',1)
+plot(t_svd,pc2,'k--','LineWidth',1)
 xlim([t_svd(1) t_svd(end)])
 xlabel('time (heartbeat cycles)')
-title('canonical heartbeat components')
-set(gca,'XTick',[0 1],'YTick',[-0.5 0 0.5])
+title('canonical PCs')
+set(gca,'XTick',[0 1],'YTick',[-0.5 0 0.5]),ylim([-.9 .9])
 
-% fft of pc
+% fft of canonical PCs
 L = length(temp(:,1)); % length
 Fs = 1./mean(diff(t_svd)); % sampling frequency
 f = Fs * (0:(L/2))/L; % frequency
@@ -85,57 +88,42 @@ p1 = p1(1:floor(L/2+1),:); % first half
 p1(2:end-1,:) = 2*p1(2:end-1,:); % 2 X first half except DC
 
 subplot(2,2,4),hold on
-plot(f,p1(:,1),'Color',[0 0 .5],'LineWidth',2)
-plot(f,p1(:,2),'Color',[1 .5 0],'LineWidth',2)
+plot(f,p1(:,1),'k','LineWidth',1)
+plot(f,p1(:,2),'k--','LineWidth',1)
 xlim([0 7])
 ylabel('|P(f)|')
 xlabel('frequency (Hz)')
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
 % 
-% % save them:
+%%% save them:
 % save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
-%% Combinations of PC1 and PC2 with color scale:
+%% Combinations of PC1 and PC2 with fancy color scale:
+% we did not use this color scale
 
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
-
 pc1_plot = pc1(1:75);
 pc2_plot = pc2(1:75);
 
 figure('Position',[0 0 400 250])
-subplot(2,2,1)
-plot(pc1_plot,'k','LineWidth',2)
-axis tight
-axis off
-subplot(2,2,3)
-plot(pc2_plot,'k','LineWidth',2)
-axis tight
-axis off
-
-% Make 2D fancy colormap
+subplot(2,2,1), plot(pc1_plot,'k','LineWidth',2), axis tight, axis off
+title('canonical PCs')
+subplot(2,2,3), plot(pc2_plot,'k','LineWidth',2), axis tight, axis off
 [x,y] = meshgrid(-1:.4:1,-1:.4:1);
-data_in = [x(:) y(:)];
-data_colors_rgb = bbData2Colors(data_in);
-
+data_colors_rgb = bbData2Colors([x(:) y(:)]); % fancy 2D color map
 subplot(1,2,2),hold on
 for kk = 1:size(data_in,1)
-    x = data_in(kk,1);
-    y = data_in(kk,2);
-    plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),...
-        'Color',data_colors_rgb(kk,:),...
-        'LineWidth',2)
+    x = data_in(kk,1); y = data_in(kk,2);   
+%     plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),'Color',data_colors_rgb(kk,:),'LineWidth',2)
+    plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),'k','LineWidth',1)
 end
-axis square
-axis tight
-% axis off
-title('canonical PCs across 5 subjects')
-
+axis square, axis tight, title('predicted responses')
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -162,8 +150,11 @@ end
 clear pc1 pc2 u s v temp Nmin1_pcs this_pcset
 
 %% load canonical heartbeat responses and run through data
-% saves beta weights on canonical PCs in a nifti in T1 space
-% saves COD (model-->data) and rms error (model VS test-retest) for canonical PC model
+% now that we have canonical PCs, we can run these through the testing data
+% and calculate relative RMSE.
+% this cell:
+% - saves beta weights on canonical PCs in a nifti in T1 space
+% - saves COD (model-->data) and relative rms error (model VS test-retest) for canonical PC model
 
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
@@ -185,19 +176,17 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     % Get functional for physioGet
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
         ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+    % Load coregistration matrix (for the functionals)
+    load([save_name_base '_AcpcXform_new.mat']);
+    acpcXform = acpcXform_new; clear acpcXform_new
 
-    % Get PPG triggered curves
+    % Get PPG triggered curves for training and testing set
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
         ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
-
     ppgTSodd = niftiRead([save_name_base '_PPGtrigResponse_odd.nii.gz']); % ppg triggered time series
     ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg triggered time series
     ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
     t = ppgT.t;
-
-    % Load coregistration matrix (for the functionals):
-    load([save_name_base '_AcpcXform_new.mat']);
-    acpcXform = acpcXform_new; clear acpcXform_new
 
     %%%% COD 
     ppgRname = [save_name_base '_codPPG.nii.gz'];
@@ -328,6 +317,7 @@ acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {[1],[1],[1],[1],[1],[1]};
 
 modelBetterThanData = zeros(length(sub_labels),1);
+hist_Rrmse = zeros(length(sub_labels),2,length(0:.1:3));
 out = [];
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
@@ -360,7 +350,11 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     rel_rmse = rel_rms_error.data(:);
     rel_rmse(zero_model.data==1) = [];
     modelBetterThanData(ss) = 100*length(find(rel_rmse<1))./length(rel_rmse);
-
+    [n,x] = hist(rel_rmse,0:.1:3);
+    hist_Rrmse(ss,1,:) = n;
+    hist_Rrmse(ss,2,:) = x;
+    clear n x
+    
     % fill outputs
     out(ss).pc1_th = pc1Weight.data(r_weight.data>0.7);
     out(ss).pc2_th = pc2Weight.data(r_weight.data>0.7);
@@ -372,7 +366,20 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     out(ss).heartrate   = 60*physioGet(physio,'PPGrate'); %BpM
 end
 
-%% plot for every subject in 1 color
+
+%% plot relative RMSE for all subjects
+figure('Position',[0 0 100 100]),hold on
+for ss = 1:5
+    plot(squeeze(hist_Rrmse(ss,2,:)),squeeze(hist_Rrmse(ss,1,:)))
+end
+plot([1 1],[0 6000],'k')
+
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
+
+%% distribution of PC1/2 weights and plot for every subject in 1 color
+
 cm = lines(length(sub_labels));
 figure,hold on
 for ss = 1:length(sub_labels) % subjects/ses/acq
@@ -382,8 +389,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     set(p1,'MarkerEdgeAlpha',.5)
 end
 
-%%
-%% plot with pc1/pc2 fancy latency color map
+%% distribution of PC1/2 weights and plot with pc1/pc2 fancy latency color map
 % circle size weighted by voxel density using hist3
 
 % print heartrate
@@ -414,16 +420,4 @@ end
 % set(gcf,'PaperPositionMode','auto')
 % print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
 % print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
-
-
-%% plot 1 voxel to check model versus data
-voxel_nr = find(ppgR.data(:)>.8,1);
-figure('Position',[0 0 200 150]),hold on
-plot(t_sel,model_v(voxel_nr,:),'k','LineWidth',2)
-plot(t_sel,a(voxel_nr,:),'b:','LineWidth',2)
-plot(t_sel,test_set(voxel_nr,:),'r:','LineWidth',2)
-
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
-% print('-painters','-r300','-depsc',[dDir './figures/renderCanonSvd/subj' int2str(s_nr) '_scan' int2str(scan_nr) '_pred_train_test'])
 
