@@ -33,8 +33,11 @@ function p = physioCreate(varargin)
 ppg = ppgInit;
 p.ppg = ppg;
 
-% resp = respInit;
-% p.resp = resp;
+resp = respInit;
+p.resp = resp;
+
+ecg = ecgInit;
+p.ecg = ecg;
 
 p.filename = 'filename';
 
@@ -124,28 +127,25 @@ if ~isempty(varargin)
             end
         end
         
-         if ecg_exist==1
+        if ecg_exist==1
             % add PPG data in the physio_output
             physio_output.ecg2.rawdata = bids.util.tsvread(ecg2_name);
             physio_output.ecg3.rawdata = bids.util.tsvread(ecg3_name);
-
+            
             % for the sampling frequency srate we have to read the json sidecar
             ecg_jsondata = bids.util.jsondecode(ecg2_name_json);
-            physio_output.ecg2.srate = ecg_jsondata.SamplingFrequency;
-            physio_output.ecg3.srate = ecg_jsondata.SamplingFrequency;
-            physio_output.ecg2.name = 'ECG2';
-            physio_output.ecg3.name = 'ECG3';
-
+            physio_output.ecg.srate = ecg_jsondata.SamplingFrequency;
+            physio_output.ecg.name = 'ECG';
+            
             % time-lock PPG data to the scan, and include a parameter for scan-onset
             % chop of the beginning
-            physio_output.ecg2.data = physio_output.ecg2.rawdata(end-round(scan_duration*physio_output.ecg2.srate)+1:end);
-            physio_output.ecg3.data = physio_output.ecg3.rawdata(end-round(scan_duration*physio_output.ecg3.srate)+1:end);
+            ecg2_data = physio_output.ecg2.rawdata(end-round(scan_duration*physio_output.ecg.srate)+1:end);
+            ecg3_data = physio_output.ecg3.rawdata(end-round(scan_duration*physio_output.ecg.srate)+1:end);
+            physio_output.ecg.data = ecg2_data-ecg3_data;
             % add scan onset:
-            physio_output.ecg2.scan_onset = zeros(size(physio_output.ecg2.data));
-            physio_output.ecg3.scan_onset = zeros(size(physio_output.ecg3.data));
+            physio_output.ecg.scan_onset = zeros(size(physio_output.ecg.data));
             for mm = 1:round(ni.dim(4))
-                physio_output.ecg2.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ecg2.srate+1)) = 1;
-                physio_output.ecg3.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ecg3.srate+1)) = 1;
+                physio_output.ecg.scan_onset(round(ni.pixdim(4)*(mm-1)*physio_output.ecg.srate+1)) = 1;
             end
         end
         
@@ -156,18 +156,25 @@ if ~isempty(varargin)
             if isequal(varargin{3},'figure') && varargin{4}==1
                 figure
                 if ~isempty(physio_output.ppg.data)
-                    subplot(2,1,1),hold on
+                    subplot(3,1,1),hold on
                     plot([1:length(p.ppg.data)]/p.ppg.srate,p.ppg.data)
                     plot(find(p.ppg.scan_onset>0)/p.ppg.srate,mean(p.ppg.data),'r.')
                     legend('ppg data','scan onset')
                     xlabel('sec'),ylabel('ppg data')
                 end
                 if ~isempty(physio_output.resp.data)
-                    subplot(2,1,2),hold on
+                    subplot(3,1,2),hold on
                     plot([1:length(p.resp.data)]/p.resp.srate,p.resp.data)
                     plot(find(p.resp.scan_onset>0)/p.resp.srate,mean(p.resp.data),'r.')
                     legend('resp data','scan onset')
                     xlabel('sec'),ylabel('resp data')
+                end
+                if ~isempty(physio_output.ecg.data)
+                    subplot(3,1,3),hold on
+                    plot([1:length(p.ecg.data)]/p.ecg.srate,p.ecgdata)
+                    plot(find(p.ecg.scan_onset>0)/p.ecg.srate,mean(p.ecg.data),'r.')
+                    legend('ecg data','scan onset')
+                    xlabel('sec'),ylabel('ecg data')
                 end
             end
         end
@@ -208,3 +215,16 @@ resp.timeseries = [];
 resp.scan_onset = [];    % Times when the scan acq begins
 
 end
+
+%%%%
+function resp = ecgInit
+
+resp.name = 'ECG';
+resp.srate = 1000;
+
+resp.rawdata    = [];    % Values in the file
+resp.timeseries = [];
+resp.scan_onset = [];    % Times when the scan acq begins
+
+end
+

@@ -13,8 +13,6 @@ run_nrs = {[1],[1],[1],[1],[1],[1]};
 
 % get model for traces figures
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
-% get model timing
-load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'t_svd')
 
 for ss = 1:6;
     rr = 1;% run_nr
@@ -27,6 +25,9 @@ for ss = 1:6;
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
         ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
 
+    % get model timing
+    load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'t_svd')
+    
     % load ppgR, COD
     ppgR = niftiRead([save_name_base '_codPPG.nii.gz']);
 
@@ -150,42 +151,42 @@ for ss = 1:6;
         cm2D_blood(kk,:,:) = cm_blood*kk/100 + gray_vect*(100-kk)/100;
     end
 
-    % plot positive responses
-    figure
-    brainHandle = bbRenderGifti(g); hold on
-    % brainHandle.FaceAlpha = .5; % Make the brain transparent
-    for kk = 1:size(intensity_plot,1)
-        if ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
-            c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
-            plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
-        end
-    end
-    title(['R>' num2str(Rthreshold,3)])
-    bbViewLight(90,0)
-
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosMed_time']))
-    bbViewLight(270,0)
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosLat_time']))
-
-
-    % plot negative responses
-    figure
-    brainHandle = bbRenderGifti(g); hold on
-    for kk = 1:size(intensity_plot,1)
-        if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
-            c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
-            plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
-        end
-    end
-    title(['R>' num2str(Rthreshold,3)])
-    bbViewLight(90,0)
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegMed_time']))
-    bbViewLight(270,0)
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegLat_time']))
+%     % plot positive responses
+%     figure
+%     brainHandle = bbRenderGifti(g); hold on
+%     % brainHandle.FaceAlpha = .5; % Make the brain transparent
+%     for kk = 1:size(intensity_plot,1)
+%         if ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
+%             c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
+%             plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+%         end
+%     end
+%     title(['R>' num2str(Rthreshold,3)])
+%     bbViewLight(90,0)
+% 
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosMed_time']))
+%     bbViewLight(270,0)
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewPosLat_time']))
+% 
+% 
+%     % plot negative responses
+%     figure
+%     brainHandle = bbRenderGifti(g); hold on
+%     for kk = 1:size(intensity_plot,1)
+%         if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
+%             c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
+%             plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+%         end
+%     end
+%     title(['R>' num2str(Rthreshold,3)])
+%     bbViewLight(90,0)
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegMed_time']))
+%     bbViewLight(270,0)
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_viewNegLat_time']))
 
     %%%% plot predicted timeseries of all rendered voxels
 
@@ -197,27 +198,28 @@ for ss = 1:6;
     % make time actual time in seconds
     tt = t_svd*ppg_cycle;
 
-    figure('Position',[0 0 180 200])
+    figure('Position',[0 0 120 200])
 
     for kk = 1:size(intensity_plot,1)
-        if ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
+        if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
             subplot(2,1,1),hold on
-            c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
+            c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
             x = ColorInt_render_sel(kk,4); %PC1
             y = ColorInt_render_sel(kk,5); %PC2
             plot(tt,x*pc1 + y*pc2,'Color',c_use)
-        elseif ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
+        elseif ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
             subplot(2,1,2),hold on
-            c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
+            c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
             x = ColorInt_render_sel(kk,4); %PC1
             y = ColorInt_render_sel(kk,5); %PC2
             plot(tt,x*pc1 + y*pc2,'Color',c_use)
         end
     end
 
-    set(gca,'FontName','Ariel')
     subplot(2,1,1),xlim([-0.5 1.8])
+    set(gca,'FontName','Arial','XTick',[0 1])
     subplot(2,1,2),xlim([-0.5 1.8])
+    set(gca,'FontName','Arial','XTick',[0 1])
 
     set(gcf,'PaperPositionMode','auto')
     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','sub_render',['subj' int2str(ss) '_run' int2str(rr) '_predictedResp']))

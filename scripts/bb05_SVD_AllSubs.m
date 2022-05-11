@@ -94,9 +94,9 @@ xlim([0 7])
 ylabel('|P(f)|')
 xlabel('frequency (Hz)')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
 % 
 %%% save them:
 % save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
@@ -374,9 +374,9 @@ for ss = 1:5
 end
 plot([1 1],[0 6000],'k')
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
 
 %% distribution of PC1/2 weights and plot for every subject in 1 color
 

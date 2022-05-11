@@ -31,13 +31,16 @@ if strcmp(param,'filename')
 end
 
 % Which type of data are we getting?
-respFlag = false; ppgFlag = false;
+respFlag = false; ppgFlag = false; ecgFlag = false;
 if     strcmp(param(1:4),'resp'), respFlag = true; param = param(5:end); 
     obj = phy.resp;
     dataType = 'resp';
 elseif strcmp(param(1:3),'ppg'),  ppgFlag = true;  param = param(4:end);
     obj = phy.ppg;
     dataType = 'ppg';
+elseif strcmp(param(1:3),'ecg'),  ecgFlag = true;  param = param(4:end);
+    obj = phy.ecg;
+    dataType = 'ecg';
 end
 
 
@@ -50,6 +53,11 @@ switch param
         signal = physioGet(phy,[dataType 'data']);
         srate  = physioGet(phy,[dataType 'srate']);
         
+        % lowpass ecg data, otherwise scan artifact
+        if isequal(dataType,'ecg')
+            [~,signal] = physioPeaks(signal,1,srate);
+        end
+        
         if isempty(varargin)
         % we could use preset minimum interval
 %             if respFlag
@@ -59,7 +67,7 @@ switch param
 %             end
         % but let's get it from the data:
             % find the peaks in the autocorrelation function:
-            [peaks_ac,peaks_ac_i] = findpeaks(acf(obj.data,500));
+            [peaks_ac,peaks_ac_i] = findpeaks(acf(signal,srate*5));
             % the first maximum peak (zero is not included) is the first
             % autocorrelation time
             [~,max_peaks_ac_i] = max(peaks_ac);
@@ -152,7 +160,7 @@ end
 end
 
 % ----
-function onsets = physioPeaks(signal,interval,srate)
+function [onsets,band_sig] = physioPeaks(signal,interval,srate)
 % Calculate the peaks for either the PPG or RESP data
 
 % low-pass filter 
