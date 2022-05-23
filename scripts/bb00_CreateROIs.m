@@ -1,86 +1,12 @@
 
-%% add brainbeat path
 
-addpath(genpath(bbPath()))
-
-%% Get ROIs of CSF in ventricles, gray and white matter
-clear all
-close all
-
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-
-s = 6;
-s_info = bb_subs(s);
-subj = s_info.subj;
-
-roisToSegment = [...
-    4 % left lateral ventricle
-    5 % left inferior lateral ventricle
-    14 % 3rd ventricle
-    15 % 4th ventricle
-    24 % CSF
-    31 % left choroid plexus
-    43 % right lateral ventricle
-    44 % right inferior lateral ventricle
-    63 % right choroid plexus
-    72 % 5th ventricle
-    2 % left white matter
-    3 % left gray matter
-    41 % right white matter
-    42]; % right gray matter
-
-roisToSegmentNames = {...
-    'L_lat_ventr'
-    'L_inferior_lat_ventr'
-    '3rd_ventr'
-    '4th_ventr'
-    'CSF'
-    'L_choroid_plexus'
-    'R_lat_ventr'
-    'R_inferior_lat_ventr'
-    'R_choroid_plexus'
-    '5th_ventricle'
-    'L_white'
-    'L_gray'
-    'R_white'
-    'R_gray'};
-
-%%%% MAKE NII DIR IN FREESURFER FOLDER
-
-%% Make a nifti file from each ROI in aseg.auto.mgz - ROIs to segment
-
-for k = 1:length(roisToSegment)
-    resample_type = 'weighted';
-    
-    alignTo = fullfile(dDir,s_info.subj,s_info.anat,[s_info.anatName '.nii.gz']);
-    segmentFile = fullfile(dDir,s_info.subj,'freesurfer','mri','aseg.auto.mgz');
-    outfile = fullfile(dDir,s_info.subj,'freesurfer','nii',[roisToSegmentNames{k} '.nii.gz']);
-
-    str = sprintf('!mri_convert  --out_orientation RAS --reslice_like %s -rt %s %s %s', alignTo, resample_type, segmentFile, outfile);
-    eval(str)
-
-    % read in the nifti
-    ni = niftiRead(outfile);
-
-    % map the replacement values
-    invals = [roisToSegment(k)];
-
-    ni.data(~ismember(ni.data,invals)) = 0;
-    ni.data(ismember(ni.data,invals)) = 1;
-
-    % write out the nifti
-    writeFileNifti(ni)
-end
-
+[~,dDir] = bbPath;
 
 %% Convert entire Freesurfer aseg.auto.mgz data to nifti in t1 space:
 
 % clear all
 % close all
 % 
-% % dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 7;
 s_info = bb_subs(s);
@@ -103,9 +29,6 @@ eval(str)
 
 % clear all
 % close all
-
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 5;
 
@@ -162,9 +85,7 @@ end
 
 % clear all
 % close all
-% 
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+
 
 s = 6;
 
@@ -223,8 +144,6 @@ end
 % clear all
 % close all
 
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 6;
 s_info = bb_subs(s);
@@ -292,8 +211,6 @@ end
 % clear all
 % close all
 
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 s = 6;
 s_info = bb_subs(s);
@@ -355,12 +272,13 @@ end
 
 %%
 %% Write DKT atlas in the space of a functional scan
+%%
+%% this is used for Figures 4 and 5
 
 % clear all
 % close all
 
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-% dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+% note that that aparc.DKTatlas+aseg.nii.gz is created through mri_convert
 
 s = 6;
 

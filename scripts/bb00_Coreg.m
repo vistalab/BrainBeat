@@ -4,19 +4,14 @@ close all
 % script produced transformation matrix between the anatomy and functional
 % scans, walk through step-by-step
 
-%% Base data directory on a Mac mounting biac4 (wandell's machine)
-% dDir = '/Volumes/biac4-wandell/data/BrainBeat/data';
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-
-% chdir(dDir)
+[~,dDir] = bbPath;
 
 %% Coregistration functionals to T1
  
-sub_labels = {'1','1'}; 
-ses_labels = {'1','2'}; 
-acq_labels = {'4mmFA25'};
-run_nrs = {[1],[1]};
+sub_labels = {'1','2','3','4','5','1'}; 
+ses_labels = {'1','1','1','1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
+run_nrs = {1,1,[1 2],[1 2],[1 2],[1 2]};
 
 
 for ss = 1 % subject number loop
@@ -115,8 +110,6 @@ bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform_new,sliceThisDim,imDims,curPos);
 %%
 
 %% The T2* data are here.  
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
 
 % The pixdim field in the ni structure has four dimensions, three spatial
 % and the fourth is time in seconds.
@@ -189,62 +182,6 @@ niVeno = niftiRead(fullfile(dDir,subj,s_info.veno,[s_info.venoName '.nii']));
 xf_veno=load(fullfile(dDir,subj,s_info.veno,[s_info.venoName 'AcpcXform.mat']));
 
 bbOverlayTimeseriesVeno(ppgTSplot,niColor,niVeno,acpcXform,xf_veno.acpcXform,sliceThisDim,imDims,curPos)
-
-
-%%
-%%
-%% The rest seems to be unnecessary?
-%%
-%%
-%%
-
-
-%%
-%% Allign functional to a good functional with SPM
-%%
-% clear all
-% close all
-% dDir = '/biac4/wandell/data/BrainBeat/data';
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-
-s_nr = 4;
-scan_nr = 9;
-ref_scan_nr = 3;
-
-s_info = bb_subs(s_nr);
-subj=s_info.subj;
-
-% Get the new ref scan:
-%     niAnatomy = niftiRead(fullfile(dDir,subj,s_info.anat,[s_info.anatName '.nii.gz']));
-niAnatomy = niftiRead(fullfile(dDir,subj,s_info.scan{ref_scan_nr}, [s_info.scanName{ref_scan_nr} '.nii.gz']));
-niAnatomy.data = niAnatomy.data(:,:,:,1);
-
-%%%%% coregister the functionals to the ref funx:
-
-scan=s_info.scan{scan_nr};
-scanName=s_info.scanName{scan_nr};
-
-fmri = fullfile(dDir,subj,scan, [scanName '.nii.gz']);
-ni = niftiRead(fmri);
-
-%%%%% use the first nifti to align, this one has the most structural info:
-ni1=ni;
-ni1.data=ni1.data(:,:,:,1);
-ni1.dim=ni1.dim(1:3);
-ni1.pixdim=ni1.pixdim(1:3);
-niAnatomy.pixdim=niAnatomy.pixdim(1:3); % only uses the first three dimensions
-
-% align functionals to the T1:
-acpcXform = dtiRawAlignToT1(ni1,niAnatomy,[], [], false, 1); % last 1 adds a figure
-% this saves the realignment matrix in the folder of the functionals, 
-
-% load ref scan acpc x-form
-ref_acpc = load(fullfile(dDir,subj,s_info.scan{ref_scan_nr},...
-    [s_info.scanName{ref_scan_nr} 'AcpcXform_new.mat']));
-
-% now fix the acpcXform such that it goes to T1 space
-acpcXform_new = ref_acpc.acpcXform_new * niAnatomy.qto_ijk * acpcXform; % funx -> ref xyz -> ref ijk -> ref acpc
-save(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']),'acpcXform_new')
 
 
 
