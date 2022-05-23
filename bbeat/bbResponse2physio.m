@@ -1,4 +1,5 @@
-function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] = bbResponse2physio(ni,slices,varargin)
+function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] = ...
+    bbResponse2physio(ni,slices,varargin)
 % function to get brain response after the peak of a heartbeat (or
 % respiration later)
 %

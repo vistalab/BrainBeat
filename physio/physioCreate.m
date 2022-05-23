@@ -96,6 +96,8 @@ if ~isempty(varargin)
             ppg_jsondata = bids.util.jsondecode(physio_name_json);
             physio_output.ppg.srate = ppg_jsondata.SamplingFrequency;
             physio_output.ppg.name = 'PPG';
+            
+            physio_output.ppg.starttime = -(length(physio_output.ppg.rawdata)-round(scan_duration*physio_output.ppg.srate))./physio_output.ppg.srate;
 
             % time-lock PPG data to the scan, and include a parameter for scan-onset
             % chop of the beginning
@@ -117,6 +119,8 @@ if ~isempty(varargin)
             physio_output.resp.srate = resp_jsondata.SamplingFrequency;
             physio_output.resp.name = 'RESP';
             
+            physio_output.resp.starttime = -(length(physio_output.resp.rawdata)-round(scan_duration*physio_output.resp.srate))./physio_output.resp.srate;
+
             % time-lock RESP data to the scan, and include a parameter for scan-onset
             % chop of the beginning
             physio_output.resp.data = physio_output.resp.rawdata(end-round(scan_duration*physio_output.resp.srate)+1:end);
@@ -137,6 +141,8 @@ if ~isempty(varargin)
             physio_output.ecg.srate = ecg_jsondata.SamplingFrequency;
             physio_output.ecg.name = 'ECG';
             
+            physio_output.ecg.starttime = -(length(physio_output.ecg2.rawdata)-round(scan_duration*physio_output.ecg.srate))./physio_output.ecg.srate;
+
             % time-lock PPG data to the scan, and include a parameter for scan-onset
             % chop of the beginning
             ecg2_data = physio_output.ecg2.rawdata(end-round(scan_duration*physio_output.ecg.srate)+1:end);
