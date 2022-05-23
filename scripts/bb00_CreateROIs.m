@@ -2,13 +2,17 @@
 
 [~,dDir] = bbPath;
 
+%
+% ROIs were generated before BIDS conversion
+%
+
 %% Convert entire Freesurfer aseg.auto.mgz data to nifti in t1 space:
 
 % clear all
 % close all
 % 
 
-s = 7;
+s = 6;
 s_info = bb_subs(s);
 subj = s_info.subj;
 
@@ -30,9 +34,9 @@ eval(str)
 % clear all
 % close all
 
-s = 5;
+s = 6;
 
-for scan_nr = [4 6]%[1:3]
+for scan_nr = [4 6]
 
     s_info = bb_subs(s);
     subj = s_info.subj;

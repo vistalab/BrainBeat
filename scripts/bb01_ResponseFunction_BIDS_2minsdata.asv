@@ -4,17 +4,12 @@
 % this script runs through code to test whether less data would give
 % similar estimated curves
 
-
-% dependency: spm (spm_bsplinc)
-
-
 %% Set base data directory 
 
 clear all
 close all
 
 [~,dDir] = bbPath;
-
 
 %% Preprocess increasingly more data and get PPG time series and calculate COD
 
@@ -192,7 +187,7 @@ for index_subset = 1:5
 end
 
 %%
-%% now analyze run 2 and compare to that to subset from run 1
+%% now analyze run 2 and compare to that to subset from run 1,
 %% only possible for subjects with 2 runs
 %%
 
@@ -212,7 +207,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         
     % get the ppg COD from subsets
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
     acpx_xform1 = load([save_name_base '_AcpcXform_new.mat']);
     ppgR_subsets = niftiRead([save_name_base '_codPPG_lessData.nii.gz']);
     out(ss).data = ppgR_subsets.data;
@@ -222,7 +217,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     rr = 2;        
     run_nr = run_nrs{ss}(rr);
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
     acpx_xform2 = load([save_name_base '_AcpcXform_new.mat']);
     ppgR_2 = niftiRead([save_name_base '_codPPG.nii.gz']);
     out(ss).ppgR_2 = ppgR_2.data;
@@ -274,7 +269,7 @@ ylim([0 1])
 ylabel('Spearman R')
 xlabel('Duration (s)')
 
-% set(gcf,'PaperPositionMode','auto')    
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['testRetestData_n4']))
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['testRetestData_n4']))
+set(gcf,'PaperPositionMode','auto')    
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group',['testRetestData_n4']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['testRetestData_n4']))
 
