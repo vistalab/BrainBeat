@@ -1,4 +1,4 @@
-function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] = ...
+function [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std,response_matrix_sterr] = ...
     bbResponse2physio(ni,slices,varargin)
 % function to get brain response after the peak of a heartbeat (or
 % respiration later)
@@ -58,6 +58,7 @@ ppg_onsets = ppg_onsets((ppg_onsets+epoch_post)<max(timing(:))); % get rid of la
 % initiate output matrix to fill:
 response_matrix = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_std = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
+response_matrix_sterr = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_odd = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 response_matrix_even = single(zeros(size(ni.data,1),size(ni.data,2),length(slices),length(t)));
 
@@ -105,11 +106,16 @@ for ss = 1:length(slices)
     clear d_up d
     
     % output:
-    response_matrix(:,:,ss,:) = nanmean(temp_response_matrix,4);
+    response_matrix(:,:,ss,:) = mean(temp_response_matrix,4,'omitnan');
     response_matrix_std(:,:,ss,:) = nanstd(temp_response_matrix,[],4);
     response_matrix_odd(:,:,ss,:) = nanmean(temp_response_matrix(:,:,:,1:2:end),4);
     response_matrix_even(:,:,ss,:) = nanmean(temp_response_matrix(:,:,:,2:2:end),4);
     
+    % create standard error output as well, but first calculate number of
+    % NaNs in each timepoint
+    nr_nonnans = sum(~isnan(temp_response_matrix(1,1,:,:)),4); % just need for 1 voxel, similar for other voxels in slice
+    response_matrix_sterr(:,:,ss,:) = nanstd(temp_response_matrix,[],4)./sqrt(repmat(nr_nonnans,size(temp_response_matrix,1),size(temp_response_matrix,2),1));
+
     clear temp_response_matrix
 end
 

@@ -12,12 +12,12 @@ ses_labels = {'1','1','1','1','1','2'};
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
 run_nrs = {1,1,[1 2],[1 2],[1 2],[1 2]};
 
-for ss = 1:length(sub_labels) % subjects/ses/acq
+for ss = 1%:length(sub_labels) % subjects/ses/acq
     sub_label = sub_labels{ss};
     ses_label = ses_labels{ss};
     acq_label = acq_labels{ss};
     
-    for rr = 1:length(run_nrs{ss}) % runs
+    for rr = 1%:length(run_nrs{ss}) % runs
         
         run_nr = run_nrs{ss}(rr);
         
@@ -48,7 +48,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         end
 
         % compute the PPG triggered response matrix for the whole brain and save as a nifti:
-        [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std] ...
+        [response_matrix,t,response_matrix_odd,response_matrix_even,response_matrix_std,response_matrix_sterr] ...
             = bbResponse2physio(ni);
 
         % safe time T:
@@ -68,6 +68,13 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         niftiWrite(ni1,fullfile(save_dir,ni1.fname))
         clear ni1
         
+        % save standard deviation of all heartbeats:
+        ni1 = ni;
+        ni1.data = response_matrix_sterr;
+        ni1.fname = [save_name_base '_PPGtrigResponse_sterr.nii.gz'];
+        niftiWrite(ni1,fullfile(save_dir,ni1.fname))
+        clear ni1
+
         % save average of all odd heartbeats:
         ni1 = ni;
         ni1.data = response_matrix_odd;

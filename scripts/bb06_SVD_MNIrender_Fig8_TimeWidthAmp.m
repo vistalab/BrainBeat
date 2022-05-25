@@ -124,46 +124,6 @@ for ss = 1:length(sub_labels)
     all_mni_cod(:,:,:,ss) = wfcod.data;
 end
 
-
-%%
-%% Slice view group R
-%%
-
-% Slice view of beta1 (pc1) and beta2 (pc2) using fancy color circle
-niAnatomy = niftiRead(fullfile(dDir,'derivatives','mni','rsingle_subj_T1.nii'));
-imDims = [-90 -120 -70; 90 100 90];
-curPos = [1 12 4]; 
-
-% Onset for color, cod for intensity
-cod_mean = mean(all_mni_cod,4); 
-cod_mean(cod_mean<.3) = 0; 
-
-load loc_colormap
-% cm = parula(100);
-
-cod_plot = pc1_mni;
-cod_plot.data = cod_mean;
-
-set(gca,'CLim',[0 1])
-
-% plot Saggital figure
-sliceThisDim = 1;
-figure
-bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vCOD']))
-
-% Plot Axial
-sliceThisDim = 3;
-figure
-bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vCOD']))
-
-% Plot Coronal
-sliceThisDim = 2;
-figure
-bbOverlayDotsAnat_PickColor(cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,cm(33:end,:),1)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vCOD']))
-
 %% Negative peaks: onset for color, cod for intensity
 onset_mean = mean(all_mni_onset,4); 
 slope_mean = mean(all_mni_slope,4); 
