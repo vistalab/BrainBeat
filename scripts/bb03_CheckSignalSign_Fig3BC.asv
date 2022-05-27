@@ -1,22 +1,24 @@
+
+% This script generates Figures 3B and 3C from the manuscript titled:
+%
+% Measuring brain beats: cardiac-aligned fast fMRI signals
+% Dora Hermes, Hua Wu, Adam B. Kerr, Brian Wandell,
+
+
 clear all
 close all
 
-%% s_bbIntro
-%
-% Script to explain how to open and do preliminary brain beat analyses
-%
+%% Data directory 
 
-%% Base data directory
+[~,dDir] = bbPath;
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-% chdir(dDir)
 
-%% Plot fMRI signals from DKT segmentation in one subject
+%% Plot raw fMRI timeseries from DKT segmentation in one subject
 
 sub_labels = {'1'}; 
 ses_labels = {'1'}; 
 acq_labels = {'4mmFA48'};
-run_nrs = {[1]};
+run_nrs = {1};
 
 ss = 1;%:length(sub_labels) % subjects/ses/acq
 rr = 1;% run_nr
@@ -26,12 +28,8 @@ acq_label = acq_labels{ss};
 
 run_nr = run_nrs{ss}(rr);
         
-dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
-dktNames = dkt_table.label;
-dktCodes = dkt_table.label_nr;
-
 fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
-    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+    ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
 fmri_name = fullfile(dDir,fmri_BIDSname);
 ni = niftiRead(fmri_name);
 
@@ -43,23 +41,18 @@ ppgCurveT   = physioGet(physio,'ppg ppgtcurve');
 srate       = 1/bbGet(ni,'tr');
 
 save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-    ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+    ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
 ppgResp = niftiRead([save_name_base '_PPGtrigResponse.nii.gz']); % ppg triggered time series
 ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
 
-%%
+% Load segmentation for GM, WM, Ventricles (from Freesurfer), CSF (from
+% SPM) and Sagittal Sinus (from Venogram)
 niSegm = niftiRead([save_name_base '_combineSegm.nii.gz']);
 roiNames = {'GM','WM','Ventricles','CSF','Veno'};
-% Freesurfer for GM, WM, Ventricles, CSF from SPM and Venogram
 
 % Voxel vector with segmentation labels 1:5 for [GM WM Ventricles CSF Veno]
 segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
-
-% load DKT atlas
-niDKT = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
-% matrix to vector
-segmVectDKT = reshape(niDKT.data,[size(niDKT.data,1) * size(niDKT.data,2) * size(niDKT.data,3)],1);
 
 %%%% put the PPG triggered data in a matrix Voxel X Time
 respMat = reshape(ppgResp.data,[size(ppgResp.data,1) * size(ppgResp.data,2) * size(ppgResp.data,3)],size(ppgResp.data,4));
@@ -70,9 +63,19 @@ for kk = 1:length(roiNames)
     avResp(:,kk) = mean(respMat(segmVect==kk,:),1);
 end
 
-this_areas = 1; % cingulate
-avResp(:,kk+1) = mean(respMat(ismember(segmVectDKT,dktCodes(this_areas)),:),1);
+% Load freesurfer DKT atlas segmentation
+niDKT = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
+% matrix to vector
+segmVectDKT = reshape(niDKT.data,[size(niDKT.data,1) * size(niDKT.data,2) * size(niDKT.data,3)],1);
+% DKT labels and codes
+dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
+dktNames = dkt_table.label;
+dktCodes = dkt_table.label_nr;
 
+% now as a last ROI, add this_areas
+this_areas = 1; 
+disp(['adding signal from ' dktNames{this_areas}])% cingulate
+avResp(:,kk+1) = mean(respMat(ismember(segmVectDKT,dktCodes(this_areas)),:),1);
 
 %%%% put the fMRI data in a matrix Voxel X Time
 sigMat = reshape(ni.data,[size(ni.data,1) * size(ni.data,2) * size(ni.data,3)],size(ni.data,4));
@@ -87,9 +90,12 @@ avSig(1:5,:) = NaN; % first scans to NaN
 
 roiNames(length(roiNames)+1) = dktNames(this_areas);
 
-%%
+%% Make figures 3B and 3C
 
-areas_plot = [6 3 5];
+areas_plot = [6 3 5]; 
+% 6: left caudal anterior cingulate (roiNames{6})
+% 3: ventricles
+% 5: venogram areas
 
 tt = [1:size(avSig,1)]/srate;
 

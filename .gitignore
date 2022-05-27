@@ -8,5 +8,6 @@ data/*
 *.ps
 *.png
 *.eps
+*.avs
 
 ~$*

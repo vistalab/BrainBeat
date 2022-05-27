@@ -1,22 +1,23 @@
+
+% This script generates Figures 3D and 4 from the manuscript titled:
+%
+% Measuring brain beats: cardiac-aligned fast fMRI signals
+% Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+%
+
 clear all
 close all
 
-%% s_bbIntro
-%
-% Script to explain how to open and do preliminary brain beat analyses
-%
+%% Data directory 
 
-%% Base data directory
-
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-% chdir(dDir)
+[~,dDir] = bbPath;
 
 %% Get the average responses across subjects
 
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],1,1,1,1,1};
+run_nrs = {1,1,1,1,1,1};
 
 dkt_table = readtable('dkt_areas.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
 dkt_table_surface = readtable('dkt_areas_surface.tsv','FileType','text','Delimiter','\t','TreatAsEmpty',{'N/A','n/a'});
@@ -29,17 +30,16 @@ avRespVeno_hr = NaN(length(t_hr),1,length(sub_labels));
 ppgCurve_hr = NaN(length(t_hr),length(sub_labels));
     
 for ss = 1:length(sub_labels)
-    % Functionals
     sub_label = sub_labels{ss};
     ses_label = ses_labels{ss};
     acq_label = acq_labels{ss};
 
-    rr = 1;% run_nr
+    rr = 1;% just use first run
     run_nr = run_nrs{ss}(rr);
     
     % Functionals
     fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
     fmri_name = fullfile(dDir,fmri_BIDSname);
     ni = niftiRead(fmri_name);
 
@@ -50,18 +50,14 @@ for ss = 1:length(sub_labels)
     srate       = 1/bbGet(ni,'tr');
 
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
     ppgResp = niftiRead([save_name_base '_PPGtrigResponse.nii.gz']); % ppg triggered time series
     ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
 
     %%%% Scale the time-series matrix by the reliability
-    % Get odd/even cod (made with bbCod/Correlate2physio):
+    % Get odd/even COD (made with bbCod/Correlate2physio):
     ppgR = niftiRead([save_name_base '_codPPG.nii.gz']); % COD between even and odd heartbeats
-%     % Set maximum of ppgTS to 1 for each voxel
-%     ppgResp.data = ppgResp.data ./ repmat(max(abs(ppgResp.data),[],4),[1,1,1,size(ppgResp.data,4)]);
-%     % Multiply by cod size (always >= 0)
-%     ppgResp.data = ppgResp.data .* repmat(ppgR.data,[1,1,1,size(ppgResp.data,4)]);
     
     % load segmentation
     niSegm = niftiRead([save_name_base '_r_DKTatlas_aseg.nii.gz']);
@@ -105,7 +101,7 @@ for ss = 1:length(sub_labels)
 end
 
 %%
-%% Figure 4D: plot set of responses
+%% Figure 3D: plot set of responses
 
 n_subs = size(avResp_hr,3);
 
@@ -150,11 +146,13 @@ plot([0 0],[-1 3],'Color',[.7 .7 .7])
 plot(t_hr,100*thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([t_hr(1) t_hr(end)])
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig4D_allSubs_tracessegm01'])
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig4D_allSubs_tracessegm01'])
+set(gcf,'PaperPositionMode','auto')    
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure3D_allsubs']))
+print('-r300','-depsc2',fullfile(dDir,'derivatives','figures',...
+    ['Figure3D_allsubs']))
 
-%% Figure 5A: Render subject 1 with DKT colored by arterial branch
+%% Figure 4A: Render subject 1 with DKT colored by arterial branch
 
 % Select a subject number and hemisphere
 ss = 1;
@@ -193,20 +191,16 @@ cmap(isnan(cmap)) = 0.7;
 figure
 ieeg_RenderGiftiLabels(gi,vert_label,cmap,colortable.struct_names)
 ieeg_viewLight(90,0)
- 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5A_s' int2str(s_nr) '_mesial'])
-% ieeg_viewLight(270,0)
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig5A_s' int2str(s_nr) '_lateral'])
 
-%%
-% create colors for rendering and plots:
-% nr_vals = 4;
-% cm1 = [[.7 .7 .7]; 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]'];
-% nr_vals = 4;
-% cm2 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1) [0.8:-0.8/(nr_vals-1):0]'];
-% nr_vals = 4;
-% cm3 = [[.7 .7 .7]; [0.8:-0.8/(nr_vals-1):0]' [0.8:-0.8/(nr_vals-1):0]' 0.85*ones(nr_vals,1)];
+set(gcf,'PaperPositionMode','auto')    
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4A_sub-' sub_label '_renderArterialZones_mesial']))
+ieeg_viewLight(270,0)
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4A_sub-' sub_label '_renderArterialZones_lateral']))
+
+
+%% Figure 4A colormap
 cm1 = [[dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1001,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1001,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1001,1))];...
     [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1002,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1002,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1002,1))];...
     [dkt_table_surface.r1(find(dkt_table_surface.ind_arterial==1003,1)) dkt_table_surface.g1(find(dkt_table_surface.ind_arterial==1003,1)) dkt_table_surface.b1(find(dkt_table_surface.ind_arterial==1003,1))];...
@@ -225,24 +219,27 @@ imagesc(1:100)
 colormap(cm1)
 axis off
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm1'])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4A_cm1']))
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)
 colormap(cm2)
 axis off
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm2'])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4A_cm2']))
 
 figure('Position',[0 0 200 50]),
 imagesc(1:100)
 colormap(cm3)
 axis off
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3A_s' int2str(s_nr) '_cm3'])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4A_cm3']))
 
 
-%% Figure 5B: plot responses in these colors
+%% Figure 4B: plot responses in these colors
 
 % we have avResp_hr with 106 regions
 % there are 31 surface areas with dkt_table.DKT_nr corresponding to dkt_table_surface.DKT_nr
@@ -286,18 +283,18 @@ for kk = 1:length(ind_art)
     these_responses = ismember(dkt_table.DKT_nr,these_dkt);
     plot(t_hr,100*mean(avResp_hr(:,these_responses,:),3),'Color',these_colors,'LineWidth',2)
 end
-% ylim([-0.3 0.3]) % for scales by R
 ylim([-1 1])
 xlabel('heartbeat cycle')
 
 % set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-depsc',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
-% print('-painters','-r300','-dpng',[dDir '/figures/segmentation/Fig3B_ArteryAvgs'])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure4B_Artery_Waveforms']))
+print('-r300','-depsc',fullfile(dDir,'derivatives','figures',...
+    ['Figure4B_Artery_Waveforms']))
 
-%% Figure 5C: get amplitude across subjects and test for significance
+%% Figure 4C: get amplitude across subjects and test for significance
 
-% t_int = t_hr>-0.2 & t_hr<0; % for mean
-t_int = t_hr>-0.5 & t_hr<0.5; % for max-min contrast
+t_int = t_hr>-0.5 & t_hr<0.5; % time for max-min contrast
 
 figure('Position',[0 0 200 400])
 subplot(3,1,1),hold on
@@ -314,22 +311,12 @@ for kk = 1:length(ind_art)
     art1_amp(kk,:,:) = 100*squeeze(mean(avResp_hr(:,these_responses,:),2))'; % average across multiple areas 
 end
 
-for kk = 1:length(ind_art) 
-%     % take mean across a section
-%     bar(kk,mean(mean(art1_amp(kk,:,t_int),3)),'FaceColor',these_colors1(kk,:))
-%     plot(kk,mean(art1_amp(kk,:,t_int),3),'k.')
-    
-%     % take min across a section
-%     bar(kk,min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
-%     plot(kk,min(art1_amp(kk,:,t_int),[],3),'k.')
-    
+for kk = 1:length(ind_art)     
     % take contrast across a section
     bar(kk,max(mean(art1_amp(kk,:,t_int)),[],3) - min(mean(art1_amp(kk,:,t_int)),[],3),'FaceColor',these_colors1(kk,:))
     plot(kk,max(art1_amp(kk,:,t_int),[],3) - min(art1_amp(kk,:,t_int),[],3),'k.')
 
 end
-% plot(mean(art1_amp(:,:,t_int),3),'k')
-% plot(min(art1_amp(:,:,t_int),[],3),'k')
 plot(max(art1_amp(:,:,t_int),[],3) - min(art1_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
@@ -348,20 +335,10 @@ for kk = 1:length(ind_art)
 end
 
 for kk = 1:length(ind_art) 
-%     % take mean across a section
-%     bar(kk,mean(mean(art2_amp(kk,:,t_int),3)),'FaceColor',these_colors2(kk,:))
-%     plot(kk,mean(art2_amp(kk,:,t_int),3),'k.')
-    
-    % take min across a section
-%     bar(kk,min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
-%     plot(kk,min(art2_amp(kk,:,t_int),[],3),'k.')
-
     % take contrast across a section
     bar(kk,max(mean(art2_amp(kk,:,t_int)),[],3) - min(mean(art2_amp(kk,:,t_int)),[],3),'FaceColor',these_colors2(kk,:))
     plot(kk,max(art2_amp(kk,:,t_int),[],3) - min(art2_amp(kk,:,t_int),[],3),'k.')
 end
-% plot(mean(art2_amp(:,:,t_int),3),'k')
-% plot(min(art2_amp(:,:,t_int),[],3),'k')
 plot(max(art2_amp(:,:,t_int),[],3) - min(art2_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
@@ -380,22 +357,12 @@ for kk = 1:length(ind_art)
 end
 
 for kk = 1:length(ind_art) 
-%     % take mean across a section
-%     bar(kk,mean(mean(art3_amp(kk,:,t_int),3)),'FaceColor',these_colors3(kk,:))
-%     plot(kk,mean(art3_amp(kk,:,t_int),3),'k.')
-    
-%     % take min across a section
-%     bar(kk,min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
-%     plot(kk,min(art3_amp(kk,:,t_int),[],3),'k.')
-
     % take contrast across a section
     bar(kk,max(mean(art3_amp(kk,:,t_int)),[],3) - min(mean(art3_amp(kk,:,t_int)),[],3),'FaceColor',these_colors3(kk,:))
     plot(kk,max(art3_amp(kk,:,t_int),[],3) - min(art3_amp(kk,:,t_int),[],3),'k.')
 
     
 end
-% plot(mean(art3_amp(:,:,t_int),3),'k')
-% plot(min(art3_amp(:,:,t_int),[],3),'k')
 plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'LineWidth',1)
 set(gca,'XTick',[1:4])
 
