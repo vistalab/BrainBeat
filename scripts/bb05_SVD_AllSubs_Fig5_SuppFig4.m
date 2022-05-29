@@ -1,5 +1,11 @@
 
-% 0: We did the SVD in bb05_SVD.m for all individual subjects, here we
+% 
+% This script is part of:
+%%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
+% Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+%
+%
+% 0: We did the SVD in bb04_SVD.m for all individual subjects, here we
 %   test across subjects.
 % 1: We take the individual subject principle components, resampled to the
 % heartrate for all subjects.
@@ -10,7 +16,12 @@
 %
 % DH & BW 2018, vistalab
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
+clear all
+close all
+
+%% Data directory 
+
+[~,dDir] = bbPath;
 
 %% Save canonical heartbeat responses (across all subjects)
 
@@ -32,7 +43,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     
     % Get PPG triggered curves
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
     % load first two principle components for these subjects and scans
     load([save_name_base '_pc12'],'y1','y2','y3','t_hr','var_explained','all_pred_acc')
@@ -94,16 +105,15 @@ xlim([0 7])
 ylabel('|P(f)|')
 xlabel('frequency (Hz)')
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','canonicalPC_S1-5'))
-% 
-%%% save them:
-% save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
+set(gcf,'PaperPositionMode','auto')
+print('-r300','-depsc2',fullfile(dDir,'derivatives','figures','Figure5AB_canonicalPC_S1-5'))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','Figure5AB_canonicalPC_S1-5'))
 
-%% Combinations of PC1 and PC2 with fancy color scale:
-% we did not use this color scale
+% save them:
+save(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
+%% Figure 5 C and E and Supplemental Figure S4A Combinations of PC1 and PC2 
+ 
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 pc1_plot = pc1(1:75);
 pc2_plot = pc2(1:75);
@@ -113,17 +123,35 @@ subplot(2,2,1), plot(pc1_plot,'k','LineWidth',2), axis tight, axis off
 title('canonical PCs')
 subplot(2,2,3), plot(pc2_plot,'k','LineWidth',2), axis tight, axis off
 [x,y] = meshgrid(-1:.4:1,-1:.4:1);
-data_colors_rgb = bbData2Colors([x(:) y(:)]); % fancy 2D color map
 subplot(1,2,2),hold on
-for kk = 1:size(data_in,1)
-    x = data_in(kk,1); y = data_in(kk,2);   
-%     plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),'Color',data_colors_rgb(kk,:),'LineWidth',2)
-    plot([x:.3/74:x+.3],y+.3*(x*pc1_plot + y*pc2_plot),'k','LineWidth',1)
+for kk = 1:size(x,1)
+    for ll = 1:size(x,2)
+        plot(x(kk,ll):.3/74:x(kk,ll)+.3, y(kk,ll)+.3*(x(kk,ll)*pc1_plot + y(kk,ll)*pc2_plot),'k','LineWidth',1)
+    end
 end
 axis square, axis tight, title('predicted responses')
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12'))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','Figure5CE_modelpc12'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','Figure5CE_modelpc12'))
+
+
+figure('Position',[0 0 400 250])
+subplot(2,2,1), plot(pc1_plot,'k','LineWidth',2), axis tight, axis off
+title('canonical PCs')
+subplot(2,2,3), plot(pc2_plot,'k','LineWidth',2), axis tight, axis off
+[x,y] = meshgrid(-1:.4:1,-1:.4:1);
+subplot(1,2,2),hold on
+for kk = 1:size(x,1)
+    for ll = 1:size(x,2)
+        data_colors_rgb = bbData2Colors([x(kk,ll) y(kk,ll)]); % fancy 2D color map
+        plot(x(kk,ll):.3/74:x(kk,ll)+.3, y(kk,ll)+.3*(x(kk,ll)*pc1_plot + y(kk,ll)*pc2_plot),...
+            'Color',data_colors_rgb,'LineWidth',2)
+    end
+end
+axis square, axis tight, title('predicted responses')
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','SuppFigureS4A_modelpc12colors'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','SuppFigureS4A_modelpc12colors'))
 
 
 %% Save canonical heartbeat responses (across N-1 subjects)
@@ -175,14 +203,14 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
 
     % Get functional for physioGet
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
     % Load coregistration matrix (for the functionals)
     load([save_name_base '_AcpcXform_new.mat']);
     acpcXform = acpcXform_new; clear acpcXform_new
 
     % Get PPG triggered curves for training and testing set
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
     ppgTSodd = niftiRead([save_name_base '_PPGtrigResponse_odd.nii.gz']); % ppg triggered time series
     ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg triggered time series
     ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
@@ -249,10 +277,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     zero_voxels = sum(test_set,2)==0;
     
     % save beta weights in a nifti in functional space 
-    % bb08_MNI_PCA writes it to T1 and then to MNI space
-    % this should be corrected, because we now save here in T1 space
-
-    % add beta weights in niftis in functional space
     ni1 = ni; % PC1
     ni1.data = ni1.data(:,:,:,1);
     ni1.data(:) = beta_weights(:,1);
@@ -330,7 +354,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         
     % Get base name
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
     % load pc1
     pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
@@ -361,7 +385,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     
     % get heartrate to have interpretable timing in seconds again
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
     physio      = physioCreate('nifti',ni);
     out(ss).heartrate   = 60*physioGet(physio,'PPGrate'); %BpM
 end
@@ -374,20 +398,10 @@ for ss = 1:5
 end
 plot([1 1],[0 6000],'k')
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_Rrmse'))
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
 
-%% distribution of PC1/2 weights and plot for every subject in 1 color
-
-cm = lines(length(sub_labels));
-figure,hold on
-for ss = 1:length(sub_labels) % subjects/ses/acq
-    subplot(1,6,ss)
-    p1 = scatter(out(ss).pc1_th,out(ss).pc2_th,5,cm(ss,:));
-    set(p1,'MarkerFaceAlpha',.5)
-    set(p1,'MarkerEdgeAlpha',.5)
-end
 
 %% distribution of PC1/2 weights and plot with pc1/pc2 fancy latency color map
 % circle size weighted by voxel density using hist3
@@ -417,7 +431,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     disp(['sub ' int2str(ss) ' heartrate ' int2str(out(ss).heartrate) ' bpm'])
 end
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
-% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','brainbeat','group','modelpc12_weightsV2'))
+set(gcf,'PaperPositionMode','auto')
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','SuppFigureS4B_modelpc12_weightsV2'))
+print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','SuppFigureS4B_modelpc12_weightsV2'))
 

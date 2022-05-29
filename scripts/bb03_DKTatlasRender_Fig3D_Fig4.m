@@ -1,7 +1,7 @@
 
 % This script generates Figures 3D and 4 from the manuscript titled:
 %
-% Measuring brain beats: cardiac-aligned fast fMRI signals
+%%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
 % Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
 %
 
