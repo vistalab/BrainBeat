@@ -1,4 +1,18 @@
-        
+
+%
+% This script estimates waveform peak and width for all individual subjects for the analysis in:
+%
+%%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
+% Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+%
+%
+
+clear all
+close all
+
+%% Data directory 
+
+[~,dDir] = bbPath;
 
 %%
 %% Calculate slope, peaktime and FWHM and save 
@@ -19,7 +33,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         
     % Get base name
     save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)]);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
     % Load coregistration matrix (to write output in T1 space):
     load([save_name_base '_AcpcXform_new.mat']);
@@ -41,7 +55,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
 
     % Get functional for physioGet
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
     ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
     % Select times that were included in SVD: we want -0.5 to 1.5 heartbeat cycle
     physio      = physioCreate('nifti',ni);

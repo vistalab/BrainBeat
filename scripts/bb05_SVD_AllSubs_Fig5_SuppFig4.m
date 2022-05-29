@@ -1,9 +1,11 @@
 
-% 
-% This script is part of:
+% This script generates Figure 5 and Supplemental Figure 4 from the manuscript titled:
+%
 %%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
 % Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+% 
 %
+%%%% We also calculated canonical heartbeat waveforms:
 %
 % 0: We did the SVD in bb04_SVD.m for all individual subjects, here we
 %   test across subjects.
@@ -204,13 +206,16 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     % Get functional for physioGet
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
         ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']));
+    
+    % Base name in derivatives
+    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
+
     % Load coregistration matrix (for the functionals)
     load([save_name_base '_AcpcXform_new.mat']);
     acpcXform = acpcXform_new; clear acpcXform_new
 
     % Get PPG triggered curves for training and testing set
-    save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
-        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
     ppgTSodd = niftiRead([save_name_base '_PPGtrigResponse_odd.nii.gz']); % ppg triggered time series
     ppgTSeven = niftiRead([save_name_base '_PPGtrigResponse_even.nii.gz']); % ppg triggered time series
     ppgT = load([save_name_base '_PPGtrigResponseT.mat'],'t');
