@@ -1,4 +1,8 @@
 
+% This script generates Figure 5J from the manuscript titled:
+%
+% Measuring brain beats: cardiac-aligned fast fMRI signals
+% Dora Hermes, Hua Wu, Adam B. Kerr, Brian Wandell
 
 % make sure full path is added
 spm('Defaults','fmri')

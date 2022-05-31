@@ -1,12 +1,29 @@
 
-%% plot ECG
+% This script generates Supplemental Figures X and Y from the manuscript titled:
+%
+% Measuring brain beats: cardiac-aligned fast fMRI signals
+% Dora Hermes, Hua Wu, Adam B. Kerr, Brian Wandell
+
+clear all
+close all
+
+%% Data directory 
+
+[~,dDir] = bbPath;
+
+%% Supplemental Figure 2
+%%
+%% Load ECG and PPG data to compare ECG vs PPG onsets for sub-4_ses-1 and sub-1_ses-2
+%% 
 
 all_phys = [];
 
-sub_labels = {'4','5','1'}; 
-ses_labels = {'1','1','2'}; 
-acq_labels = {'4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1]};
+sub_labels = {'4','1'};%{'4','5','1'}; 
+ses_labels = {'1','2'};%{'1','1','2'}; 
+acq_labels = {'4mmFA48','4mmFA48'};
+run_nrs = {1,1};
+% we also collected ECG data in subject 5, session 1, run 1, but that was
+% extremely noisy from scanner artifact...
 
 for ss = 1:length(sub_labels)    
     sub_label = sub_labels{ss};
@@ -16,7 +33,7 @@ for ss = 1:length(sub_labels)
     run_nr = run_nrs{ss}(rr);
 
     fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
     fmri_name = fullfile(dDir,fmri_BIDSname);
     ni = niftiRead(fmri_name);
 
@@ -26,21 +43,21 @@ for ss = 1:length(sub_labels)
     all_phys(ss).ecg_onsets = physioGet(all_phys(ss).physio,'ecg peaks');
 end
 
-% remove last ecg onset for subject 3, this is nout found in ppg, otherwise
-% match
-all_phys(3).ecg_onsets(end) = [];
+% remove last ecg onset for subject 1, session 2, this is not found in ppg, otherwise
+% all onsets match
+all_phys(find(ismember(sub_labels,'1'))).ecg_onsets(end) = [];
 
-%%
-figure('Position',[0 0 800 300])
+%% Supplemental Figure 2: plot ECG and PPG signals
+
+figure('Position',[0 0 500 300])
 
 for ss = 1:length(sub_labels) 
 
-    subplot(2,3,ss),hold on
+    subplot(2,2,ss),hold on
 
     ecg_srate = all_phys(ss).physio.ecg.srate;
     ecg_plot = zscore(all_phys(ss).physio.ecg.data);
-    plot([1:length(all_phys(ss).physio.ecg.data)]/ecg_srate,ecg_plot,'Color',[1 .7 .9])
-    plot(all_phys(ss).ecg_onsets,1,'r*')
+    plot((1:length(all_phys(ss).physio.ecg.data))/ecg_srate,ecg_plot,'Color',[1 .7 .9])
 
     band = 5;
     Rp   = 3; Rs = 60; % third order Butterworth
@@ -50,36 +67,52 @@ for ss = 1:length(sub_labels)
     [n_band,wn_band] = buttord(high_p,high_s,Rp,Rs);
     [bf_b,bf_a] = butter(n_band,wn_band,'low');
     ecg_filt    = filtfilt(bf_b,bf_a,all_phys(ss).physio.ecg.data);
-    plot([1:length(all_phys(ss).physio.ecg.data)]/ecg_srate,zscore(ecg_filt),'m')
+    ecg_plot2 = zscore(ecg_filt);
+    plot((1:length(all_phys(ss).physio.ecg.data))/ecg_srate,ecg_plot2,'r')
+    plot(all_phys(ss).ecg_onsets,ecg_plot2(round(all_phys(ss).ecg_onsets*ecg_srate)),'r*')
 
     ppg_srate = all_phys(ss).physio.ppg.srate;
     ppg_plot = zscore(all_phys(ss).physio.ppg.data);
-    plot([1:length(all_phys(ss).physio.ppg.data)]/ppg_srate,ppg_plot,'b')
-    plot(all_phys(ss).ppg_onsets,1,'b*')
+    plot((1:length(all_phys(ss).physio.ppg.data))/ppg_srate,ppg_plot,'b')
+    plot(all_phys(ss).ppg_onsets,ppg_plot(round(all_phys(ss).ppg_onsets*ppg_srate)),'b*')
 
-    xlim([79 92])
+    xlim([82 90])
     xlabel('time (s)')
 
-    subplot(2,3,3+ss),hold on
+    subplot(2,2,2+ss),hold on
     if length(all_phys(ss).ppg_onsets)==length(all_phys(ss).ecg_onsets)
         hist(all_phys(ss).ppg_onsets-all_phys(ss).ecg_onsets,[.1:.005:.3],'w')
-        xlabel('Delta ecg and ppg onset (s)')
-        ylabel('number of heart beats')
+        xlabel('$${\Delta}$$ ppg-ecg onsets (s)','Interpreter','latex')
+
+        ylabel('Number of heart beats','Interpreter','latex')
+        
+        delta_onset = (all_phys(ss).ppg_onsets-all_phys(ss).ecg_onsets); 
+        pd = fitdist(delta_onset,'Normal'); % fit a normal distribution
+        x_values = 0.050:0.001:0.350;
+        y = pdf(pd,x_values);
+        plot(x_values,y,'LineWidth',2,'Color',[0 .5 1])
+        ci95 = paramci(pd,'Alpha',.05); % returns ci of the mean and std
+        title(['mean 95 \% ci ' num2str(ci95(:,1)',3)],'Interpreter','latex')
     end
 end
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','ECGvsPPG_sub451'))
-% print('-painters','-r300','-depsc2',fullfile(dDir,'derivatives','brainbeat','ECGvsPPG_sub451'))
+
+set(gcf,'PaperPositionMode','auto')    
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','SuppFigureS2_ECGvsPPG'))
+print('-r300','-depsc2',fullfile(dDir,'derivatives','figures','SuppFigureS2_ECGvsPPG'))
 
 
-%% get Heart Rate Variability
+%% Supplemental Figure 3
+%%
+%% Calculate Heart Rate Variability (HRV) for all subjects
+%%
 
+% define empty output structure
 all_phys = [];
-
+% load data
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 for ss = 1:length(sub_labels)    
     sub_label = sub_labels{ss};
@@ -89,7 +122,7 @@ for ss = 1:length(sub_labels)
     run_nr = run_nrs{ss}(rr);
 
     fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
-        ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+        ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
     fmri_name = fullfile(dDir,fmri_BIDSname);
     ni = niftiRead(fmri_name);
 
@@ -98,7 +131,7 @@ for ss = 1:length(sub_labels)
     all_phys(ss).ppg_onsets = physioGet(all_phys(ss).physio,'ppg peaks');
 end
 
-%% plot HRV
+%% Supplemental Figure 3: plot HRV
 
 cl_use = lines(6);
 
