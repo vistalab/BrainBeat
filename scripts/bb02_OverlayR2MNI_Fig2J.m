@@ -86,7 +86,7 @@ end
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 flags.bb    = [-90 -120 -60; 90 96 130];
 all_mni_cod = NaN([diff(flags.bb)+1 length(sub_labels)]);

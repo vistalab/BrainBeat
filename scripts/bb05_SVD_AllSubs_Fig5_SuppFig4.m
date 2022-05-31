@@ -30,7 +30,7 @@ close all
 sub_labels = {'1','2','3','4','5'}; 
 ses_labels = {'1','1','1','1','1'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1};
 
 all_pcs = zeros(length(sub_labels),2,128);
 all_varExplained = zeros(length(sub_labels),20);
@@ -189,7 +189,7 @@ clear pc1 pc2 u s v temp Nmin1_pcs this_pcset
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
 
@@ -315,35 +315,35 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni4.sto_ijk = inv(acpcXform);
 
     % name for pc1
-    pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii.gz'];
+    pc1_newName = [save_name_base '_space-T1w_canoPc1Weights.nii'];
     niftiWrite(ni1,pc1_newName)
     
     % name for pc2
-    pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii.gz'];
+    pc2_newName = [save_name_base '_space-T1w_canoPc2Weights.nii'];
     niftiWrite(ni2,pc2_newName)
 
     % name for r weights
-    r_newName = [save_name_base '_space-T1w_canoPc12R.nii.gz'];
+    r_newName = [save_name_base '_space-T1w_canoPc12R.nii'];
     niftiWrite(ni3,r_newName)
     
     % name for rel rms error weights
-    relRmse_newName = [save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz'];
+    relRmse_newName = [save_name_base '_space-T1w_canoPc12RelRMSE.nii'];
     niftiWrite(ni4,relRmse_newName)
 
     % zero model
     ni4.data(:) = zero_voxels;
-    zero_model = [save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz'];
+    zero_model = [save_name_base '_space-T1w_canoPc12ZeroModel.nii'];
     niftiWrite(ni4,zero_model)
 
     clear ni1 ni2 ni3 ni4 ni5
 end
 
-%% Summary across subjects
+%% Summary relative RMSE across subjects
 
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 modelBetterThanData = zeros(length(sub_labels),1);
 hist_Rrmse = zeros(length(sub_labels),2,length(0:.1:3));
@@ -362,18 +362,18 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
     % load pc1
-    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii']);
     % load pc2
-    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii']);
 
     % load r weights
-    r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
+    r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii']);
     
     % name for rel rms error weights
-    rel_rms_error = niftiRead([save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz']);
+    rel_rms_error = niftiRead([save_name_base '_space-T1w_canoPc12RelRMSE.nii']);
     
     % zero data and model
-    zero_model = niftiRead([save_name_base '_space-T1w_canoPC12ZeroModel.nii.gz']);
+    zero_model = niftiRead([save_name_base '_space-T1w_canoPc12ZeroModel.nii']);
     
     % voxels with model->data better than data->data
     rel_rmse = rel_rms_error.data(:);
@@ -385,8 +385,8 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     clear n x
     
     % fill outputs
-    out(ss).pc1_th = pc1Weight.data(r_weight.data>0.7);
-    out(ss).pc2_th = pc2Weight.data(r_weight.data>0.7);
+    out(ss).pc1_th = pc1Weight.data(r_weight.data>0.70);
+    out(ss).pc2_th = pc2Weight.data(r_weight.data>0.70);
     
     % get heartrate to have interpretable timing in seconds again
     ni = niftiRead(fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'func',...
@@ -396,7 +396,8 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
 end
 
 
-%% plot relative RMSE for all subjects
+%% Figure 5D: plot relative RMSE for all subjects
+
 figure('Position',[0 0 100 100]),hold on
 for ss = 1:5
     plot(squeeze(hist_Rrmse(ss,2,:)),squeeze(hist_Rrmse(ss,1,:)))
@@ -405,10 +406,10 @@ plot([1 1],[0 6000],'k')
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
+print(-r300','-depsc',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
 
 
-%% distribution of PC1/2 weights and plot with pc1/pc2 fancy latency color map
+%% Figrue S4B: distribution of PC1/2 weights and plot with pc1/pc2 fancy latency color map
 % circle size weighted by voxel density using hist3
 
 % print heartrate
@@ -438,5 +439,5 @@ end
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','SuppFigureS4B_modelpc12_weightsV2'))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures','SuppFigureS4B_modelpc12_weightsV2'))
+print('-r300','-depsc',fullfile(dDir,'derivatives','figures','SuppFigureS4B_modelpc12_weightsV2'))
 

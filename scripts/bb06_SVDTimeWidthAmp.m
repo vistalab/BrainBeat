@@ -21,7 +21,7 @@ close all
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 for ss = 1:length(sub_labels) % subjects/ses/acq
 
@@ -40,15 +40,15 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     acpcXform = acpcXform_new; clear acpcXform_new
     
     % load pc1
-    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii']);
     % load pc2
-    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii']);
 
     % load r weights
-    r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
+    r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii']);
     
     % name for rel rms error weights
-    rel_rms_error = niftiRead([save_name_base '_space-T1w_canoPc12RelRMSE.nii.gz']);
+    rel_rms_error = niftiRead([save_name_base '_space-T1w_canoPc12RelRMSE.nii']);
     
     % load canonical pcs
     load(fullfile(dDir,'derivatives','brainbeat','group',['canonicalPC_leavout' sub_labels{ss}]),'pc1','pc2','t_svd')
@@ -134,7 +134,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
         end
     end
 
-
     %%% write these niftis
     % add beta weights in niftis in functional space
     ni1 = ni; % slope pos/neg and strength
@@ -146,7 +145,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni1.sto_ijk = inv(acpcXform);
 
     % name for positive or negative slope
-    pc1_newName = [save_name_base '_space-T1w_modelSlope.nii.gz'];
+    pc1_newName = [save_name_base '_space-T1w_modelSlope.nii'];
     niftiWrite(ni1,pc1_newName)
 
     ni2 = ni; % onset
@@ -158,7 +157,7 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni2.sto_ijk = inv(acpcXform);
 
     % name for time: ranging -50:+50
-    pc2_newName = [save_name_base '_space-T1w_modelOnset.nii.gz'];
+    pc2_newName = [save_name_base '_space-T1w_modelOnset.nii'];
     niftiWrite(ni2,pc2_newName)
 
     ni3 = ni; % FWHM
@@ -170,6 +169,6 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     ni3.sto_ijk = inv(acpcXform);
 
     % FWHM in percengate
-    pc3_newName = [save_name_base '_space-T1w_model_FWHM.nii.gz']; 
+    pc3_newName = [save_name_base '_space-T1w_model_FWHM.nii']; 
     niftiWrite(ni3,pc3_newName)
 end
