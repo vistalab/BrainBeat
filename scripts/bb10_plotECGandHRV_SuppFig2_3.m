@@ -106,9 +106,8 @@ print('-r300','-depsc2',fullfile(dDir,'derivatives','figures','SuppFigureS2_ECGv
 %% Calculate Heart Rate Variability (HRV) for all subjects
 %%
 
-% define empty output structure
 all_phys = [];
-% load data
+
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
@@ -132,41 +131,65 @@ for ss = 1:length(sub_labels)
 end
 
 %% Supplemental Figure 3: plot HRV
+cl_use = lines(6); % colors for different subjects
 
-cl_use = lines(6);
-
-figure
+figure('Position',[0 0 550 300])
 
 % just subsequent differences (RRs)
-subplot(2,1,1),hold on
-for ss = 1:6
-    plot(diff(all_phys(ss).ppg_onsets),'Color',cl_use(ss,:));
+for ss = 1:6 % subjects
+    subplot(2,4,1:3),hold on
+    plot(all_phys(ss).ppg_onsets(2:end),diff(all_phys(ss).ppg_onsets),'Color',cl_use(ss,:));
+    
+    subplot(2,4,4),hold on    
+    b = bar(ss,mean(diff(all_phys(ss).ppg_onsets)));
+    set(b,'FaceColor',cl_use(ss,:))
+    eb = errorbar(ss,mean(diff(all_phys(ss).ppg_onsets)),std(diff(all_phys(ss).ppg_onsets)));
+    set(eb,'Color','k')   
 end
 
-% RMSSD
-int_length = 20; % seconds to calculate RMSSD
+subplot(2,4,1:3),hold on
+ylabel('P-P interval (s)')
+xlabel('Time (s)')
+xlim([0 max(all_phys(1).ppg_onsets)]),ylim([0 1.5])
+
+subplot(2,4,4),hold on
+set(gca,'XTick',1:6),ylim([0 1.5])
+xlabel('Subject #'),ylabel('P-P interval (s)')
+
+% Root Mean Sum of Squared Differences (RMSSD)
+int_length = 20; % interval in seconds to calculate RMSSD
 all_hrv = zeros(6,1);
-for ss = 1:6
+for ss = 1:6 % subjects
     subplot(2,4,5:7),hold on
-    these_int = 1:int_length:max(all_phys(ss).ppg_onsets)-int_length;
+    these_int = 1:int_length:max(all_phys(ss).ppg_onsets);
     this_hrv = zeros(length(these_int),1);
     for kk = 1:length(these_int)
         % get 10 seconds
         these_beats = all_phys(ss).ppg_onsets(all_phys(ss).ppg_onsets>these_int(kk) & all_phys(ss).ppg_onsets<=these_int(kk)+int_length);
-        % get RR (peak to peak difference),
+        % get RR (peak to peak difference)
         RR = diff(these_beats);
         % difference in ms between RRs
         these_diff = diff(RR)*1000; 
         this_hrv(kk) = sqrt(mean(these_diff.^2));
     end
-    plot(this_hrv,'Color',cl_use(ss,:))
+    plot(these_int-1+int_length,this_hrv,'Color',cl_use(ss,:))
     all_hrv(ss) = mean(this_hrv);
     
     subplot(2,4,8),hold on
     b = bar(ss,all_hrv(ss));
-    set(b,'FaceColor',cl_use(ss,:))
+    set(b,'FaceColor',cl_use(ss,:))   
+    eb = errorbar(ss,all_hrv(ss),std(this_hrv));
+    set(eb,'Color','k')   
 end
 
+subplot(2,4,5:7),hold on
+title('Root Mean Square of Successive Differences between heartbeats')
+xlabel('Time (s)'),ylabel('RMSSD (ms)')
+xlim([0 max(all_phys(1).ppg_onsets)]),ylim([0 100])
+subplot(2,4,8),hold on
+set(gca,'XTick',1:6),ylim([0 100])
+ylabel('RMSSD (ms)')
+xlabel('Subject #')
 
-% b.CData = cl_use;
-
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','SuppFigureS3_HRV'))
+print('-r300','-depsc2',fullfile(dDir,'derivatives','figures','SuppFigureS3_HRV'))

@@ -67,7 +67,11 @@ switch param
 %             end
         % but let's get it from the data:
             % find the peaks in the autocorrelation function:
-            [peaks_ac,peaks_ac_i] = findpeaks(acf(signal,srate*5));
+            if isequal(dataType,'ecg') || isequal(dataType,'ppg')
+                [peaks_ac,peaks_ac_i] = findpeaks(acf(signal,srate*5)); % 5 seconds for cardiac
+            elseif isequal(dataType,'resp')
+                [peaks_ac,peaks_ac_i] = findpeaks(acf(signal,srate*20)); % 20 seconds for respiratory
+            end
             % the first maximum peak (zero is not included) is the first
             % autocorrelation time
             [~,max_peaks_ac_i] = max(peaks_ac);
