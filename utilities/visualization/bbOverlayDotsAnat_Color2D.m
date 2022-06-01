@@ -9,8 +9,10 @@ function [] = bbOverlayDotsAnat_Color2D(niColor,niIntensity,niAnatomy,acpcXform,
 %     imDims
 %     curPos
 % Optional inputs (varargin)
-%     maxPlotC: default max(niColor.data(:))
-%     maxPlotI: default max(niIntensity.data(:))
+%     [maxPlotC maxPlotI]: 
+%           maxPlotC: default max(niColor.data(:)) 
+%           maxPlotI: default max(niIntensity.data(:))
+%     pointsize: default 10
 %     dotTh: default NaN
 %     colormap index: default 1 (red/blue), also option is 2 and 3
 % 

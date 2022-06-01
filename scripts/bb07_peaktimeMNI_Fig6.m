@@ -3,6 +3,7 @@
 %
 % Measuring brain beats: cardiac-aligned fast fMRI signals
 % Dora Hermes, Hua Wu, Adam B. Kerr, Brian Wandell
+%
 
 
 clear all
@@ -138,8 +139,9 @@ end
 niAnatomy = niftiRead(fullfile(dDir,'derivatives','mni','rsingle_subj_T1.nii'));
 imDims = [-90 -120 -70; 90 100 90];
 curPos = [1 12 4]; 
+acpcXform = pc1_mni.qto_xyz;
 
-%% Negative peaks: onset for color, cod for intensity
+%% Figure 6A panels: timing of local minima with onset for color, R^2 for intensity
 onset_mean = mean(all_mni_onset,4); 
 slope_mean = mean(all_mni_slope,4); 
 cod_mean = mean(all_mni_cod,4); 
@@ -148,31 +150,31 @@ cod_mean = mean(all_mni_cod,4);
 onset_mean(slope_mean>0) = NaN;
 cod_mean(slope_mean>0) = NaN;
 
-onset_plot = pc1_mni;
-cod_plot = pc1_mni;
+onset_plot = pc1_mni; % initialize nifti
+cod_plot = pc1_mni; % initialize nifti
 onset_plot.data = onset_mean;
 cod_plot.data = cod_mean;
-acpcXform = pc1_mni.qto_xyz;
 
 % plot Saggital figure
 sliceThisDim = 1;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vneg2']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6A_MNI_Saggital' int2str(curPos(sliceThisDim)) '_vneg2']))
 
 % Plot Axial
 sliceThisDim = 3;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vneg2']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6A_MNI_Axial' int2str(curPos(sliceThisDim)) '_vneg2']))
 
 % Plot Coronal
 sliceThisDim = 2;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,2);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vneg2']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6A_MNI_Coronal' int2str(curPos(sliceThisDim)) '_vneg2']))
 
-%% Positive peaks: onset for color, cod for intensity
+%% Figure 6B panels: timing of local maxima with onset for color, R^2 for intensity
+
 onset_mean = mean(all_mni_onset,4); 
 slope_mean = mean(all_mni_slope,4); 
 cod_mean = mean(all_mni_cod,4); 
@@ -187,137 +189,66 @@ onset_plot.data = onset_mean;
 cod_plot.data = cod_mean;
 acpcXform = pc1_mni.qto_xyz;
 
-
 % plot Saggital figure
 sliceThisDim = 1;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Saggital' int2str(curPos(sliceThisDim)) '_vpos2']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6B_MNI_Saggital' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 % Plot Axial
 sliceThisDim = 3;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Axial' int2str(curPos(sliceThisDim)) '_vpos2']))
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6B_MNI_Axial' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 % Plot Coronal
 sliceThisDim = 2;
 bbOverlayDotsAnat_Color2D(onset_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,3);
 set(gca,'CLim',[0 1])
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group',['MNI_Coronal' int2str(curPos(sliceThisDim)) '_vpos2']))
-
-
-
-%% 
-%%
-%% Renderings code not implemented yet - takes take a few minutes for each
-%%
-%%
-
-Rthreshold = 0.5;
-these_areas = all_mni_cod>=Rthreshold;
-these_areas = sum(these_areas,4);
-select_voxels = find(these_areas>=3); % voxel>Rthreshold in more than 3 subjects
-
-% Get indiced of selected voxels
-[ii,jj,kk] = ind2sub(size(wfcod.data),select_voxels);
-ijk_func = [ii jj kk];
-clear ii jj kk % housekeeping
-
-% Get mni coordinates of voxels
-xyz_mni = mrAnatXformCoords(wfcod.sto_xyz, ijk_func);
-
-
-%% % load MNI cortical surfaces 
-load(fullfile(dDir,'derivatives','mni','MNI_cortex_left.mat'))
-gl.vertices = cortex.vert;
-gl.faces = cortex.tri;
-gl.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-gl = gifti(gl);
-
-load(fullfile(dDir,'derivatives','mni','MNI_cortex_right.mat'))
-gr.vertices = cortex.vert;
-gr.faces = cortex.tri;
-gr.mat = [1 0 0 1;0 1 0 1; 0 0 1 1; 0 0 0 1];
-gr = gifti(gr);
-
-%% plot right
-figure,hold on
-fg = ieeg_RenderGifti(gr);
-% add PC2 in color:
-for kk = 1:size(xyz_mni,1)
-    if xyz_mni(kk,1)>-10
-        plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-    end
-end
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_v02'))
-
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_v02'))
-
-%% plot left
-figure,hold on
-fg = ieeg_RenderGifti(gl);
-% add PC2 in color:
-for kk = 1:size(xyz_mni,1)
-    if xyz_mni(kk,1)<10
-        plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-    end
-end
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_v02'))
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_v02'))
-
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['Figure6B_MNI_Coronal' int2str(curPos(sliceThisDim)) '_vpos2']))
 
 
 %%
-%% test only plotting positive/negative
+%% Uncomment below if you want to make figures of the width distribution
 %%
+% 
+% % plot width of local minima 
+% width_mean = mean(all_mni_fwhm,4); 
+% slope_mean = mean(all_mni_slope,4); 
+% cod_mean = mean(all_mni_cod,4); 
+% 
+% % plot blood
+% width_mean(slope_mean>0) = NaN;
+% cod_mean(slope_mean>0) = NaN;
+% 
+% width_plot = pc1_mni; % initialize nifti
+% cod_plot = pc1_mni; % initialize nifti
+% width_plot.data = width_mean;
+% cod_plot.data = cod_mean;
+% 
+% % plot Saggital figure
+% sliceThisDim = 1;
+% bbOverlayDotsAnat_Color2D(width_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,1);
+% set(gca,'CLim',[0 1])
+% 
+% 
+% % plot width of local maxima
+% width_mean = mean(all_mni_fwhm,4); 
+% slope_mean = mean(all_mni_slope,4); 
+% cod_mean = mean(all_mni_cod,4); 
+% 
+% % plot CSF
+% width_mean(slope_mean<0) = NaN;
+% cod_mean(slope_mean<0) = NaN;
+% 
+% width_plot = pc1_mni; % initialize nifti
+% cod_plot = pc1_mni; % initialize nifti
+% width_plot.data = width_mean;
+% cod_plot.data = cod_mean;
+% 
+% % plot Saggital figure
+% sliceThisDim = 1;
+% bbOverlayDotsAnat_Color2D(width_plot,cod_plot,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,[50 .3],8,.3,1);
+% set(gca,'CLim',[0 1])
 
-pc_complex = complex(pc1_mean(select_voxels),pc2_mean(select_voxels));
-pc_angle = angle(pc_complex*(1-1i)); % multiply by (1-i) to rotatio 45 deg
-
-%% plot right
-figure,hold on
-fg = ieeg_RenderGifti(gr);
-% add PC2 in color:
-for kk = 1:size(xyz_mni,1)
-    if xyz_mni(kk,1)>-10
-        if pc_angle(kk)<0
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-        end
-    end
-end
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view1_vPos'))
-
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_right_render_view2_vPos'))
-
-%% plot left
-figure,hold on
-fg = ieeg_RenderGifti(gl);
-% add PC2 in color:
-for kk = 1:size(xyz_mni,1)
-    if xyz_mni(kk,1)<10
-        if pc_angle(kk)<0
-            plot3(xyz_mni(kk,1),xyz_mni(kk,2),xyz_mni(kk,3),'.','Color',data_colors_rgb(kk,:))
-        end
-    end
-end
-
-set(fg,'FaceAlpha',.5)
-set(gcf,'PaperPositionMode','auto') 
-ieeg_viewLight(270,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view1_vPos'))
-ieeg_viewLight(90,0)
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','brainbeat','group','mni_all_left_render_view2_vPos'))
 
