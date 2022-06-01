@@ -1,94 +1,76 @@
+
+% This script generates Figure 1 from the manuscript titled:
+%
+%%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
+% Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+%
+
 clear all
 close all
 
-%% s_bbIntro
-%
-% Script to explain how to open and do preliminary brain beat analyses
-%
+%% Data directory 
 
-%% Base data directory
+[~,dDir] = bbPath;
 
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-% chdir(dDir)
 
-%% The T2* data are here.  
+%% Load the SMS data for subject 1
 
-% Select a subject and scan nummer
-s_nr = 1;
-scan_nr = 3;
+sub_labels = {'1'}; 
+ses_labels = {'1'}; 
+acq_labels = {'4mmFA48'};
+run_nrs = {[1]};
 
-subs = bb_subs(s_nr);
-subj = subs.subj;
-scan = subs.scan{scan_nr};
-scanName = subs.scanName{scan_nr};
-fmri = fullfile(dDir,subj,scan,[scanName '.nii.gz']);
-if ~exist(fmri,'file')
-    clear ni
-    error('filename %s does not exist',fmri)
-end
-ni = niftiRead(fmri);
+ss = 1;%:length(sub_labels) % subjects/ses/acq
+rr = 1;% run_nr
+sub_label = sub_labels{ss};
+ses_label = ses_labels{ss};
+acq_label = acq_labels{ss};
 
-% load coregistration matrix for the functionals:
-load(fullfile(dDir,subj,scan,[scanName 'AcpcXform_new.mat']))
+run_nr = run_nrs{ss}(rr);
+        
+% load the fMRI data
+fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
+    ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+fmri_name = fullfile(dDir,fmri_BIDSname);
+ni = niftiRead(fmri_name);
+
+save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...
+    ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
+
+% load coregistration matrix (for the functionals):
+load([save_name_base '_AcpcXform_new.mat']);
 acpcXform = acpcXform_new; clear acpcXform_new
 
-% The pixdim field in the ni structure has four dimensions, three spatial
-% and the fourth is time in seconds.
+% load the T1w
+t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
+            ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
-% Get the MRVenogram:
-% niVeno = niftiRead(fullfile(dDir,subj,subs.veno,[subs.venoName '.nii']));
-% % load coregistration matrix (for the venogram):
-% xf_veno=load(fullfile(dDir,subj,subs.veno,[subs.venoName 'AcpcXform.mat']));
+%% Make Figure 1: Slice with example voxel
 
-%% Anatomicals
-
-anat      = fullfile(dDir,subj,subs.anat,[subs.anatName '.nii.gz']);
-niAnatomy = niftiRead(anat);
-
-%% Quick overlay between functionals and anatomy
+exampl_coords = [27 51 20];
 
 sliceThisDim = 3;
-if s_nr == 2
-    imDims = [-90 -120 -120; 90 130 90];
-%     curPos = [1,10,-20];
-%     curPos = [-29,-14,-50]; % 03
-%     curPos = [-3,30,-43]; % 03
-    curPos = [1,10,-20];
-    curPos = [1,1,-20];
-    curPos = [-11 34 -71]; % Carotid
-elseif s_nr == 3
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-%     curPos = [0,4,38];
-elseif s_nr == 4
-    imDims = [-90 -120 -100; 90 130 110];
-    curPos = [0,4,38];
-end
-niFunc = ni;
+curPos = mrAnatXformCoords(acpcXform,exampl_coords); % xyz coordinates
+imDims = [-90 -120 -100; 90 130 110];
 
-% niFunc.data = ni.data(:,:,:,1); % overlay the first functional - more structure visible
-% bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-% title('First functional on anatomy')
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_Func1onAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+% % this can show the overlay for checking data
+% niFunc = ni; % initialize for plotting
+% niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the mean functional
+% [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
 
-niFunc.data = mean(ni.data(:,:,:,5:end),4); % overlay the mean functional
-bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos)
-title('Mean functional on anatomy')
-set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/checkCoreg/' subj '_' scan '_MeanFuncOnAnat_view' int2str(sliceThisDim) '_slice' int2str(curPos(sliceThisDim))])
+figure
+image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
+hold on
+axis image
+plot(curPos(1),curPos(2),'w*','MarkerSize',10)
 
-ppgRname = fullfile(dDir,subj,scan,[scanName '_codPPG.nii.gz']);
-ppgR = niftiRead(ppgRname); % correlation with PPG
+set(gcf,'PaperPositionMode','auto')    
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure1_sub-' int2str(sub_label) '_SignalTracesSlice']))
 
-ppgTSname = fullfile(dDir,subj,scan,[scanName '_PPGtrigResponse.nii.gz']);
-ppgTS = niftiRead(ppgTSname); % ppg triggered time series
-load(fullfile(dDir,subj,scan,[scanName '_PPGtrigResponseT.mat']),'t');
+%% Make Figure 1: Timeseries and waveforms
 
-%% 
-
-exampl_coords = [27 51 20];%[27 51 20] = superior saggital sinus, S1, scan3
-exampl_coords = [27 45 26];%[27 51 20] = superior saggital sinus, S2, scan3
 plot_nrs = [13:2:20]; % heartbeat nrs to plot
 
 figure('Position',[0 0 250 400])
@@ -96,9 +78,9 @@ figure('Position',[0 0 250 400])
 slices=[1:size(ni.data,3)];
 
 % get the nifti stuff we need:
-timing=bbGet(ni,'timing');
-mux_f=bbGet(ni,'super slices');
-srate=1/bbGet(ni,'tr');
+timing = bbGet(ni,'timing');
+mux_f = bbGet(ni,'super slices');
+srate = 1/bbGet(ni,'tr');
 
 % get physio stuff we need:
 physio     = physioCreate('nifti',ni);
@@ -145,11 +127,9 @@ for s = exampl_coords(3)%1:length(slices)
 
     subplot(4,1,1),hold on
     plot([1:length(physio.ppg.data)]./physio.ppg.srate,physio.ppg.data,'k')
-    %  plot(ppg_onsets,physio.ppg.data(round(ppg_onsets*physio.ppg.srate)),'ko','MarkerSize',10)
     plot([ppg_onsets ppg_onsets],[-20 50],'k:') 
     xlim([ppg_onsets(plot_nrs(1))-epoch_pre ppg_onsets(plot_nrs(end)+1)+epoch_post])
     title('PPG signal')
-%     ylim([-20 50])
     
     subplot(4,1,2),hold on
     plot(t_sli,squeeze(d(exampl_coords(1),exampl_coords(2),:)),...
@@ -157,10 +137,8 @@ for s = exampl_coords(3)%1:length(slices)
     plot(t_sli,squeeze(d(exampl_coords(1),exampl_coords(2),:)),...
         '.','Color',[.3 .3 .3]);
     xlim([ppg_onsets(plot_nrs(1))-epoch_pre ppg_onsets(plot_nrs(end)+1)+epoch_post])
-%     plot(ppg_onsets,0,'ko','MarkerSize',10)
     plot([ppg_onsets ppg_onsets],[0 .2],'k:') 
     title('T2^* signal')
-%     ylim([-.8 .5])
     
     % get the upsampled (NaN) of this slice
     d_up = single(NaN(size(d,1),size(d,2),length(t_vox))); % initiate with NaNs
@@ -174,19 +152,8 @@ for s = exampl_coords(3)%1:length(slices)
         temp_response_matrix(:,:,:,kk) = d_up(:,:,ppg_find-floor(epoch_pre*srate_epochs):ppg_find+floor(epoch_post*srate_epochs));
     end
 
-    t_mri = [1:size(temp_response_matrix,3)]./(mux_f*srate)-epoch_pre;
+    t_mri = (1:size(temp_response_matrix,3))./(mux_f*srate)-epoch_pre;
     
-    % code for plotting ppg for each trial:
-%     for kk = 1:length(plot_nrs)
-%     plot_nr = plot_nrs(kk);
-%         subplot(4,2,5),hold on
-%         t_physio = [-epoch_pre*physio.ppg.srate:epoch_post*physio.ppg.srate]./physio.ppg.srate;
-%         plot(t_physio,...
-%             physio.ppg.data(round(ppg_onsets(plot_nr)*physio.ppg.srate)-(epoch_pre*physio.ppg.srate):...
-%             round(ppg_onsets(plot_nr)*physio.ppg.srate)+(epoch_post*physio.ppg.srate)),...
-%             'Color',plot_colors(kk,:))
-%         xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
-%     end
     plot_colors = lines(8);
     
     subplot(4,2,5),hold on
@@ -203,10 +170,9 @@ for s = exampl_coords(3)%1:length(slices)
         plot(t_mri(~isnan(data_plot)),data_plot(~isnan(data_plot)),...
             'Color',[.3 .3 .3])
         plot(t_mri,data_plot,...
-            '.','Color',[.3 .3 .3],'MarkerSize',10)%,plot_colors(kk,:))
+            '.','Color',[.3 .3 .3],'MarkerSize',10)
     end
     xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
-%     ylim([-.8 .5])
     plot([0 0],[-.8 .5],'k:')
     
     subplot(4,2,6),hold on % odd trials
@@ -223,10 +189,9 @@ for s = exampl_coords(3)%1:length(slices)
         plot(t_mri(~isnan(data_plot)),data_plot(~isnan(data_plot)),...
             'Color',[.3 .3 .3])
         plot(t_mri,data_plot,...
-            '.','Color',[.3 .3 .3],'MarkerSize',10)%,plot_colors(kk,:))
+            '.','Color',[.3 .3 .3],'MarkerSize',10)
     end
     xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
-%     ylim([-.8 .5])
     plot([0 0],[-.8 .5],'k:')
     
     subplot(4,2,7),hold on
@@ -243,7 +208,6 @@ for s = exampl_coords(3)%1:length(slices)
         '.','Color',[0 0 0],'MarkerSize',10)
     xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
     title('average even')
-%     ylim([-.8 .5])
     plot([0 0],[-.8 .5],'k:')
 
     subplot(4,2,8),hold on
@@ -260,30 +224,12 @@ for s = exampl_coords(3)%1:length(slices)
         '.','Color',[0 0 0],'MarkerSize',10)
     xlim([-epoch_pre*physio.ppg.srate./physio.ppg.srate epoch_post*physio.ppg.srate./physio.ppg.srate])
     title('average odd')
-%     ylim([-.8 .5])
     plot([0 0],[-.8 .5],'k:')
-%     clear d_up d
     
 end
 
-% set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces'])
-% print('-painters','-r300','-depsc',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces'])
-%%
-exampl_coords = [27 45 26];%[27 51 20] = superior saggital sinus, S1, scan3
-
-sliceThisDim = 3;
-curPos = mrAnatXformCoords(acpcXform,exampl_coords); % xyz coordinates
-imDims = [-90 -120 -100; 90 130 110];
-
-niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the mean functional
-[imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
-
-figure
-image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background
-hold on
-axis image
-plot(curPos(1),curPos(2),'w*','MarkerSize',10)
-
 set(gcf,'PaperPositionMode','auto')
-% print('-painters','-r300','-dpng',[dDir './figures/methods/s' int2str(s_nr) '_scan' int2str(scan_nr) '_SignalTraces_Location'])
+print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',...
+    ['Figure1_sub-' sub_label '_ses-' ses_label '_SignalTraces']))
+print('-r300','-depsc2',fullfile(dDir,'derivatives','figures',...
+    ['Figure1_sub-' sub_label '_ses-' ses_label '_SignalTraces']))
