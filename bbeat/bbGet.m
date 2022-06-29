@@ -100,6 +100,12 @@ switch(param)
         %
         % We could check that the value is very close to an integer
         val = round(bbGet(ni,'tr')./ bbGet(ni,'slice duration'));
+
+    case {'json'}
+        % Get json sidecar filename
+        [thisDir,thisFile] = fileparts(ni.fname);
+        [~,thisFile] = fileparts(thisFile);
+        val = bids.util.jsondecode(fullfile(thisDir,[thisFile '.json']));
     case{'mux','simultaneousslices'}
         % Number of slices acquired simultaneously
         val = round(ni.dim(3)./bbGet(ni,'super slices'));
@@ -117,25 +123,30 @@ switch(param)
         % bbGet(ni,'timing')
         % 
         % The moment in time that we start to measure each slice
-        nslices= bbGet(ni,'super slices');
-        mux    = bbGet(ni,'simultaneous slices');
-         
         tr     = bbGet(ni,'tr');
-        sDuration = bbGet(ni,'slice duration');
-        mux_slice_acq_time = 0:sDuration:tr;
         
-        % This is the timing for the super slices
-        mux_slice_acq_order   = bbGet(ni,'slice acquisition order');
-        [~,idx] = sort(mux_slice_acq_order);
-        sliceTime = mux_slice_acq_time(idx);
+%         % old code, we now get this info from the BIDS json file
+%         nslices= bbGet(ni,'super slices');
+%         mux    = bbGet(ni,'simultaneous slices');
+%                  sDuration = bbGet(ni,'slice duration');
+%         mux_slice_acq_time = 0:sDuration:tr;
+%         
+%         % This is the timing for the super slices
+%         mux_slice_acq_order   = bbGet(ni,'slice acquisition order');
+%         [~,idx] = sort(mux_slice_acq_order);
+%         sliceTime = mux_slice_acq_time(idx);
+%         
+%         sAcquisitionTiming = zeros(mux,nslices);
+%         for ii = 1:mux
+%             sAcquisitionTiming(ii,:) = sliceTime;
+%         end
+%         sAcquisitionTiming = sAcquisitionTiming';
+%         sAcquisitionTiming = sAcquisitionTiming(:);
         
-        sAcquisitionTiming = zeros(mux,nslices);
-        for ii = 1:mux
-            sAcquisitionTiming(ii,:) = sliceTime;
-        end
-        sAcquisitionTiming = sAcquisitionTiming';
-        sAcquisitionTiming = sAcquisitionTiming(:);
-               
+        % we just read the slice AcquisitionTiming from the _bold.json SliceTiming field
+        bold_json = bbGet(ni,'json');
+        sAcquisitionTiming = bold_json.SliceTiming;
+
         % The timing matrix
         nVolumes = bbGet(ni,'n volumes');
         timing = zeros(bbGet(ni,'total slices'),nVolumes);
