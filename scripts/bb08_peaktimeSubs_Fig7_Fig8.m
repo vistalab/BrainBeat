@@ -23,7 +23,7 @@ close all
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 % get model for traces figures
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
@@ -88,7 +88,7 @@ for ss = 1:6
     % show sagittal
     sliceThisDim = 1;
 
-    % not implemented yet with current colorscale
+    % slice view in individual subjects not implemented yet with current colorscale
     % % local minima
     % svd_peakt_plot =  svd_peakt; % time for color 
     % svd_intensity_plot = ppgR; % R for intensity
