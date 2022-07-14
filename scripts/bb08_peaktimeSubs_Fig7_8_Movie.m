@@ -58,11 +58,6 @@ for ss = 4%1:6
     % load FWHM
     svd_fwhm = niftiRead([save_name_base '_space-T1w_model_FWHM.nii']); 
     acpcXform = pc1Weight.qto_xyz;
-    
-    % Get anatomy
-    t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
-                ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
-    niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
     % Get functional voxels to plot with rendering
     Rthreshold = .5;
@@ -137,58 +132,104 @@ for ss = 4%1:6
     xyz_min = min([xx_plot yy_plot zz_plot]);
     xyz_max = max([xx_plot yy_plot zz_plot]);
 
-    videoName = [save_name_base '_movieMesialView'];
-
-    fid = figure('Position',[0 0 1000 400],'Color','w');
-
-    vidObj = VideoWriter(videoName,'MPEG-4'); % open movie file
-    open(vidObj); 
-
-    for this_t = 1:find(tt>(ppg_cycle/2),1) % just plot 1 cycle, as in Figure 6 and 7 ti
-        % plot negative responses
-        subplot(1,2,1)
-        brainHandle = bbRenderGifti(g); hold on
-        plot3(xyz_min(1),xyz_min(2),xyz_min(3),'.','MarkerSize',100,'Color',[1 1 1])
-        plot3(xyz_max(1),xyz_max(2),xyz_max(3),'.','MarkerSize',100,'Color',[1 1 1])
-        % only plot size etc if signal exceeds threshold at time t
-        for kk = 1:size(intensity_plot,1)
-            if these_waveforms(kk,this_t)<-.2 % only plot size etc if signal exceeds threshold at time t
-                if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
-                    c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
-                    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+    for view_nrs = 2%1:2
+        if view_nrs==1
+            videoName = [save_name_base '_movieMesialView'];
+            view_angle = [90 0];
+        elseif view_nrs==2
+            videoName = [save_name_base '_movieLateralView'];
+            view_angle = [270 0];
+        end
+        fid = figure('Position',[0 0 1000 600],'Color','w');
+    
+        vidObj = VideoWriter(videoName,'MPEG-4'); % open movie file
+        open(vidObj); 
+    
+        for this_t = 1:length(tt)%find(tt>(ppg_cycle/2),1) % just plot 1 cycle, as in Figure 6 and 7 ti
+            % plot negative responses
+            subplot(5,7,[1:3 8:10 15:17 22:24])
+            brainHandle = bbRenderGifti(g); hold on
+            plot3(xyz_min(1),xyz_min(2),xyz_min(3),'.','MarkerSize',100,'Color',[1 1 1])
+            plot3(xyz_max(1),xyz_max(2),xyz_max(3),'.','MarkerSize',100,'Color',[1 1 1])
+            % only plot size etc if signal exceeds threshold at time t
+            for kk = 1:size(intensity_plot,1)
+                if these_waveforms(kk,this_t)<-.2 % only plot size etc if signal exceeds threshold at time t
+                    if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
+                        c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
+                        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+                    end
                 end
             end
-        end
-        title(['tt = ' num2str(tt(this_t),2) ' s'])
-        bbViewLight(90,0)
-
-        % plot positive responses
-        subplot(1,2,2)
-        brainHandle = bbRenderGifti(g); hold on
-        plot3(xyz_min(1),xyz_min(2),xyz_min(3),'.','MarkerSize',100,'Color',[1 1 1])
-        plot3(xyz_max(1),xyz_max(2),xyz_max(3),'.','MarkerSize',100,'Color',[1 1 1])
-        for kk = 1:size(intensity_plot,1)
-            if these_waveforms(kk,this_t)>.2 % only plot size etc if signal exceeds threshold at time t
-                if ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
-                    c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
-                    plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+            bbViewLight(view_angle(1),view_angle(2))
+    
+            % plot positive responses
+            subplot(5,7,[5:7 12:14 19:21 26:28])
+            brainHandle = bbRenderGifti(g); hold on
+            plot3(xyz_min(1),xyz_min(2),xyz_min(3),'.','MarkerSize',100,'Color',[1 1 1])
+            plot3(xyz_max(1),xyz_max(2),xyz_max(3),'.','MarkerSize',100,'Color',[1 1 1])
+            for kk = 1:size(intensity_plot,1)
+                if these_waveforms(kk,this_t)>.2 % only plot size etc if signal exceeds threshold at time t
+                    if ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
+                        c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
+                        plot3(xx_plot(kk),yy_plot(kk),zz_plot(kk),'.','MarkerSize',round(intensity_plot(kk)*100)-40,'Color',c_use)
+                    end
                 end
             end
-        end
-        title(['tt = ' num2str(tt(this_t),2) ' s'])
-        bbViewLight(90,0)
-
-        nr_frames = 3;
-        % Write each frame to the file
-        for m = 1:nr_frames % write X frames: decides speed
-            writeVideo(vidObj,getframe(fid));
-        end
+            bbViewLight(view_angle(1),view_angle(2))
         
-        clf
+            if view_nrs==1
+                title({'Time with respect to PPG peak:',[int2str(tt(this_t)*1000) ' ms']},'Position',[-25 -120 110],'FontSize',15,'Interpreter','latex')
+            elseif view_nrs==2
+                title({'Time with respect to PPG peak:',[int2str(tt(this_t)*1000) ' ms']},'Position',[-25 120 110],'FontSize',15,'Interpreter','latex')
+            end
 
+            % Add waveforms/colors
+            for kk = 1:size(intensity_plot,1)
+                if ColorInt_render_sel(kk,3)<0 % negative slope: local minimum
+                    if these_waveforms(kk,this_t)<-.2 % only plot size etc if signal exceeds threshold at time t
+                        subplot(5,7,29:31),hold on
+                        c_use = squeeze(cm2D_blood(100,ceil(color_plot(kk)*99.5)+100,:));
+                        x = ColorInt_render_sel(kk,4); %PC1
+                        y = ColorInt_render_sel(kk,5); %PC2
+                        plot(tt,x*pc1 + y*pc2,'Color',c_use)
+                    end
+                elseif ColorInt_render_sel(kk,3)>0 % positive slope: local maximum
+                    if these_waveforms(kk,this_t)>.2 % only plot size etc if signal exceeds threshold at time t
+                        subplot(5,7,33:35),hold on
+                        c_use = squeeze(cm2D_csf(100,ceil(color_plot(kk)*99.5)+100,:));
+                        x = ColorInt_render_sel(kk,4); %PC1
+                        y = ColorInt_render_sel(kk,5); %PC2
+                        plot(tt,x*pc1 + y*pc2,'Color',c_use)
+                    end
+                end
+            end
+            subplot(5,7,29:31),hold on
+            plot([tt(this_t) tt(this_t)],[-1 1],'k','LineWidth',2),set(gca,'YTickLabel','')
+            plot(tt,-0.2+zeros(size(tt)),'k','LineWidth',2)
+            ylim([-1 1]),xlim([min(tt) max(tt)])
+            title({'Areas with local minima (blood vessels)','color = timing, size = reliablity','','Waveforms of areas (2 cycles)'},'FontSize',15,'Interpreter','latex','Position',[0.4554 1.1 0])
+            xlabel('Time (s)','Interpreter','latex')
+
+            subplot(5,7,33:35),hold on
+            plot([tt(this_t) tt(this_t)],[-1 1],'k','LineWidth',2),set(gca,'YTickLabel','')
+            plot(tt,0.2+zeros(size(tt)),'k','LineWidth',2)
+            ylim([-1 1]),xlim([min(tt) max(tt)])
+            title({'Areas with local maxima (CSF spaces)','color = timing, size = reliablity','','Waveforms of areas (2 cycles)'},'FontSize',15,'Interpreter','latex','Position',[0.4554 1.1 0])
+            xlabel('Time (s)','Interpreter','latex')
+    
+            nr_frames = 6;
+            % Write each frame to the file
+            for m = 1:nr_frames % write X frames: decides speed
+                writeVideo(vidObj,getframe(fid));
+            end
+            
+            clf
+
+        end
+
+        close(vidObj);
     end
 
-    close(vidObj);
 end
 
 
