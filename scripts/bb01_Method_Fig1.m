@@ -55,9 +55,9 @@ curPos = mrAnatXformCoords(acpcXform,exampl_coords); % xyz coordinates
 imDims = [-90 -120 -100; 90 130 110];
 
 % % this can show the overlay for checking data
-% niFunc = ni; % initialize for plotting
-% niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the mean functional
-% [imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
+niFunc = ni; % initialize for plotting
+niFunc.data = mean(ni.data(:,:,:,1),4); % overlay the mean functional
+[imgSlice,x,y,imgSlice1,x1,y1] = bbOverlayFuncAnat(niFunc,niAnatomy,acpcXform,sliceThisDim,imDims,curPos);
 
 figure
 image(x,y,cat(3,imgSlice,imgSlice,imgSlice)/max(imgSlice(:))); % background

@@ -21,7 +21,7 @@ for ss = 1 % subject number loop
 
     % Get the anatomicals:
     t1_name = fullfile(dDir,['sub-' sub_label],['ses-' ses_label],'anat',...
-        ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+        ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
     niAnatomy = niftiRead(t1_name);
 
     % Get the MRVenogram:
@@ -36,13 +36,13 @@ for ss = 1 % subject number loop
         
         % read functional data
         fmri_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'func',...
-            ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
+            ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr) '_bold.nii.gz']);
         fmri_name = fullfile(dDir,fmri_BIDSname);
         ni1 = niftiRead(fmri_name);
         
         % directory and base name of how to save the coregitsration matrix
         save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
-        save_name_base = ['sub-' sub_label '_ses-' ses_label '_acq-' acq_label '_run-' int2str(run_nr)];
+        save_name_base = ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)];
         
         % select certain scans to align in ni1 (first, average)
         ni1 = ni;
