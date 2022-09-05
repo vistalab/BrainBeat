@@ -48,7 +48,7 @@ for ss = 1 % subject number loop
         ni1 = ni;
         %%%%% use the first nifti to align, this one has the most structural info:
         % this worked best for subject 1, scan 2
-        ni1.data=ni1.data(:,:,:,1); % use this
+        ni1.data = ni1.data(:,:,:,1); % use this
         %%%%% use the average functionals to align
 %         ni1.data = mean(ni1.data(:,:,:,5:end),4); 
         
