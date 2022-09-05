@@ -21,7 +21,7 @@ close all
 sub_labels = {'1','2','3','4','5','1'}; 
 ses_labels = {'1','1','1','1','1','2'}; 
 acq_labels = {'4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48','4mmFA48'};
-run_nrs = {[1],[1],[1],[1],[1],[1]};
+run_nrs = {1,1,1,1,1,1};
 
 ss = 1;
 rr = 1;% run_nr
@@ -36,16 +36,16 @@ save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['se
     ['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
 
 % load pc1
-pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii']);
 % load pc2
-pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii']);
 % load r weights (how much explained by canonical PC1-2)
-r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii.gz']);
+r_weight = niftiRead([save_name_base '_space-T1w_canoPc12R.nii']);
 acpcXform = pc1Weight.qto_xyz;
 
 % Get anatomy
 t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
-            ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+            ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
 niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
 
@@ -74,7 +74,7 @@ end
 sliceThisDim = 1;
 bbOverlayDotsAnat_FancyColorCircle(pc1Weight,pc2Weight,niAnatomy,acpcXform,sliceThisDim,imDims,curPos,.7);
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_exampleAxial38']))
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_exampleAxial38']))
 
 % Get functional voxels to plot with rendering: brain mask and COD
 % threshold
@@ -102,7 +102,7 @@ xyz_anat = mrAnatXformCoords(acpcXform, ijk_func);
 %%%%%%%%%%%% Render left and right hemispheres
 hemis = {'r','l'};
 
-for hh = 1:length(hemis)
+for hh = 1%:length(hemis)
     hemi_load = hemis{hh};
     
     gifti_name = fullfile(dDir,'derivatives','surfaces',['sub-' sub_label],['ses-' ses_label],['T1w_' hemi_load 'h_white_render.gii']);
@@ -144,18 +144,18 @@ for hh = 1:length(hemis)
     
     bbViewLight(90,0)
     set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_view90_0']))
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_view90_0']))
     
-    bbViewLight(270,0)
-    set(gcf,'PaperPositionMode','auto')
-    print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_view270_0']))
+%     bbViewLight(270,0)
+%     set(gcf,'PaperPositionMode','auto')
+%     print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_render' upper(hemi_load) '_view270_0']))
     
     clear xyz_select g
 
 end
 
-%% Plot predicted responses for all subjects as function of time(s)
-% this can be used as a colorscale to go with renderings
+%% This colormap matches the plots in supplementary figure 4
+
 
 Rthreshold = .5;
 
@@ -216,9 +216,9 @@ set(gca,'FontName','Ariel')
 subplot(2,1,1),xlim([-0.5 1.8])
 subplot(2,1,2),xlim([-0.5 1.8])
 
-set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_renderCM_predictedResp']))
-print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_renderCM_predictedResp']))
-
+% set(gcf,'PaperPositionMode','auto')
+% print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_renderCM_predictedResp']))
+% print('-painters','-r300','-depsc',fullfile(dDir,'derivatives','figures',['subj' int2str(ss) '_run' int2str(rr) '_renderCM_predictedResp']))
+% 
 
 

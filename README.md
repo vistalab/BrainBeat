@@ -22,6 +22,8 @@ ECG physio files have to have the same name as the recording plus a _recording-E
 
 Matlab toolboxes:
 - signal processing toolbox
+- statistics toolbox
+- image processing toolbox
 
 ## Contact
 Dora Hermes: 

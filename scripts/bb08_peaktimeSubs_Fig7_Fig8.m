@@ -28,7 +28,7 @@ run_nrs = {1,1,1,1,1,1};
 % get model for traces figures
 load(fullfile(dDir,'derivatives','brainbeat','group','allsubs_pc12'),'pc1','pc2')
 
-for ss = 1:6
+for ss = 5%1:6
     rr = 1;% run_nr
     sub_label = sub_labels{ss};
     ses_label = ses_labels{ss};
@@ -48,20 +48,20 @@ for ss = 1:6
 
     % these are all in T1w space
     % load pc1 weights
-    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii.gz']);
+    pc1Weight = niftiRead([save_name_base '_space-T1w_canoPc1Weights.nii']);
     % load pc2 weights
-    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii.gz']);
+    pc2Weight = niftiRead([save_name_base '_space-T1w_canoPc2Weights.nii']);
     % load Slope
-    svd_slope = niftiRead([save_name_base '_space-T1w_modelSlope.nii.gz']);
+    svd_slope = niftiRead([save_name_base '_space-T1w_modelSlope.nii']);
     % load PeakTime
-    svd_peakt = niftiRead([save_name_base '_space-T1w_modelOnset.nii.gz']);
+    svd_peakt = niftiRead([save_name_base '_space-T1w_modelOnset.nii']);
     % load FWHM
-    svd_fwhm = niftiRead([save_name_base '_space-T1w_model_FWHM.nii.gz']); 
+    svd_fwhm = niftiRead([save_name_base '_space-T1w_model_FWHM.nii']); 
     acpcXform = pc1Weight.qto_xyz;
     
     % Get anatomy
     t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
-                ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+                ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
     niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
     if ss == 1

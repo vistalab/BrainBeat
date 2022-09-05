@@ -1,15 +1,17 @@
+
+% This script makes Figure 8 from:
+%
+%%%%% Measuring brain beats: cardiac-aligned fast fMRI signals %%%%%
+% Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
+%
+%
+
 clear all
 close all
 
-%% s_bbIntro
-%
-% Script to explain how to open and do preliminary brain beat analyses
-%
+%% Data directory 
 
-%% Base data directory
-
-dDir = '/Volumes/DoraBigDrive/data/BrainBeat/data/';
-% chdir(dDir)
+[~,dDir] = bbPath;
 
 %% Get the average responses across subjects
 
@@ -25,18 +27,18 @@ avResp_all = NaN(248,length(roiNames),length(sub_labels));
 %     
 for kk = 1:length(sub_labels)
      
-    sub_label = ['IRIS0' sub_labels{kk}];
+    sub_label = ['sub-IRIS0' sub_labels{kk}];
     
     % load cardiac gated timeseries
-    ppgResp = niftiRead(fullfile(dDir,'sourcedata','slowFMRI',sub_label,'brainbeats','cardiac_gated_analysis',...
+    ppgResp = niftiRead(fullfile(dDir,'derivatives','rs_fmri',sub_label,...
         ['avgGatedSignalNormalizedPercentage.nii.gz']));
 
     % load times
-    t = load(fullfile(dDir,'sourcedata','slowFMRI',sub_label,'brainbeats','cardiac_gated_analysis',...
+    t = load(fullfile(dDir,'derivatives','rs_fmri',sub_label,...
         ['avgTimes.mat']));
     
     % load segmentation
-    niSegm = niftiRead(fullfile(dDir,'sourcedata','slowFMRI',sub_label,'brainbeats','cardiac_gated_analysis',...
+    niSegm = niftiRead(fullfile(dDir,'derivatives','rs_fmri',sub_label,...
         ['fs_aparc_resampled.nii.gz']));
     % matrix to vector
     segmVect = reshape(niSegm.data,[size(niSegm.data,1) * size(niSegm.data,2) * size(niSegm.data,3)],1);
@@ -81,8 +83,8 @@ plot(t_match,thisSignal,'Color',[.5 .5 .5],'LineWidth',1)
 xlim([-0.5 1.5])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_slowfMRIventricle'])
-print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig4D_allSubs_slowfMRIventricle'])
+print('-painters','-r300','-depsc',[dDir '/derivatives/figures/Fig9AB_allSubs_slowfMRIventricleInsula'])
+print('-painters','-r300','-dpng',[dDir '/derivatives/figures/Fig9AB_allSubs_slowfMRIventricleInsula'])
 
 
 %%
@@ -180,8 +182,8 @@ xlim([-.5 1.5])
 xlabel('heartbeat cycle')
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig3B_ArteryAvgs_slowfMRI'])
-print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig3B_ArteryAvgs_slowfMRI'])
+print('-painters','-r300','-depsc',[dDir '/derivatives/figures/Fig9C_ArteryAvgs_slowfMRI'])
+print('-painters','-r300','-dpng',[dDir '/derivatives/figures/Fig9C_ArteryAvgs_slowfMRI'])
 
 %% Figure 5C: get amplitude across subjects and test for significance
 
@@ -257,6 +259,6 @@ plot(max(art3_amp(:,:,t_int),[],3) - min(art3_amp(:,:,t_int),[],3),'LineWidth',1
 set(gca,'XTick',[1:4])
 
 set(gcf,'PaperPositionMode','auto')
-print('-painters','-r300','-depsc',[dDir '/derivatives/brainbeat/group/Fig5C_ArteryAvgs_bar_slowfMRI'])
-print('-painters','-r300','-dpng',[dDir '/derivatives/brainbeat/group/Fig5C_ArteryAvgs_bar_slowfMRI'])
+print('-painters','-r300','-depsc',[dDir '/derivatives/figures/Fig9D_ArteryAvgs_bar_slowfMRI'])
+print('-painters','-r300','-dpng',[dDir '/derivatives/figures/Fig9D_ArteryAvgs_bar_slowfMRI'])
 
