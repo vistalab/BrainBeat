@@ -12,7 +12,15 @@ function [rootPath,dDir] = bbPath()
 rootPath = fileparts(which(mfilename));
 
 % add code path
-addpath(genpath(rootPath));
+addpath(rootPath);
+
+addpath(fullfile(rootPath,'bbeat'));
+addpath(genpath(fullfile(rootPath,'external')));
+addpath(fullfile(rootPath,'physio'));
+addpath(fullfile(rootPath,'roi_labeling'));
+addpath(fullfile(rootPath,'scripts'));
+addpath(fullfile(rootPath,'visualization'));
+
 
 % make sure local data path is not added as code
 rmpath(fullfile(rootPath,'local'));
