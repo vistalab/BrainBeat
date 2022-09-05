@@ -21,10 +21,6 @@ addpath(fullfile(rootPath,'roi_labeling'));
 addpath(fullfile(rootPath,'scripts'));
 addpath(fullfile(rootPath,'visualization'));
 
-
-% make sure local data path is not added as code
-rmpath(fullfile(rootPath,'local'));
-
 % data directory
 dDir = fullfile(rootPath,'local','BrainBeat');
 

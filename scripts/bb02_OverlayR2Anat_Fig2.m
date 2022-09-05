@@ -27,7 +27,7 @@ run_nr = run_nrs{ss}(rr);
         
 % Get the anatomicals:
 t1w_BIDSname = fullfile(['sub-' sub_label],['ses-' ses_label],'anat',...
-            ['sub-' sub_label '_ses-' ses_label '_T1w.nii.gz']);
+            ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
 niAnatomy = niftiRead(fullfile(dDir,t1w_BIDSname));
 
 save_name_base = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label],...

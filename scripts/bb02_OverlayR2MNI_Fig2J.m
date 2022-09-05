@@ -28,10 +28,9 @@ for ss = 1:length(sub_labels) % subjects/ses/acq
     
     run_nr = run_nrs{ss}(rr);
     
-    % Get the anatomy used for SPM segmentation:
+    % Get the anatomy used for SPM segmentation, this file was later defaced and does not exist anymore in the derivatives, only the deformation fields:
     t1w_BIDSnameSPM = fullfile('derivatives','spmSegmentation',['sub-' sub_label],['ses-' ses_label],...
                 ['sub-' sub_label '_ses-' ses_label '_T1w.nii']);
-    niAnatomySPM = niftiRead(fullfile(dDir,t1w_BIDSnameSPM));
     
     save_dir = fullfile(dDir,'derivatives','brainbeat',['sub-' sub_label],['ses-' ses_label]);
     save_name_base = (['sub-' sub_label '_ses-' ses_label '_task-rest_acq-' acq_label '_run-' int2str(run_nr)]);
