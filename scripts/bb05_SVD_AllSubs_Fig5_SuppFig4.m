@@ -406,7 +406,6 @@ plot([1 1],[0 6000],'k')
 
 set(gcf,'PaperPositionMode','auto')
 print('-painters','-r300','-dpng',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
-print(-r300','-depsc',fullfile(dDir,'derivatives','figures','Figure5D_modelpc12_Rrmse'))
 
 
 %% Figrue S4B: distribution of PC1/2 weights and plot with pc1/pc2 fancy latency color map
