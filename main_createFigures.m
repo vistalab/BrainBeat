@@ -6,6 +6,33 @@
 % Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell
 %
 
+%% Check whether required paths are added
+
+% check for SPM
+try spm('Defaults','fmri')
+catch ME
+    switch ME.identifier
+        case 'MATLAB:UndefinedFunction'
+            warning('Add SPM12 to path (DO NOT USE genpath)');
+    end
+end
+
+if ~exist('vistaRootPath.m','file')
+    warning('Add vistasoft to Matlab path');
+end
+
+try bids.bids_matlab_version
+catch ME
+    switch ME.identifier
+        case 'MATLAB:undefinedVarOrClass'
+            warning('Add bids_matlab to Matlab path');
+    end
+end
+
+[~,dDir] = bbPath;
+
+%%
+
 bb01_Method_Fig1
 
 %%
