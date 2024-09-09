@@ -3,8 +3,9 @@ BrainBeat
 
 This repository contains functions to do the analyses and generate figures from the manuscript titled:
 
-**Measuring brain beats: cardiac-aligned fast fMRI signals.**
-Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell, *Human Brain Mapping 2022* https://doi.org/10.1002/hbm.26128
+**Measuring brain beats: cardiac-aligned fast fMRI signals.** <br>
+Dora Hermes, Hua Wu, Adam Kerr, Brian Wandell, <br> 
+*Human Brain Mapping 2022* https://doi.org/10.1002/hbm.26128
 
 Please cite this work when using the code.
 
