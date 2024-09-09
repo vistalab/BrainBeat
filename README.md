@@ -19,6 +19,8 @@ Run: `main_createFigures.m`
 
 Figures will be saved in: `/BrainBeat/local/BrainBeat/derivatives/figures/`
 
+Here is an example:  ![image](https://github.com/user-attachments/assets/bb325bc4-a4f7-4994-9846-8827deb6b219)
+
 ## Dependencies
 
 General toolboxes
